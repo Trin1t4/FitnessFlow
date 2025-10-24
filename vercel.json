@@ -1,9 +1,8 @@
 {
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/"
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs20.x"
     }
-  ],
-  "outputDirectory": "client/dist"
+  },
+  "buildCommand": "cd client && npm install && npm run build"
 }
