@@ -1,0 +1,140 @@
+-- ===== TrainSmart v3.1 - AI Features Migration =====
+-- Run this script AFTER updating schema.ts and running `npm run db:push`
+-- Or use Drizzle Kit to handle migrations automatically
+
+-- ===== 1. Add AI usage columns to users table =====
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS ai_video_corrections_used INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS ai_photo_analysis_used INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS last_ai_video_date TIMESTAMP,
+ADD COLUMN IF NOT EXISTS last_ai_photo_date TIMESTAMP;
+
+-- ===== 2. Create body_composition_assessments table =====
+CREATE TABLE IF NOT EXISTS body_composition_assessments (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  
+  -- Manual data
+  weight REAL NOT NULL,
+  height REAL NOT NULL,
+  bmi REAL,
+  
+  -- Photos (URLs)
+  photo_front_url TEXT,
+  photo_back_url TEXT,
+  photo_side_url TEXT,
+  
+  -- AI Analysis (JSON)
+  ai_analysis JSONB,
+  ai_model_used VARCHAR(50),
+  
+  -- Optional measurements
+  waist_cm REAL,
+  chest_cm REAL,
+  arm_cm REAL,
+  thigh_cm REAL,
+  
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Index for faster queries
+CREATE INDEX IF NOT EXISTS idx_body_comp_user_id ON body_composition_assessments(user_id);
+CREATE INDEX IF NOT EXISTS idx_body_comp_created_at ON body_composition_assessments(created_at DESC);
+
+-- ===== 3. Create form_corrections table =====
+CREATE TABLE IF NOT EXISTS form_corrections (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  workout_id INTEGER REFERENCES workouts(id) ON DELETE CASCADE,
+  exercise_name VARCHAR(255) NOT NULL,
+  
+  -- Video
+  video_url TEXT NOT NULL,
+  video_duration INTEGER NOT NULL,
+  
+  -- AI Analysis (JSON)
+  ai_corrections JSONB NOT NULL,
+  
+  status VARCHAR(20) DEFAULT 'pending',
+  coach_reviewed BOOLEAN DEFAULT FALSE,
+  coach_notes TEXT,
+  
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_form_corr_user_id ON form_corrections(user_id);
+CREATE INDEX IF NOT EXISTS idx_form_corr_workout_id ON form_corrections(workout_id);
+CREATE INDEX IF NOT EXISTS idx_form_corr_created_at ON form_corrections(created_at DESC);
+
+-- ===== 4. Create ai_adaptation_suggestions table =====
+CREATE TABLE IF NOT EXISTS ai_adaptation_suggestions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  program_id INTEGER REFERENCES programs(id) ON DELETE CASCADE,
+  
+  trigger_type VARCHAR(50) NOT NULL,
+  trigger_data JSONB NOT NULL,
+  
+  -- AI Suggestions (JSON)
+  suggestions JSONB NOT NULL,
+  
+  user_action VARCHAR(50),
+  applied_at TIMESTAMP,
+  
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_ai_suggest_user_id ON ai_adaptation_suggestions(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_suggest_program_id ON ai_adaptation_suggestions(program_id);
+CREATE INDEX IF NOT EXISTS idx_ai_suggest_created_at ON ai_adaptation_suggestions(created_at DESC);
+
+-- ===== 5. Add BMI calculation function (optional helper) =====
+CREATE OR REPLACE FUNCTION calculate_bmi(weight REAL, height REAL)
+RETURNS REAL AS $$
+BEGIN
+  RETURN weight / (height * height);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- ===== 6. Create view for user AI summary (optional) =====
+CREATE OR REPLACE VIEW user_ai_summary AS
+SELECT 
+  u.id,
+  u.username,
+  u.subscription_tier,
+  u.ai_video_corrections_used,
+  u.ai_photo_analysis_used,
+  COUNT(DISTINCT bca.id) as total_body_assessments,
+  COUNT(DISTINCT fc.id) as total_form_corrections,
+  COUNT(DISTINCT aas.id) as total_ai_suggestions,
+  MAX(bca.created_at) as last_body_assessment,
+  MAX(fc.created_at) as last_form_correction,
+  MAX(aas.created_at) as last_ai_suggestion
+FROM users u
+LEFT JOIN body_composition_assessments bca ON u.id = bca.user_id
+LEFT JOIN form_corrections fc ON u.id = fc.user_id
+LEFT JOIN ai_adaptation_suggestions aas ON u.id = aas.user_id
+GROUP BY u.id, u.username, u.subscription_tier, u.ai_video_corrections_used, u.ai_photo_analysis_used;
+
+-- ===== 7. Verify installation =====
+-- Run this to check everything is created:
+SELECT 
+  table_name,
+  (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = t.table_name) as column_count
+FROM information_schema.tables t
+WHERE table_schema = 'public' 
+  AND table_name IN (
+    'body_composition_assessments',
+    'form_corrections',
+    'ai_adaptation_suggestions'
+  )
+ORDER BY table_name;
+
+-- ===== Migration Complete! =====
+-- Next steps:
+-- 1. Update your .env with API keys
+-- 2. Restart the server
+-- 3. Test endpoints with Postman/curl
+-- 4. Deploy to production

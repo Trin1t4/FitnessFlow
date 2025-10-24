@@ -1,0 +1,874 @@
+import { useState, useEffect } from 'react';
+
+// ===== TIPI E INTERFACCE =====
+
+type Goal = 'strength' | 'hypertrophy' | 'weight_loss' | 'rehab' | 'performance';
+type Location = 'gym' | 'home' | 'mixed';
+
+interface AvailableEquipment {
+  barbell: boolean;
+  dumbbellMaxKg: number;
+  kettlebellKg: number[];
+  bands: boolean;
+  pullupBar: boolean;
+  bench: boolean;
+}
+
+interface GiantSetExercise {
+  name: string;
+  muscleGroup: string;
+  reps: string;
+  rest: number;
+  tempo?: string;
+  notes: string;
+}
+
+interface GiantSet {
+  id: string;
+  name: string;
+  type: 'giant_set';
+  rounds: number;
+  restBetweenRounds: number;
+  exercises: GiantSetExercise[];
+  totalNotes: string;
+}
+
+interface Exercise {
+  id: string;
+  name: string;
+  sets: number;
+  reps: string;
+  rest: number;
+  weight?: number;
+  notes: string;
+}
+
+interface PreWorkoutWeights {
+  [exerciseName: string]: {
+    planned: number;
+    available: number;
+  };
+}
+
+interface WorkoutDay {
+  dayNumber: number;
+  name: string;
+  focus: string;
+  exercises: Array<Exercise | GiantSet>;
+  completed?: boolean;
+}
+
+// ===== DATABASE SOSTITUZIONI =====
+
+const HOME_ALTERNATIVES: Record<string, string> = {
+  'Squat': 'Squat a Corpo Libero',
+  'Front Squat': 'Goblet Squat',
+  'Panca piana': 'Push-up',
+  'Panca inclinata': 'Pike Push-up',
+  'Stacco': 'GIANT_SET_DEADLIFT',
+  'Stacco rumeno': 'Single Leg RDL',
+  'Trazioni': 'FLOOR_SLIDE_ROWS',
+  'Lat Machine': 'FLOOR_SLIDE_ROWS',
+  'Rematore bilanciere': 'Inverted Row',
+  'Rematore manubrio': 'Plank Row',
+  'Military Press': 'Pike Push-up',
+  'Alzate laterali': 'Band Lateral Raise',
+  'Leg Press': 'Bulgarian Split Squat',
+  'Leg Curl': 'Nordic Curl',
+  'Dips': 'Diamond Push-up'
+};
+
+// ===== GIANT SETS =====
+
+function createDeadliftGiantSet(goal: Goal): GiantSet {
+  const configs = {
+    strength: { rounds: 4, rest: 240, reps: { jump: "8", nordic: "5-6", gm: "10-12", hang: "30-45s" } },
+    hypertrophy: { rounds: 4, rest: 150, reps: { jump: "12", nordic: "8-10", gm: "15-18", hang: "45-60s" } },
+    weight_loss: { rounds: 5, rest: 120, reps: { jump: "15", nordic: "10", gm: "20", hang: "30s" } },
+    rehab: { rounds: 3, rest: 180, reps: { jump: "0", nordic: "0", gm: "12", hang: "0" } },
+    performance: { rounds: 4, rest: 240, reps: { jump: "8", nordic: "5-6", gm: "10-12", hang: "30-45s" } }
+  };
+
+  const config = configs[goal];
+
+  if (goal === 'rehab') {
+    return {
+      id: 'giant_deadlift_rehab',
+      name: 'Giant Set Catena Posteriore (Rehab)',
+      type: 'giant_set',
+      rounds: 3,
+      restBetweenRounds: 180,
+      exercises: [
+        { name: "Squat Isometrico", muscleGroup: "Stabilità", reps: "20-30s", rest: 0, notes: "Tenuta statica" },
+        { name: "Ponte Glutei", muscleGroup: "Glutei", reps: "15", rest: 0, tempo: "2s hold", notes: "No compensi lombari" },
+        { name: "Good Morning Leggero", muscleGroup: "Catena Posteriore", reps: "12", rest: 0, notes: "ROM controllato" },
+        { name: "Scapular Pull", muscleGroup: "Scapole", reps: "10", rest: 0, notes: "Attivazione scapolare" }
+      ],
+      totalNotes: "⚠️ REHAB: esercizi controllati, ROM sicuro, no balzi."
+    };
+  }
+
+  return {
+    id: `giant_deadlift_${goal}`,
+    name: `Giant Set Stacco (${goal === 'strength' ? 'Forza' : goal === 'hypertrophy' ? 'Ipertrofia' : 'Dimagrimento'})`,
+    type: 'giant_set',
+    rounds: config.rounds,
+    restBetweenRounds: config.rest,
+    exercises: [
+      { name: "Squat Jump", muscleGroup: "Quads + Esplosività", reps: config.reps.jump, rest: 0, notes: "Simula strappo iniziale stacco" },
+      { name: "Nordic Curl", muscleGroup: "Femorali", reps: config.reps.nordic, rest: 0, tempo: "4s eccentrica", notes: "Eccentrico controllato" },
+      { name: "Good Morning", muscleGroup: "Erettori + Glutei", reps: config.reps.gm, rest: 0, notes: "Cerniera anca, zaino se disponibile" },
+      { name: "Dead Hang", muscleGroup: "Grip + Trap", reps: config.reps.hang, rest: 0, notes: "Presa massimale" }
+    ],
+    totalNotes: "⚠️ LO STACCO È INSOSTITUIBILE. Questo giant set simula la fatica sistemica e l'effort, NON la biomeccanica dello stacco."
+  };
+}
+
+function createFloorSlideGiantSet(goal: Goal): GiantSet {
+  const rounds = goal === 'weight_loss' ? 5 : goal === 'hypertrophy' ? 4 : 3;
+  const rest = goal === 'weight_loss' ? 90 : goal === 'strength' || goal === 'performance' ? 180 : 120;
+
+  return {
+    id: 'giant_pullup_floor',
+    name: 'Giant Set Dorsale (Floor Work)',
+    type: 'giant_set',
+    rounds,
+    restBetweenRounds: rest,
+    exercises: [
+      { name: "Floor Slide Rows", muscleGroup: "Dorsali + Scapole", reps: "12-15", rest: 0, tempo: "3s eccentrica", notes: "Prono, mani avanti, 'scivola' indietro con dorsali (come passo giaguaro ma 2 braccia insieme)" },
+      { name: "Scapular Push-up", muscleGroup: "Scapole", reps: "15", rest: 0, notes: "Retrazione/protrazione in plank" },
+      { name: "Superman Hold", muscleGroup: "Erettori + Dorsali", reps: "30-45s", rest: 0, notes: "Isometrica dorsale" },
+      { name: "Hollow Body", muscleGroup: "Core", reps: "30s", rest: 0, notes: "Recupero attivo" }
+    ],
+    totalNotes: "⚠️ LE TRAZIONI sono insostituibili per sviluppo dorsale. Questo giant set allena attivazione scapolare senza sbarra."
+  };
+}
+
+// ===== CALIBRAZIONE EFFORT =====
+
+function calibrateEffort(plannedWeight: number, availableWeight: number, goal: Goal) {
+  const ratio = availableWeight / plannedWeight;
+  
+  if (ratio >= 0.9) {
+    return { setsMultiplier: 1, repsMultiplier: 1, tempo: "Standard", notes: "" };
+  }
+  
+  if (ratio < 0.7) {
+    switch(goal) {
+      case 'strength':
+      case 'performance':
+        return { 
+          setsMultiplier: 1.5, 
+          repsMultiplier: 1, 
+          tempo: "4-0-1-0", 
+          notes: "⚡ Peso ridotto: aumentate serie +50%, tempo eccentrico lento" 
+        };
+      case 'hypertrophy':
+        return { 
+          setsMultiplier: 1, 
+          repsMultiplier: 1.5, 
+          tempo: "3-1-1-0", 
+          notes: "⚡ Peso ridotto: aumentate reps +50%, TUT elevato" 
+        };
+      case 'weight_loss':
+        return { 
+          setsMultiplier: 1.3, 
+          repsMultiplier: 1.2, 
+          tempo: "Esplosivo", 
+          notes: "⚡ Peso ridotto: aumentate densità, riducete pause di 20s" 
+        };
+      default:
+        return { setsMultiplier: 1, repsMultiplier: 1, tempo: "Controllato", notes: "" };
+    }
+  }
+  
+  return { setsMultiplier: 1, repsMultiplier: 1.2, tempo: "Standard", notes: "⚡ Peso ridotto: aumentate reps leggermente" };
+}
+
+// ===== COMPONENTE PRINCIPALE =====
+
+export default function TrainSmartApp() {
+  const [view, setView] = useState<'home' | 'screening' | 'assessment' | 'preworkout' | 'dashboard'>('home');
+  const [userData, setUserData] = useState<any>({});
+  const [program, setProgram] = useState<WorkoutDay[]>([]);
+  const [currentDay, setCurrentDay] = useState(0);
+  const [preWorkoutWeights, setPreWorkoutWeights] = useState<PreWorkoutWeights>({});
+  const [showCalibration, setShowCalibration] = useState(false);
+
+  // ===== HOME =====
+  if (view === 'home') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center space-y-8">
+          <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto">
+            <span className="text-4xl">⚡</span>
+          </div>
+          <h1 className="text-5xl font-bold text-white">TrainSmart</h1>
+          <p className="text-xl text-gray-300">Il tuo coach basato su scienza</p>
+          <button 
+            onClick={() => setView('screening')}
+            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 px-6 rounded-xl font-semibold text-lg transition-all"
+          >
+            Inizia Ora →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== SCREENING =====
+  if (view === 'screening') {
+    const [step, setStep] = useState(1);
+    const [formData, setFormData] = useState({
+      name: '',
+      age: '',
+      weight: '',
+      height: '',
+      goal: '' as Goal,
+      location: '' as Location,
+      frequency: 3,
+      equipment: {
+        barbell: false,
+        dumbbellMaxKg: 0,
+        kettlebellKg: [] as number[],
+        bands: false,
+        pullupBar: false,
+        bench: false
+      }
+    });
+
+    const handleNext = () => {
+      if (step === 4) {
+        setUserData(formData);
+        setView('assessment');
+      } else {
+        setStep(step + 1);
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-gray-800 rounded-2xl p-8 shadow-2xl">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-bold text-white">Screening - Step {step}/4</h2>
+              <div className="text-emerald-400 font-semibold">{Math.round((step/4)*100)}%</div>
+            </div>
+
+            {/* STEP 1: DATI PERSONALI */}
+            {step === 1 && (
+              <div className="space-y-4">
+                <h3 className="text-xl text-white font-semibold mb-4">Dati Personali</h3>
+                <input
+                  type="text"
+                  placeholder="Nome"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600"
+                />
+                <input
+                  type="number"
+                  placeholder="Età"
+                  value={formData.age}
+                  onChange={(e) => setFormData({...formData, age: e.target.value})}
+                  className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600"
+                />
+                <input
+                  type="number"
+                  placeholder="Peso (kg)"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({...formData, weight: e.target.value})}
+                  className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600"
+                />
+                <input
+                  type="number"
+                  placeholder="Altezza (cm)"
+                  value={formData.height}
+                  onChange={(e) => setFormData({...formData, height: e.target.value})}
+                  className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600"
+                />
+              </div>
+            )}
+
+            {/* STEP 2: OBIETTIVO */}
+            {step === 2 && (
+              <div className="space-y-4">
+                <h3 className="text-xl text-white font-semibold mb-4">Qual è il tuo obiettivo?</h3>
+                {[
+                  { value: 'strength', label: '💪 Forza', desc: 'Aumentare massimali' },
+                  { value: 'hypertrophy', label: '🏋️ Massa Muscolare', desc: 'Ipertrofia e volume' },
+                  { value: 'weight_loss', label: '🔥 Dimagrimento', desc: 'Perdere grasso' },
+                  { value: 'performance', label: '⚡ Performance', desc: 'Atletismo e esplosività' },
+                  { value: 'rehab', label: '🩺 Rehab', desc: 'Recupero da infortuni' }
+                ].map(goal => (
+                  <button
+                    key={goal.value}
+                    onClick={() => setFormData({...formData, goal: goal.value as Goal})}
+                    className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                      formData.goal === goal.value 
+                        ? 'border-emerald-500 bg-emerald-500/20' 
+                        : 'border-gray-600 bg-gray-700 hover:border-gray-500'
+                    }`}
+                  >
+                    <div className="text-white font-semibold">{goal.label}</div>
+                    <div className="text-gray-400 text-sm">{goal.desc}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* STEP 3: LOCATION */}
+            {step === 3 && (
+              <div className="space-y-4">
+                <h3 className="text-xl text-white font-semibold mb-4">Dove ti alleni?</h3>
+                {[
+                  { value: 'gym', label: '🏢 Palestra', desc: 'Accesso completo attrezzature' },
+                  { value: 'home', label: '🏠 Casa', desc: 'Corpo libero e attrezzatura minima' },
+                  { value: 'mixed', label: '🔀 Misto', desc: 'Alcuni giorni casa, altri palestra' }
+                ].map(loc => (
+                  <button
+                    key={loc.value}
+                    onClick={() => setFormData({...formData, location: loc.value as Location})}
+                    className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                      formData.location === loc.value 
+                        ? 'border-emerald-500 bg-emerald-500/20' 
+                        : 'border-gray-600 bg-gray-700 hover:border-gray-500'
+                    }`}
+                  >
+                    <div className="text-white font-semibold">{loc.label}</div>
+                    <div className="text-gray-400 text-sm">{loc.desc}</div>
+                  </button>
+                ))}
+
+                {(formData.location === 'home' || formData.location === 'mixed') && (
+                  <div className="mt-6 p-4 bg-gray-700 rounded-lg space-y-3">
+                    <h4 className="text-white font-semibold">Attrezzatura disponibile a casa:</h4>
+                    
+                    <label className="flex items-center text-white">
+                      <input
+                        type="checkbox"
+                        checked={formData.equipment.barbell}
+                        onChange={(e) => setFormData({...formData, equipment: {...formData.equipment, barbell: e.target.checked}})}
+                        className="mr-2"
+                      />
+                      Bilanciere
+                    </label>
+
+                    <div className="space-y-2">
+                      <label className="text-white">Manubri fino a (kg):</label>
+                      <input
+                        type="number"
+                        value={formData.equipment.dumbbellMaxKg}
+                        onChange={(e) => setFormData({...formData, equipment: {...formData.equipment, dumbbellMaxKg: parseInt(e.target.value) || 0}})}
+                        className="w-full p-2 rounded bg-gray-600 text-white"
+                      />
+                    </div>
+
+                    <label className="flex items-center text-white">
+                      <input
+                        type="checkbox"
+                        checked={formData.equipment.bands}
+                        onChange={(e) => setFormData({...formData, equipment: {...formData.equipment, bands: e.target.checked}})}
+                        className="mr-2"
+                      />
+                      Elastici
+                    </label>
+
+                    <label className="flex items-center text-white">
+                      <input
+                        type="checkbox"
+                        checked={formData.equipment.pullupBar}
+                        onChange={(e) => setFormData({...formData, equipment: {...formData.equipment, pullupBar: e.target.checked}})}
+                        className="mr-2"
+                      />
+                      Sbarra per trazioni
+                    </label>
+
+                    <label className="flex items-center text-white">
+                      <input
+                        type="checkbox"
+                        checked={formData.equipment.bench}
+                        onChange={(e) => setFormData({...formData, equipment: {...formData.equipment, bench: e.target.checked}})}
+                        className="mr-2"
+                      />
+                      Panca
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* STEP 4: FREQUENZA */}
+            {step === 4 && (
+              <div className="space-y-4">
+                <h3 className="text-xl text-white font-semibold mb-4">Quanti giorni a settimana?</h3>
+                <div className="grid grid-cols-4 gap-3">
+                  {[2, 3, 4, 5, 6].map(days => (
+                    <button
+                      key={days}
+                      onClick={() => setFormData({...formData, frequency: days})}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        formData.frequency === days 
+                          ? 'border-emerald-500 bg-emerald-500/20' 
+                          : 'border-gray-600 bg-gray-700 hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="text-white font-bold text-2xl">{days}</div>
+                      <div className="text-gray-400 text-xs">giorni</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-4 mt-8">
+              {step > 1 && (
+                <button
+                  onClick={() => setStep(step - 1)}
+                  className="flex-1 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-all"
+                >
+                  ← Indietro
+                </button>
+              )}
+              <button
+                onClick={handleNext}
+                disabled={
+                  (step === 1 && (!formData.name || !formData.age || !formData.weight || !formData.height)) ||
+                  (step === 2 && !formData.goal) ||
+                  (step === 3 && !formData.location)
+                }
+                className="flex-1 bg-emerald-500 text-white py-3 rounded-lg hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {step === 4 ? 'Vai ai Test →' : 'Avanti →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== ASSESSMENT =====
+  if (view === 'assessment') {
+    const [assessments, setAssessments] = useState<Record<string, number>>({});
+    
+    const exercises = userData.location === 'gym' 
+      ? ['Squat', 'Panca piana', 'Stacco', 'Trazioni', 'Military Press']
+      : ['Squat', 'Push-up', 'Inverted Row', 'Pike Push-up'];
+
+    const handleComplete = () => {
+      // Genera programma
+      const generatedProgram = generateProgram(userData, assessments);
+      setProgram(generatedProgram);
+      setView('dashboard');
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-gray-800 rounded-2xl p-8 shadow-2xl">
+            <h2 className="text-2xl font-bold text-white mb-6">Test Massimali</h2>
+            <p className="text-gray-300 mb-6">
+              Inserisci il carico con cui riesci a fare {userData.location === 'gym' ? '10' : '20'} ripetizioni pulite:
+            </p>
+
+            <div className="space-y-4">
+              {exercises.map(ex => (
+                <div key={ex} className="bg-gray-700 p-4 rounded-lg">
+                  <label className="text-white font-semibold block mb-2">{ex}</label>
+                  <input
+                    type="number"
+                    placeholder={userData.location === 'gym' ? "kg per 10 reps" : "reps massime"}
+                    value={assessments[ex] || ''}
+                    onChange={(e) => setAssessments({...assessments, [ex]: parseInt(e.target.value) || 0})}
+                    className="w-full p-3 rounded bg-gray-600 text-white"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={handleComplete}
+              disabled={Object.keys(assessments).length < exercises.length}
+              className="w-full mt-6 bg-emerald-500 text-white py-3 rounded-lg hover:bg-emerald-600 transition-all disabled:opacity-50"
+            >
+              Genera Programma →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== PRE-WORKOUT =====
+  if (view === 'preworkout') {
+    const todayWorkout = program[currentDay];
+    const plannedExercises = todayWorkout.exercises.filter((ex): ex is Exercise => 'weight' in ex && ex.weight);
+
+    const handleStartWorkout = () => {
+      setShowCalibration(true);
+      setTimeout(() => setView('dashboard'), 2000);
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-gray-800 rounded-2xl p-8 shadow-2xl">
+            <h2 className="text-2xl font-bold text-white mb-6">
+              Pre-Workout - {todayWorkout.name}
+            </h2>
+            <p className="text-gray-300 mb-6">
+              Inserisci i pesi disponibili oggi per ogni esercizio. Il sistema ricalcolerà automaticamente l'effort:
+            </p>
+
+            <div className="space-y-4 mb-6">
+              {plannedExercises.map((ex, idx) => (
+                <div key={idx} className="bg-gray-700 p-4 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-white font-semibold">{ex.name}</span>
+                    <span className="text-emerald-400">Programmato: {ex.weight}kg</span>
+                  </div>
+                  <input
+                    type="number"
+                    placeholder="Peso disponibile oggi (kg)"
+                    value={preWorkoutWeights[ex.name]?.available || ''}
+                    onChange={(e) => setPreWorkoutWeights({
+                      ...preWorkoutWeights,
+                      [ex.name]: {
+                        planned: ex.weight!,
+                        available: parseInt(e.target.value) || 0
+                      }
+                    })}
+                    className="w-full p-3 rounded bg-gray-600 text-white"
+                  />
+
+                  {preWorkoutWeights[ex.name]?.available && preWorkoutWeights[ex.name].available < ex.weight! * 0.9 && (
+                    <div className="mt-2 p-2 bg-orange-500/20 border border-orange-500 rounded text-orange-300 text-sm">
+                      ⚡ Peso ridotto: il sistema adatterà automaticamente serie/reps/tempo
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={handleStartWorkout}
+              className="w-full bg-emerald-500 text-white py-3 rounded-lg hover:bg-emerald-600 transition-all"
+            >
+              Inizia Allenamento →
+            </button>
+          </div>
+
+          {showCalibration && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-8 rounded-2xl max-w-md">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">⚡</div>
+                  <h3 className="text-2xl font-bold text-white mb-4">Calibrazione in corso...</h3>
+                  <p className="text-gray-300">Sto adattando il programma ai pesi disponibili</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ===== DASHBOARD =====
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="bg-gray-800 rounded-2xl p-6 mb-6 shadow-2xl">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-white">Ciao, {userData.name}!</h1>
+              <p className="text-gray-400">Obiettivo: {userData.goal === 'hypertrophy' ? 'Massa Muscolare' : userData.goal === 'strength' ? 'Forza' : 'Dimagrimento'}</p>
+            </div>
+            <button
+              onClick={() => {
+                setView('home');
+                setUserData({});
+                setProgram([]);
+              }}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+
+        {/* Selezione giorno */}
+        <div className="bg-gray-800 rounded-2xl p-6 mb-6">
+          <h2 className="text-xl font-bold text-white mb-4">Seleziona Allenamento</h2>
+          <div className="grid grid-cols-3 gap-3">
+            {program.map((day, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentDay(idx)}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  currentDay === idx
+                    ? 'border-emerald-500 bg-emerald-500/20'
+                    : 'border-gray-600 bg-gray-700 hover:border-gray-500'
+                }`}
+              >
+                <div className="text-white font-semibold">Giorno {day.dayNumber}</div>
+                <div className="text-gray-400 text-sm">{day.focus}</div>
+              </button>
+            ))}
+          </div>
+
+          {userData.location === 'mixed' && (
+            <button
+              onClick={() => setView('preworkout')}
+              className="w-full mt-4 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-all"
+            >
+              🔄 Pre-Workout Setup (modalità mista)
+            </button>
+          )}
+        </div>
+
+        {/* Workout corrente */}
+        <div className="bg-gray-800 rounded-2xl p-6">
+          <h2 className="text-2xl font-bold text-white mb-4">{program[currentDay]?.name}</h2>
+          
+          <div className="space-y-4">
+            {program[currentDay]?.exercises.map((item, idx) => {
+              // Gestione Giant Set
+              if ('type' in item && item.type === 'giant_set') {
+                const gs = item as GiantSet;
+                return (
+                  <div key={idx} className="border-2 border-orange-500 bg-orange-900/20 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">🔥</span>
+                      <h3 className="text-xl font-bold text-orange-400">{gs.name}</h3>
+                    </div>
+
+                    <div className="bg-gray-700 p-3 rounded mb-3">
+                      <p className="text-white text-sm font-semibold">
+                        ⚡ {gs.rounds} giri | 🚫 ZERO pause tra esercizi | ⏱️ {gs.restBetweenRounds}s recupero TRA i giri
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      {gs.exercises.map((ex, i) => (
+                        <div key={i} className="bg-gray-700 p-3 rounded flex items-start gap-3">
+                          <span className="text-orange-400 font-bold">{i + 1}.</span>
+                          <div className="flex-1">
+                            <p className="text-white font-semibold">{ex.name}</p>
+                            <p className="text-gray-400 text-sm">{ex.muscleGroup}</p>
+                            <p className="text-emerald-400 text-sm">
+                              {ex.reps} reps {ex.tempo && `| ${ex.tempo}`} | {ex.rest === 0 ? '⚡ NO PAUSA' : `${ex.rest}s rest`}
+                            </p>
+                            <p className="text-gray-500 text-xs italic">{ex.notes}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-3 p-3 bg-yellow-900/30 border border-yellow-500 rounded">
+                      <p className="text-yellow-200 text-xs">{gs.totalNotes}</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Esercizio normale
+              const ex = item as Exercise;
+              const calibration = preWorkoutWeights[ex.name] 
+                ? calibrateEffort(preWorkoutWeights[ex.name].planned, preWorkoutWeights[ex.name].available, userData.goal)
+                : null;
+
+              return (
+                <div key={idx} className="bg-gray-700 rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-white font-bold text-lg">{ex.name}</h3>
+                    {ex.weight && (
+                      <span className="text-emerald-400 font-semibold">{ex.weight}kg</span>
+                    )}
+                  </div>
+
+                  <div className="text-gray-300 space-y-1">
+                    <p>
+                      📊 {calibration ? Math.round(ex.sets * calibration.setsMultiplier) : ex.sets} serie × {' '}
+                      {calibration ? (typeof ex.reps === 'string' ? ex.reps : Math.round(ex.reps * calibration.repsMultiplier)) : ex.reps} reps
+                    </p>
+                    <p>⏱️ {ex.rest}s recupero</p>
+                    {calibration && calibration.tempo !== 'Standard' && (
+                      <p>🎯 Tempo: {calibration.tempo}</p>
+                    )}
+                    {ex.notes && <p className="text-gray-400 text-sm italic">💡 {ex.notes}</p>}
+                  </div>
+
+                  {calibration?.notes && (
+                    <div className="mt-2 p-2 bg-orange-500/20 border border-orange-500 rounded text-orange-300 text-sm">
+                      {calibration.notes}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== GENERATORE PROGRAMMA =====
+
+function generateProgram(userData: any, assessments: Record<string, number>): WorkoutDay[] {
+  const { goal, location, frequency, equipment } = userData;
+  
+  // Determina split
+  let split: 'fullbody' | 'upper_lower' | 'ppl';
+  if (frequency <= 3) split = 'fullbody';
+  else if (frequency === 4) split = 'upper_lower';
+  else split = 'ppl';
+
+  const days: WorkoutDay[] = [];
+
+  // FULL BODY (3 giorni)
+  if (split === 'fullbody') {
+    for (let i = 0; i < 3; i++) {
+      const exercises: Array<Exercise | GiantSet> = [];
+      
+      // Squat
+      if (location === 'gym') {
+        exercises.push({
+          id: `squat_${i}`,
+          name: 'Squat',
+          sets: goal === 'strength' ? 5 : 4,
+          reps: goal === 'strength' ? '5' : '8-12',
+          rest: 180,
+          weight: assessments['Squat'] * 0.7,
+          notes: 'Esercizio principale'
+        });
+      } else {
+        exercises.push({
+          id: `squat_home_${i}`,
+          name: 'Squat a Corpo Libero',
+          sets: 4,
+          reps: '15-20',
+          rest: 90,
+          notes: 'Alta ripetizione'
+        });
+      }
+
+      // Stacco
+      if (location === 'gym') {
+        exercises.push({
+          id: `deadlift_${i}`,
+          name: 'Stacco',
+          sets: goal === 'strength' ? 5 : 3,
+          reps: goal === 'strength' ? '5' : '8-10',
+          rest: 240,
+          weight: assessments['Stacco'] * 0.7,
+          notes: 'Catena posteriore'
+        });
+      } else {
+        exercises.push(createDeadliftGiantSet(goal));
+      }
+
+      // Panca/Push-up
+      if (location === 'gym') {
+        exercises.push({
+          id: `bench_${i}`,
+          name: 'Panca piana',
+          sets: 4,
+          reps: goal === 'strength' ? '5-8' : '8-12',
+          rest: 150,
+          weight: assessments['Panca piana'] * 0.7,
+          notes: 'Petto principale'
+        });
+      } else {
+        exercises.push({
+          id: `pushup_${i}`,
+          name: 'Push-up',
+          sets: 4,
+          reps: '12-20',
+          rest: 90,
+          notes: 'Petto e tricipiti'
+        });
+      }
+
+      // Trazioni/Floor Slides
+      if (location === 'gym') {
+        exercises.push({
+          id: `pullup_${i}`,
+          name: 'Trazioni',
+          sets: 4,
+          reps: '6-12',
+          rest: 150,
+          notes: 'Dorsali'
+        });
+      } else {
+        if (equipment.pullupBar) {
+          exercises.push({
+            id: `pullup_home_${i}`,
+            name: 'Australian Pull-up',
+            sets: 4,
+            reps: '10-15',
+            rest: 90,
+            notes: 'Dorsali con sbarra bassa'
+          });
+        } else {
+          exercises.push(createFloorSlideGiantSet(goal));
+        }
+      }
+
+      days.push({
+        dayNumber: i + 1,
+        name: `Full Body ${i + 1}`,
+        focus: 'Tutto il corpo',
+        exercises,
+        completed: false
+      });
+    }
+  }
+
+  // UPPER/LOWER (4 giorni)
+  if (split === 'upper_lower') {
+    // Upper 1
+    const upper1: Array<Exercise | GiantSet> = [];
+    if (location === 'gym') {
+      upper1.push(
+        { id: 'bench1', name: 'Panca piana', sets: 4, reps: '8-12', rest: 150, weight: assessments['Panca piana'] * 0.7, notes: 'Petto' },
+        { id: 'pullup1', name: 'Trazioni', sets: 4, reps: '8-12', rest: 120, notes: 'Dorsali' },
+        { id: 'military1', name: 'Military Press', sets: 3, reps: '10-12', rest: 90, weight: assessments['Military Press'] * 0.7, notes: 'Spalle' }
+      );
+    } else {
+      upper1.push(
+        { id: 'pushup1', name: 'Push-up', sets: 4, reps: '15-20', rest: 90, notes: 'Petto' },
+        equipment.pullupBar ? 
+          { id: 'aus1', name: 'Australian Pull-up', sets: 4, reps: '12-15', rest: 90, notes: 'Dorsali' } :
+          createFloorSlideGiantSet(goal),
+        { id: 'pike1', name: 'Pike Push-up', sets: 3, reps: '12-15', rest: 90, notes: 'Spalle' }
+      );
+    }
+
+    // Lower 1
+    const lower1: Array<Exercise | GiantSet> = [];
+    if (location === 'gym') {
+      lower1.push(
+        { id: 'squat1', name: 'Squat', sets: 4, reps: '8-12', rest: 180, weight: assessments['Squat'] * 0.7, notes: 'Gambe' },
+        { id: 'deadlift1', name: 'Stacco', sets: 3, reps: '8-10', rest: 240, weight: assessments['Stacco'] * 0.7, notes: 'Posteriori' }
+      );
+    } else {
+      lower1.push(
+        { id: 'squat_h1', name: 'Squat a Corpo Libero', sets: 4, reps: '20', rest: 90, notes: 'Gambe' },
+        createDeadliftGiantSet(goal)
+      );
+    }
+
+    days.push(
+      { dayNumber: 1, name: 'Upper 1', focus: 'Parte superiore', exercises: upper1, completed: false },
+      { dayNumber: 2, name: 'Lower 1', focus: 'Parte inferiore', exercises: lower1, completed: false },
+      { dayNumber: 3, name: 'Upper 2', focus: 'Parte superiore', exercises: upper1, completed: false },
+      { dayNumber: 4, name: 'Lower 2', focus: 'Parte inferiore', exercises: lower1, completed: false }
+    );
+  }
+
+  return days;
+}

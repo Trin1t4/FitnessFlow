@@ -1,0 +1,292 @@
+import { Request, Response, NextFunction } from "express";
+import { db } from "../db";
+import { users, bodyCompositionAssessments, formCorrections } from "@db/schema";
+import { eq, and, gte } from "drizzle-orm";
+
+export const AI_LIMITS = {
+  none: {
+    bodyComposition: { perMonth: 1, perYear: 12 },
+    formCorrection: { perMonth: 0, perYear: 0 },
+    adaptFlowSuggestions: true,
+  },
+  base: {
+    bodyComposition: { perMonth: 3, perYear: 36 },
+    formCorrection: { perMonth: 2, perYear: 24 },
+    adaptFlowSuggestions: true,
+  },
+  premium: {
+    bodyComposition: { perMonth: 999, perYear: 999 },
+    formCorrection: { perMonth: 10, perYear: 120 },
+    adaptFlowSuggestions: true,
+  },
+  elite: {
+    bodyComposition: { perMonth: 999, perYear: 999 },
+    formCorrection: { perMonth: 999, perYear: 999 },
+    adaptFlowSuggestions: true,
+    coachReview: true,
+  },
+} as const;
+
+type SubscriptionTier = keyof typeof AI_LIMITS;
+type FeatureType = "bodyComposition" | "formCorrection" | "adaptFlowSuggestions";
+
+export interface AILimitCheck {
+  allowed: boolean;
+  remaining: number;
+  limit: number;
+  resetDate: Date;
+  tier: SubscriptionTier;
+}
+
+export async function checkAILimit(
+  userId: number,
+  featureType: FeatureType
+): Promise<AILimitCheck> {
+  try {
+    // Get user
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+
+    if (!user) {
+      return {
+        allowed: false,
+        remaining: 0,
+        limit: 0,
+        resetDate: new Date(),
+        tier: "none",
+      };
+    }
+
+    const tier = (user.subscriptionTier as SubscriptionTier) || "none";
+    const limits = AI_LIMITS[tier];
+
+    // AdaptFlow is always allowed
+    if (featureType === "adaptFlowSuggestions") {
+      return {
+        allowed: true,
+        remaining: 999,
+        limit: 999,
+        resetDate: new Date(),
+        tier,
+      };
+    }
+
+    const limit = limits[featureType];
+    if (typeof limit !== "object") {
+      return {
+        allowed: false,
+        remaining: 0,
+        limit: 0,
+        resetDate: new Date(),
+        tier,
+      };
+    }
+
+    // Calculate start of current month
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    // Get usage for current month
+    let usage = 0;
+
+    if (featureType === "bodyComposition") {
+      const results = await db
+        .select()
+        .from(bodyCompositionAssessments)
+        .where(
+          and(
+            eq(bodyCompositionAssessments.userId, userId),
+            gte(bodyCompositionAssessments.createdAt, startOfMonth)
+          )
+        );
+      usage = results.length;
+    } else if (featureType === "formCorrection") {
+      const results = await db
+        .select()
+        .from(formCorrections)
+        .where(
+          and(
+            eq(formCorrections.userId, userId),
+            gte(formCorrections.createdAt, startOfMonth)
+          )
+        );
+      usage = results.length;
+    }
+
+    const allowed = usage < limit.perMonth;
+    const remaining = Math.max(0, limit.perMonth - usage);
+
+    return {
+      allowed,
+      remaining,
+      limit: limit.perMonth,
+      resetDate: endOfMonth,
+      tier,
+    };
+  } catch (error) {
+    console.error("Error checking AI limit:", error);
+    return {
+      allowed: false,
+      remaining: 0,
+      limit: 0,
+      resetDate: new Date(),
+      tier: "none",
+    };
+  }
+}
+
+export function aiLimitMiddleware(featureType: FeatureType) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const limitCheck = await checkAILimit(userId, featureType);
+
+      if (!limitCheck.allowed) {
+        return res.status(403).json({
+          error: "Limite mensile raggiunto",
+          details: {
+            feature: featureType,
+            currentTier: limitCheck.tier,
+            limit: limitCheck.limit,
+            remaining: limitCheck.remaining,
+            resetDate: limitCheck.resetDate,
+            upgradeMessage: getUpgradeMessage(limitCheck.tier, featureType),
+          },
+        });
+      }
+
+      // Attach limit info to request for logging
+      req.aiLimitInfo = limitCheck;
+
+      next();
+    } catch (error) {
+      console.error("AI limit middleware error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
+}
+
+function getUpgradeMessage(
+  currentTier: SubscriptionTier,
+  featureType: FeatureType
+): string {
+  if (currentTier === "none") {
+    if (featureType === "formCorrection") {
+      return "La correzione video è disponibile dal piano Base. Effettua l'upgrade per analizzare i tuoi video!";
+    }
+    return "Upgrade a Base per più analisi mensili!";
+  }
+
+  if (currentTier === "base") {
+    if (featureType === "bodyComposition") {
+      return "Upgrade a Premium per analisi illimitate della composizione corporea!";
+    }
+    return "Upgrade a Premium per 10 correzioni video al mese!";
+  }
+
+  if (currentTier === "premium") {
+    return "Upgrade a Elite per analisi illimitate e revisione da coach professionisti!";
+  }
+
+  return "Hai raggiunto il limite del tuo piano";
+}
+
+// Get usage stats for user dashboard
+export async function getAIUsageStats(userId: number) {
+  try {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const tier = (user.subscriptionTier as SubscriptionTier) || "none";
+
+    // Current month
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Body composition usage
+    const bodyCompResults = await db
+      .select()
+      .from(bodyCompositionAssessments)
+      .where(
+        and(
+          eq(bodyCompositionAssessments.userId, userId),
+          gte(bodyCompositionAssessments.createdAt, startOfMonth)
+        )
+      );
+
+    // Form correction usage
+    const formCorrResults = await db
+      .select()
+      .from(formCorrections)
+      .where(
+        and(
+          eq(formCorrections.userId, userId),
+          gte(formCorrections.createdAt, startOfMonth)
+        )
+      );
+
+    const limits = AI_LIMITS[tier];
+
+    return {
+      tier,
+      thisMonth: {
+        bodyComposition: {
+          used: bodyCompResults.length,
+          limit:
+            typeof limits.bodyComposition === "object"
+              ? limits.bodyComposition.perMonth
+              : 0,
+          remaining: Math.max(
+            0,
+            (typeof limits.bodyComposition === "object"
+              ? limits.bodyComposition.perMonth
+              : 0) - bodyCompResults.length
+          ),
+        },
+        formCorrection: {
+          used: formCorrResults.length,
+          limit:
+            typeof limits.formCorrection === "object"
+              ? limits.formCorrection.perMonth
+              : 0,
+          remaining: Math.max(
+            0,
+            (typeof limits.formCorrection === "object"
+              ? limits.formCorrection.perMonth
+              : 0) - formCorrResults.length
+          ),
+        },
+        adaptFlow: {
+          used: 0, // Not tracked, always available
+          limit: 999,
+          remaining: 999,
+        },
+      },
+      allTime: {
+        bodyComposition: user.aiPhotoAnalysisUsed || 0,
+        formCorrection: user.aiVideoCorrectionsUsed || 0,
+      },
+      resetDate: new Date(now.getFullYear(), now.getMonth() + 1, 0),
+    };
+  } catch (error) {
+    console.error("Error getting AI usage stats:", error);
+    throw error;
+  }
+}
+
+// Extend Express Request type
+declare global {
+  namespace Express {
+    interface Request {
+      aiLimitInfo?: AILimitCheck;
+    }
+  }
+}

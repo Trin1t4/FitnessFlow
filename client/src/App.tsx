@@ -1,0 +1,54 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Onboarding from "./pages/Onboarding";
+import BiomechanicsQuiz from "./pages/BiomechanicsQuiz";
+import Assessment from "./pages/Assessment";
+import Dashboard from "./components/Dashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute>
+              <Onboarding />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/quiz"
+          element={
+            <ProtectedRoute>
+              <BiomechanicsQuiz />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assessment"
+          element={
+            <ProtectedRoute>
+              <Assessment />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

@@ -1,0 +1,258 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleAIFileManager } from "@google/generative-ai/server";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY!);
+
+interface FormCorrectionParams {
+  videoBuffer: Buffer;
+  exerciseName: string;
+  videoDuration?: number;
+}
+
+interface FormCorrectionResult {
+  overallScore: number; // 1-10
+  strengths: string[];
+  improvements: Array<{
+    issue: string;
+    suggestion: string;
+    severity: "low" | "medium" | "high";
+    timestamp?: number;
+  }>;
+  modelUsed: string;
+}
+
+// Exercise-specific prompts for better accuracy
+const EXERCISE_PROMPTS: Record<string, string> = {
+  Squat: `
+CHECKLIST TECNICA SQUAT:
+- Posizione piedi: larghezza spalle, punte leggermente extraruotate
+- Discesa: ginocchia seguono direzione punte, schiena neutra
+- Profondità: almeno parallelo (cosce parallele al suolo)
+- Risalita: spinta talloni, core attivo
+- Errori comuni: ginocchia in valgismo, talloni sollevati, schiena arrotondata
+`,
+  "Bench Press": `
+CHECKLIST TECNICA BENCH PRESS:
+- Setup: scapole retratte e depresse, leggero arco lombare
+- Posizione mani: poco più larghe delle spalle
+- Discesa: bilanciere a metà petto, gomiti 45° rispetto al busto
+- Spinta: simmetrica, senza rimbalzo
+- Errori comuni: gomiti troppo larghi, piedi instabili, rimbalzo sul petto
+`,
+  Deadlift: `
+CHECKLIST TECNICA DEADLIFT:
+- Setup: piedi sotto bilanciere, schiena neutra, spalle sopra bilanciere
+- Presa: pronazione o mista, larghezza spalle
+- Stacco: spinta gambe + estensione anche simultanea
+- Postura: core attivo, schiena neutra tutto il movimento
+- Errori comuni: schiena arrotondata, tirata con solo schiena, iperestensione finale
+`,
+  "Pull-up": `
+CHECKLIST TECNICA PULL-UP:
+- Presa: pronazione, larghezza spalle o poco più
+- Partenza: braccia tese, scapole attive
+- Trazione: gomiti giù e dietro, petto verso sbarra
+- ROM: mento sopra sbarra
+- Errori comuni: kipping eccessivo, ROM incompleto, scapole passive
+`,
+};
+
+export async function analyzeExerciseForm(
+  params: FormCorrectionParams
+): Promise<FormCorrectionResult> {
+  try {
+    // Use Gemini 1.5 Flash (cheaper, faster for video)
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // Get exercise-specific prompt
+    const exercisePrompt = EXERCISE_PROMPTS[params.exerciseName] || "";
+
+    const prompt = `
+Sei un personal trainer certificato specializzato in analisi biomeccanica. Analizza l'esecuzione dell'esercizio "${params.exerciseName}" nel video fornito.
+
+${exercisePrompt}
+
+COMPITO:
+1. Osserva attentamente la tecnica di esecuzione
+2. Identifica i punti di forza
+3. Identifica MAX 2 MIGLIORAMENTI (i più critici)
+4. Assegna un punteggio complessivo 1-10
+
+RISPONDI IN FORMATO JSON (solo JSON valido):
+{
+  "overallScore": <numero 1-10>,
+  "strengths": [
+    "<punto forte 1>",
+    "<punto forte 2>"
+  ],
+  "improvements": [
+    {
+      "issue": "<problema specifico>",
+      "suggestion": "<come correggerlo - massimo 100 caratteri>",
+      "severity": "<low/medium/high>",
+      "timestamp": <secondi nel video dove avviene l'errore>
+    }
+  ]
+}
+
+LINEE GUIDA:
+- Sii COSTRUTTIVO e MOTIVANTE
+- MAX 2 miglioramenti (se ce ne sono di più, scegli i più importanti)
+- Suggerimenti devono essere ACTIONABLE (cosa fare esattamente)
+- Severity: high = rischio infortunio, medium = efficacia ridotta, low = ottimizzazione
+- Timestamp approssimativo basato sull'osservazione
+- Se la tecnica è ottima, metti improvements vuoto
+
+ESEMPI BUONI DI SUGGESTIONS:
+✅ "Scendi fino a 90° di flessione ginocchio"
+✅ "Mantieni le scapole retratte durante tutta l'esecuzione"
+✅ "Spingi attivamente i talloni contro il pavimento"
+
+ESEMPI CATTIVI:
+❌ "Migliora la tecnica" (troppo vago)
+❌ "Fai meglio" (non actionable)
+❌ "Leggi un libro sulla biomeccanica" (non pratico)
+`;
+
+    // Save buffer to temporary file
+    const tempDir = os.tmpdir();
+    const tempFilePath = path.join(tempDir, `video-${Date.now()}.webm`);
+    fs.writeFileSync(tempFilePath, params.videoBuffer);
+
+    try {
+      // Upload video to Gemini
+      const uploadResponse = await fileManager.uploadFile(tempFilePath, {
+        mimeType: "video/webm",
+        displayName: `Form Check - ${params.exerciseName}`,
+      });
+
+      // Wait for video processing
+      let file = await fileManager.getFile(uploadResponse.file.name);
+      while (file.state === "PROCESSING") {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        file = await fileManager.getFile(uploadResponse.file.name);
+      }
+
+      if (file.state === "FAILED") {
+        throw new Error("Video processing failed");
+      }
+
+      // Generate content with video
+      const result = await model.generateContent([
+        {
+          fileData: {
+            mimeType: uploadResponse.file.mimeType,
+            fileUri: uploadResponse.file.uri,
+          },
+        },
+        { text: prompt },
+      ]);
+
+      const response = await result.response.text();
+
+      // Extract JSON
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("Invalid JSON in AI response");
+      }
+
+      const analysis: FormCorrectionResult = JSON.parse(jsonMatch[0]);
+      analysis.modelUsed = "gemini-1.5-flash";
+
+      // Validate
+      if (
+        !analysis.overallScore ||
+        !analysis.strengths ||
+        !analysis.improvements
+      ) {
+        throw new Error("Incomplete AI response");
+      }
+
+      // Cleanup
+      fs.unlinkSync(tempFilePath);
+
+      return analysis;
+    } catch (uploadError) {
+      console.error("Video upload/processing error:", uploadError);
+      
+      // Cleanup
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+      
+      // Fallback to generic response
+      return fallbackFormAnalysis(params.exerciseName);
+    }
+  } catch (error) {
+    console.error("Form correction AI error:", error);
+    return fallbackFormAnalysis(params.exerciseName);
+  }
+}
+
+function fallbackFormAnalysis(exerciseName: string): FormCorrectionResult {
+  return {
+    overallScore: 7,
+    strengths: [
+      "Buon controllo generale del movimento",
+      "Range di movimento apprezzabile",
+    ],
+    improvements: [
+      {
+        issue: "Impossibile analizzare il video in dettaglio",
+        suggestion: "Riprova con una connessione migliore o video più breve",
+        severity: "low",
+        timestamp: 0,
+      },
+    ],
+    modelUsed: "fallback",
+  };
+}
+
+// Helper to validate video duration (max 10 seconds)
+export function validateVideoDuration(
+  buffer: Buffer,
+  maxSeconds: number = 10
+): boolean {
+  // This is a simple check - in production, use ffprobe or similar
+  // For now, we check file size as proxy (rough: 1MB per second for 720p)
+  const maxSize = maxSeconds * 1024 * 1024; // ~1MB per second
+  return buffer.length <= maxSize * 2; // Allow up to 2MB/sec for high quality
+}
+
+// Get general exercise tips (used in UI while video is being recorded)
+export function getExerciseTips(exerciseName: string): string[] {
+  const tipsMap: Record<string, string[]> = {
+    Squat: [
+      "Mantieni il peso sui talloni",
+      "Ginocchia in linea con le punte dei piedi",
+      "Core attivo durante tutto il movimento",
+    ],
+    "Bench Press": [
+      "Scapole retratte e depresse",
+      "Gomiti a 45° rispetto al busto",
+      "Piedi ben piantati a terra",
+    ],
+    Deadlift: [
+      "Schiena neutra, non arrotondata",
+      "Bilanciere vicino alle gambe",
+      "Movimento simultaneo gambe e schiena",
+    ],
+    "Pull-up": [
+      "Partenza con braccia completamente distese",
+      "Traziona con i dorsali, non solo le braccia",
+      "Mento sopra la sbarra",
+    ],
+  };
+
+  return (
+    tipsMap[exerciseName] || [
+      "Mantieni una buona postura",
+      "Controlla il movimento",
+      "Respira correttamente",
+    ]
+  );
+}

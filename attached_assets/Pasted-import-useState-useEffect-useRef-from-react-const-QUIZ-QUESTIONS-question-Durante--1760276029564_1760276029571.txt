@@ -1,0 +1,851 @@
+import { useState, useEffect, useRef } from 'react';
+
+const QUIZ_QUESTIONS = [
+  {question:"Durante lo squat, dove deve passare la linea del bilanciere vista di lato?",options:["Davanti alle punte dei piedi","Sul centro del piede, in linea con le caviglie","Dietro i talloni","Non importa, basta scendere parallelo"],correctAnswer:1},
+  {question:"Nello stacco da terra, dove deve rimanere il bilanciere durante tutta la salita?",options:["Lontano dal corpo per evitare di toccare le gambe","Attaccato al corpo o a pochi millimetri di distanza","Deve oscillare liberamente davanti a te","Deve toccare solo all'inizio e poi allontanarsi"],correctAnswer:1},
+  {question:"Cosa devono fare le scapole PRIMA di iniziare a tirare nelle trazioni?",options:["Rimanere completamente rilassate e 'spalle alle orecchie'","Depresse (abbassate) e leggermente addotte (avvicinate)","Elevarsi completamente verso l'alto","Non importa, basta tirare forte"],correctAnswer:1},
+  {question:"Qual è la larghezza ottimale delle mani sulla panca per la maggior parte delle persone?",options:["Mani strette, dentro le spalle","Leggermente più larghe delle spalle","Il più larghe possibile sulla barra","All'altezza dei gomiti quando sono a 90°"],correctAnswer:1},
+  {question:"Dove deve toccare il bilanciere sul petto nella panca corretta?",options:["Sulla clavicola","Sul capezzolo/sterno medio-basso","Sulla parte alta del petto","Non deve toccare, si ferma a 5cm"],correctAnswer:1},
+  {question:"Cosa devono fare le scapole durante tutta l'esecuzione della panca?",options:["Muoversi liberamente per seguire il movimento","Rimanere addotte e depresse (chiuse e abbassate)","Elevarsi verso le orecchie in fase concentrica","Staccarsi dalla panca in fase eccentrica"],correctAnswer:1},
+  {question:"Nell'hip thrust, quale deve essere l'allineamento del corpo al punto massimo?",options:["Spalle, anche e ginocchia devono formare una linea retta","Le anche devono essere più alte delle spalle","Le anche devono rimanere più basse delle ginocchia","Non importa, basta spingere forte"],correctAnswer:0},
+  {question:"Nell'hip thrust, come devono essere posizionati i piedi?",options:["Molto lontani, con ginocchia quasi estese","In modo che le ginocchia formino circa 90° quando l'anca è estesa","Molto vicini al sedere, con ginocchia oltre i 120°","Larghezza casuale, non influisce"],correctAnswer:1},
+  {question:"Qual è l'errore più pericoloso durante il military press in piedi?",options:["Tenere i gomiti leggermente avanti rispetto alla barra","Inarcare eccessivamente la schiena durante la spinta","Shruggare (alzare) le spalle al momento del lockout","Respirare durante l'alzata"],correctAnswer:1},
+  {question:"Nella lat pulldown, qual è l'errore che riduce maggiormente l'attivazione dei dorsali?",options:["Portare la barra al petto invece che dietro la nuca","Inclinarsi leggermente indietro di 10-15°","Usare troppo slancio e dondolare il busto avanti-indietro","Tenere le scapole depresse"],correctAnswer:2}
+];
+
+const PRIMARY_GOALS = [{id:'weight_loss',label:'Perdita peso',icon:'⚖️'},{id:'muscle_gain',label:'Massa muscolare',icon:'💪'},{id:'strength',label:'Forza',icon:'🏋️'},{id:'endurance',label:'Resistenza',icon:'🏃'},{id:'flexibility',label:'Flessibilità',icon:'🧘'},{id:'general_health',label:'Salute',icon:'❤️'}];
+
+const determineSplit = (frequency, isGym) => {
+  if (!isGym) return Array(frequency).fill(null).map((_, i) => ['Full Body A','Full Body B','Full Body C'][i%3]);
+  if (frequency === 2) return ['Full Body A','Full Body B'];
+  if (frequency === 3) return ['Full Body A','Full Body B','Full Body C'];
+  if (frequency === 4) return ['Upper A','Lower A','Upper B','Lower B'];
+  if (frequency === 5) return ['Push A','Pull A','Legs','Push B','Pull B'];
+  if (frequency === 6) return ['Push A','Pull A','Legs A','Push B','Pull B','Legs B'];
+  return ['Full Body A','Full Body B'];
+};
+
+const determineProgression = (level) => {
+  if (level === 'beginner') return {name:'Wave Loading 2-3-4',description:'Progressione graduale'};
+  if (level === 'intermediate') return {name:'Ondulata Settimanale',description:'Variazione settimanale'};
+  return {name:'Ondulata Giornaliera',description:'Stimoli multipli'};
+};
+
+// CALCOLO 1RM con formula di Brzycki
+const calculate1RM = (weight, reps) => {
+  if (reps === 1) return weight;
+  return weight / (1.0278 - 0.0278 * reps);
+};
+
+// Calcola peso target in base a reps, serie e LIVELLO usando Brzycki
+const calculateTargetWeight = (oneRM, targetReps, sets, level = 'beginner') => {
+  let percentage = 0.75; // default
+  
+  // PRINCIPIANTI: percentuali PIÙ BASSE per avere buffer (RIR 3-4)
+  if (level === 'beginner') {
+    if (targetReps <= 5) {
+      percentage = 0.75; // 3x5: 75% dell'1RM (buffer alto)
+    } else if (targetReps <= 8) {
+      percentage = 0.70; // 3-4x8: 70% dell'1RM
+    } else if (targetReps <= 10) {
+      percentage = 0.67; // 3x10: 67% dell'1RM (RIR 3-4)
+    } else {
+      percentage = 0.65; // 3x12+: 65% dell'1RM
+    }
+  }
+  // INTERMEDI: percentuali moderate (RIR 2-3)
+  else if (level === 'intermediate') {
+    if (targetReps <= 5) {
+      if (sets >= 5) percentage = 0.82; // 5x5: 82%
+      else percentage = 0.85; // 3-4x5: 85%
+    } else if (targetReps <= 8) {
+      if (sets >= 4) percentage = 0.80; // 4x6-8: 80%
+      else percentage = 0.77; // 3x6-8: 77%
+    } else if (targetReps <= 10) {
+      percentage = 0.75; // 3x10: 75%
+    } else {
+      percentage = 0.70; // 3x12+: 70%
+    }
+  }
+  // AVANZATI: percentuali alte (RIR 1-2)
+  else {
+    if (targetReps <= 5) {
+      if (sets >= 5) percentage = 0.85; // 5x5: 85%
+      else percentage = 0.87; // 4x5: 87%
+    } else if (targetReps <= 8) {
+      if (sets >= 4) percentage = 0.82; // 4x6-8: 82%
+      else percentage = 0.80; // 3x6-8: 80%
+    } else if (targetReps <= 10) {
+      percentage = 0.77; // 3x10: 77%
+    } else {
+      percentage = 0.72; // 3x12+: 72%
+    }
+  }
+  
+  return Math.round(oneRM * percentage * 2) / 2; // arrotonda a 0.5kg
+};
+
+const generateExercise = (name, isGym, assessment, sets, reps, rest, level = 'beginner') => {
+  const testResult = assessment?.find(t => t.exerciseName === name);
+  let weight = 0;
+  
+  if (testResult?.weight > 0) {
+    // Calcola 1RM dal test (10RM per palestra, 20RM per casa)
+    const testReps = isGym ? 10 : 20;
+    const oneRM = calculate1RM(testResult.weight, testReps);
+    
+    // Calcola peso target in base a reps, serie E LIVELLO
+    const targetReps = typeof reps === 'string' ? (reps === 'max' ? 8 : parseInt(reps.split('-')[0])) : reps;
+    weight = calculateTargetWeight(oneRM, targetReps, sets, level);
+  }
+  
+  const homeAlts = {
+    'Squat':'Squat BW','Panca Piana':'Push-up','Trazioni':'Body Row',
+    'Shoulder Press':'Pike Push-up','Stacco Rumeno':'Good Morning',
+    'Leg Press':'Squat Bulgaro','Leg Curl':'Nordic Curl',
+    'Stacco da Terra':'Good Morning','Military Press':'Pike Push-up',
+    'Rematore Manubrio':'Inverted Row','Curl Bilanciere':'Chin-up',
+    'French Press':'Diamond Push-up','Panca Manubri':'Push-up',
+    'Lat Pulldown':'Body Row','Alzate Laterali':'Pike Push-up Variante',
+    'Leg Extension':'Squat Isometrico','Curl Manubri':'Chin-up'
+  };
+  
+  return {name: isGym ? name : (homeAlts[name] || name), sets, reps: String(reps), weight, rest};
+};
+
+const generateDayExercises = (dayName, isGym, assessment, level, painAreas = []) => {
+  const exercises = [];
+  
+  // Funzione per verificare se un esercizio è da evitare per dolore
+  const shouldAvoidExercise = (exerciseName) => {
+    const exercisePainMap = {
+      'Squat': ['ginocchio', 'caviglia', 'schiena_bassa'],
+      'Panca Piana': ['spalla_dx', 'spalla_sx', 'gomito_dx', 'gomito_sx', 'polso'],
+      'Trazioni': ['spalla_dx', 'spalla_sx', 'gomito_dx', 'gomito_sx'],
+      'Shoulder Press': ['spalla_dx', 'spalla_sx', 'polso'],
+      'Military Press': ['spalla_dx', 'spalla_sx', 'polso', 'schiena_bassa'],
+      'Stacco da Terra': ['schiena_bassa', 'ginocchio'],
+      'Stacco Rumeno': ['schiena_bassa'],
+      'Leg Press': ['ginocchio'],
+      'Affondi': ['ginocchio', 'caviglia'],
+      'Curl Bilanciere': ['gomito_dx', 'gomito_sx', 'polso']
+    };
+    
+    const affectedAreas = exercisePainMap[exerciseName] || [];
+    return painAreas.some(pain => affectedAreas.includes(pain.location));
+  };
+  
+  // Esercizi alternativi sicuri per ogni zona dolorante
+  const getSafeAlternative = (originalExercise) => {
+    const alternatives = {
+      'Squat': 'Leg Press',
+      'Panca Piana': 'Panca Manubri',
+      'Trazioni': 'Lat Pulldown',
+      'Shoulder Press': 'Alzate Laterali',
+      'Military Press': 'Alzate Laterali',
+      'Stacco da Terra': 'Leg Curl',
+      'Stacco Rumeno': 'Leg Curl',
+      'Leg Press': 'Leg Extension',
+      'Affondi': 'Leg Extension',
+      'Curl Bilanciere': 'Curl Manubri'
+    };
+    return alternatives[originalExercise] || originalExercise;
+  };
+  
+  // Helper per aggiungere esercizio (sostituisce se necessario)
+  const addExercise = (name, sets, reps, rest) => {
+    const finalName = shouldAvoidExercise(name) ? getSafeAlternative(name) : name;
+    exercises.push(generateExercise(finalName, isGym, assessment, sets, reps, rest, level));
+  };
+  
+  // PRINCIPIANTI: schede SOFT (3-4 serie, 8-10 reps, recuperi 120s)
+  if (level === 'beginner') {
+    if (dayName === 'Full Body A') {
+      addExercise('Squat', 3, '10', 120);
+      addExercise('Panca Piana', 3, '10', 120);
+      addExercise('Trazioni', 3, '8', 120);
+      addExercise('Shoulder Press', 3, '10', 120);
+    } else if (dayName === 'Full Body B') {
+      addExercise('Leg Press', 3, '10', 120);
+      addExercise('Panca Piana', 3, '10', 120);
+      addExercise('Trazioni', 3, '8', 120);
+      addExercise('Curl Bilanciere', 3, '10', 90);
+    } else if (dayName === 'Full Body C') {
+      addExercise('Squat', 3, '10', 120);
+      addExercise('Stacco Rumeno', 3, '10', 120);
+      addExercise('Panca Piana', 3, '10', 120);
+      addExercise('Lat Pulldown', 3, '10', 90);
+    } else {
+      addExercise('Squat', 3, '10', 120);
+      addExercise('Panca Piana', 3, '10', 120);
+      addExercise('Trazioni', 3, '8', 120);
+    }
+  }
+  // INTERMEDI E AVANZATI: schede più intense
+  else {
+    if (dayName === 'Full Body A') {
+      addExercise('Squat', 5, '5', 180);
+      addExercise('Panca Piana', 4, '6', 150);
+      addExercise('Trazioni', 3, 'max', 120);
+      addExercise('Shoulder Press', 3, '8', 120);
+      addExercise('Curl Bilanciere', 3, '10', 90);
+    } else if (dayName === 'Full Body B') {
+      addExercise('Panca Piana', 4, '6', 150);
+      addExercise('Trazioni', 4, 'max', 90);
+      addExercise('Leg Press', 3, '12', 120);
+      addExercise('Leg Curl', 2, '12', 90);
+    } else if (dayName === 'Full Body C') {
+      addExercise('Stacco da Terra', 4, '5', 180);
+      addExercise('Rematore Manubrio', 4, '8', 120);
+      addExercise('Military Press', 3, '8', 90);
+    } else {
+      addExercise('Squat', 4, '6', 180);
+      addExercise('Panca Piana', 4, '8', 120);
+      addExercise('Trazioni', 3, 'max', 120);
+    }
+  }
+  
+  return exercises;
+};
+
+export default function TrainSmartApp() {
+  const [view, setView] = useState('home');
+  const [screening, setScreening] = useState(null);
+  const [quiz, setQuiz] = useState(null);
+  const [assessment, setAssessment] = useState([]);
+  const [plan, setPlan] = useState([]);
+  const [activeWorkout, setActiveWorkout] = useState(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('trainsmart');
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.screening) setScreening(data.screening);
+      if (data.quiz) setQuiz(data.quiz);
+      if (data.assessment) setAssessment(data.assessment);
+      if (data.plan) {
+        setPlan(data.plan);
+        setView('dashboard');
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (screening) {
+      localStorage.setItem('trainsmart', JSON.stringify({screening, quiz, assessment, plan}));
+    }
+  }, [screening, quiz, assessment, plan]);
+
+  const reset = () => {
+    localStorage.removeItem('trainsmart');
+    setScreening(null);
+    setQuiz(null);
+    setAssessment([]);
+    setPlan([]);
+    setActiveWorkout(null);
+    setView('home');
+  };
+
+  if (view === 'workout' && activeWorkout) {
+    return <WorkoutTracker workout={activeWorkout} onExit={() => {setActiveWorkout(null); setView('dashboard');}} />;
+  }
+
+  if (view === 'home') {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        <div className="max-w-md w-full text-center space-y-8">
+          <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto">
+            <span className="text-4xl">⚡</span>
+          </div>
+          <h1 className="text-5xl font-bold text-white">TrainSmart</h1>
+          <p className="text-xl text-gray-300">Il tuo coach personale basato sulla scienza</p>
+          <button onClick={() => setView('screening')} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 px-6 rounded-xl font-semibold text-lg">Inizia Ora →</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'screening') {
+    return <ScreeningFlow onComplete={(data) => {setScreening(data); setView('quiz');}} />;
+  }
+
+  if (view === 'quiz') {
+    return <BiomechanicsQuiz onComplete={(result) => {setQuiz(result); setView('assessment');}} />;
+  }
+
+  if (view === 'assessment') {
+    return <AssessmentScreen isGym={screening?.trainingLocation === 'gym'} onComplete={(results) => {setAssessment(results); setView('plan');}} />;
+  }
+
+  if (view === 'plan') {
+    const isGym = screening.trainingLocation === 'gym';
+    const split = determineSplit(screening.weeklyFrequency, isGym);
+    const progression = determineProgression(quiz?.level || 'beginner');
+    const level = quiz?.level || 'beginner';
+    const painAreas = screening.painAreas || [];
+    
+    const weeklyPlan = split.map((dayName, i) => ({
+      day: i + 1,
+      name: dayName,
+      exercises: generateDayExercises(dayName, isGym, assessment, level, painAreas),
+      progression
+    }));
+    
+    setTimeout(() => {
+      setPlan(weeklyPlan);
+      setView('dashboard');
+    }, 2000);
+
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        <div className="text-center space-y-6">
+          <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto animate-pulse">
+            <span className="text-4xl">⚡</span>
+          </div>
+          <h2 className="text-3xl font-bold text-white">Creazione Programma...</h2>
+          <p className="text-gray-400">Analisi dati in corso</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'dashboard') {
+    return (
+      <div className="min-h-screen p-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white">TrainSmart</h1>
+              <p className="text-gray-400">Il tuo programma</p>
+            </div>
+            <button onClick={reset} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-semibold">Reset</button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-gray-800/50 rounded-xl p-4">
+              <h3 className="text-emerald-400 font-semibold mb-1">Frequenza</h3>
+              <p className="text-2xl font-bold text-white">{screening?.weeklyFrequency}x</p>
+            </div>
+            <div className="bg-gray-800/50 rounded-xl p-4">
+              <h3 className="text-emerald-400 font-semibold mb-1">Livello</h3>
+              <p className="text-xl font-bold text-white">{quiz?.level === 'beginner' && '🌱'}{quiz?.level === 'intermediate' && '💪'}{quiz?.level === 'advanced' && '🎯'}</p>
+            </div>
+            <div className="bg-gray-800/50 rounded-xl p-4">
+              <h3 className="text-emerald-400 font-semibold mb-1">Score</h3>
+              <p className="text-2xl font-bold text-white">{quiz?.score}/10</p>
+            </div>
+          </div>
+
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+            <h3 className="text-emerald-400 font-bold mb-1">{plan[0]?.progression?.name}</h3>
+            <p className="text-white text-sm">{plan[0]?.progression?.description}</p>
+          </div>
+
+          <div className="bg-gray-800/50 rounded-xl p-6">
+            <h2 className="text-2xl font-bold text-white mb-4">I Tuoi Allenamenti</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {plan?.map((day, i) => (
+                <div key={i} className="bg-gray-700/30 rounded-xl p-4 border-2 border-emerald-500/20">
+                  <div className="flex justify-between mb-3">
+                    <h3 className="text-white font-semibold">{day.name}</h3>
+                    <span className="text-emerald-400 text-xs font-bold">G{day.day}</span>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    {day.exercises?.slice(0, 3).map((ex, j) => (
+                      <div key={j} className="text-sm">
+                        <div className="text-gray-300 font-medium">{ex.name}</div>
+                        <div className="text-gray-400 text-xs">{ex.sets}×{ex.reps} {ex.weight > 0 && `• ${ex.weight}kg`}</div>
+                      </div>
+                    ))}
+                    {day.exercises?.length > 3 && <p className="text-gray-500 text-xs">+{day.exercises.length - 3} altri</p>}
+                  </div>
+                  <button onClick={() => {setActiveWorkout(day); setView('workout');}} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded-lg font-semibold text-sm">Inizia 💪</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function ScreeningFlow({ onComplete }) {
+  const [step, setStep] = useState(1);
+  const [data, setData] = useState({name:'',age:0,gender:'',height:0,weight:0,bmi:0,trainingLocation:'',weeklyFrequency:3,primaryGoal:'',hasPain:false,painAreas:[]});
+
+  const update = (field, value) => {
+    const newData = {...data, [field]: value};
+    if ((field === 'height' || field === 'weight') && newData.height > 0 && newData.weight > 0) {
+      const h = newData.height / 100;
+      newData.bmi = parseFloat((newData.weight / (h * h)).toFixed(1));
+    }
+    setData(newData);
+  };
+
+  const addPainArea = (location) => {
+    if (!data.painAreas.some(p => p.location === location)) {
+      update('painAreas', [...data.painAreas, {location, intensity: 5}]);
+    }
+  };
+
+  const removePainArea = (location) => {
+    update('painAreas', data.painAreas.filter(p => p.location !== location));
+  };
+
+  const canProceed = () => {
+    if (step === 1) return data.name && data.age > 0 && data.gender && data.height > 0 && data.weight > 0;
+    if (step === 2) return data.trainingLocation && data.weeklyFrequency >= 2;
+    if (step === 3) return data.primaryGoal;
+    if (step === 4) return true; // pain è opzionale
+    return true;
+  };
+
+  const BODY_AREAS = [
+    {id: 'spalla_dx', label: 'Spalla Destra', exercises: ['Shoulder Press', 'Military Press', 'Alzate Laterali']},
+    {id: 'spalla_sx', label: 'Spalla Sinistra', exercises: ['Shoulder Press', 'Military Press', 'Alzate Laterali']},
+    {id: 'gomito_dx', label: 'Gomito Destro', exercises: ['Panca Piana', 'Trazioni', 'Curl Bilanciere']},
+    {id: 'gomito_sx', label: 'Gomito Sinistro', exercises: ['Panca Piana', 'Trazioni', 'Curl Bilanciere']},
+    {id: 'polso', label: 'Polso', exercises: ['Panca Piana', 'Military Press']},
+    {id: 'schiena_bassa', label: 'Schiena Bassa', exercises: ['Squat', 'Stacco da Terra', 'Stacco Rumeno']},
+    {id: 'ginocchio', label: 'Ginocchio', exercises: ['Squat', 'Leg Press', 'Affondi']},
+    {id: 'caviglia', label: 'Caviglia', exercises: ['Squat', 'Affondi']}
+  ];
+
+  return (
+    <div className="min-h-screen p-4 flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <div className="max-w-2xl w-full">
+        <div className="mb-6">
+          <div className="flex justify-between mb-2">
+            <h2 className="text-2xl font-bold text-white">Profilo</h2>
+            <span className="text-emerald-400 font-semibold">{step}/4</span>
+          </div>
+          <div className="h-2 bg-gray-700 rounded-full">
+            <div className="h-full bg-emerald-500 transition-all" style={{width: `${(step/4)*100}%`}} />
+          </div>
+        </div>
+
+        <div className="bg-gray-800/50 rounded-2xl p-6 space-y-6">
+          {step === 1 && (
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-white">Info Personali</h3>
+              <input type="text" value={data.name} onChange={(e) => update('name', e.target.value)} className="w-full bg-gray-700 text-white px-4 py-3 rounded-xl outline-none" placeholder="Nome *" />
+              <div className="grid grid-cols-2 gap-4">
+                <input type="number" value={data.age || ''} onChange={(e) => update('age', parseInt(e.target.value))} className="w-full bg-gray-700 text-white px-4 py-3 rounded-xl outline-none" placeholder="Età *" />
+                <select value={data.gender} onChange={(e) => update('gender', e.target.value)} className="w-full bg-gray-700 text-white px-4 py-3 rounded-xl outline-none"><option value="">Sesso *</option><option value="male">M</option><option value="female">F</option></select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <input type="number" value={data.height || ''} onChange={(e) => update('height', parseInt(e.target.value))} className="w-full bg-gray-700 text-white px-4 py-3 rounded-xl outline-none" placeholder="Altezza (cm) *" />
+                <input type="number" value={data.weight || ''} onChange={(e) => update('weight', parseInt(e.target.value))} className="w-full bg-gray-700 text-white px-4 py-3 rounded-xl outline-none" placeholder="Peso (kg) *" />
+              </div>
+              {data.bmi > 0 && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+                  <p className="text-emerald-400 font-semibold">BMI: {data.bmi}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-white">Allenamento</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <button onClick={() => update('trainingLocation', 'home')} className={`p-6 rounded-xl border-2 ${data.trainingLocation === 'home' ? 'border-emerald-500 bg-emerald-500/10' : 'border-gray-700'}`}>
+                  <div className="text-4xl mb-2">🏠</div>
+                  <h4 className="text-white font-semibold">Casa</h4>
+                </button>
+                <button onClick={() => update('trainingLocation', 'gym')} className={`p-6 rounded-xl border-2 ${data.trainingLocation === 'gym' ? 'border-emerald-500 bg-emerald-500/10' : 'border-gray-700'}`}>
+                  <div className="text-4xl mb-2">🏋️</div>
+                  <h4 className="text-white font-semibold">Palestra</h4>
+                </button>
+              </div>
+              <div>
+                <label className="block text-emerald-400 mb-2">Frequenza settimanale: {data.weeklyFrequency}x</label>
+                <div className="flex gap-2">
+                  {[2,3,4,5,6].map(n => <button key={n} onClick={() => update('weeklyFrequency', n)} className={`flex-1 py-3 rounded-xl font-bold ${data.weeklyFrequency === n ? 'bg-emerald-500 text-white' : 'bg-gray-700 text-gray-300'}`}>{n}</button>)}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-white">Obiettivo Principale</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {PRIMARY_GOALS.map(goal => <button key={goal.id} onClick={() => update('primaryGoal', goal.id)} className={`p-4 rounded-xl border-2 ${data.primaryGoal === goal.id ? 'border-emerald-500 bg-emerald-500/20' : 'border-gray-600'}`}><div className="text-2xl mb-1">{goal.icon}</div><div className="text-white text-sm">{goal.label}</div></button>)}
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-white">Dolori o Limitazioni</h3>
+              <p className="text-gray-400 text-sm">Seleziona le zone con dolore o fastidio (opzionale)</p>
+              <div className="grid grid-cols-2 gap-3">
+                {BODY_AREAS.map(area => {
+                  const isSelected = data.painAreas.some(p => p.location === area.id);
+                  return (
+                    <button 
+                      key={area.id} 
+                      onClick={() => isSelected ? removePainArea(area.id) : addPainArea(area.id)}
+                      className={`p-4 rounded-xl border-2 text-left ${isSelected ? 'border-red-500 bg-red-500/20' : 'border-gray-600 bg-gray-700/30'}`}
+                    >
+                      <div className="text-white font-medium text-sm">{area.label}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              {data.painAreas.length > 0 && (
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
+                  <p className="text-yellow-400 text-sm">⚠️ Gli esercizi che coinvolgono queste zone saranno sostituiti o adattati</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex space-x-4">
+            {step > 1 && <button onClick={() => setStep(step - 1)} className="flex-1 bg-gray-700 text-white py-3 rounded-xl font-semibold">Indietro</button>}
+            <button 
+              onClick={() => step < 4 ? setStep(step + 1) : onComplete(data)} 
+              disabled={!canProceed()}
+              className={`flex-1 py-3 rounded-xl font-semibold ${canProceed() ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+            >
+              {step === 4 ? 'Continua →' : 'Avanti →'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BiomechanicsQuiz({ onComplete }) {
+  const [current, setCurrent] = useState(0);
+  const [answers, setAnswers] = useState([]);
+  const [selected, setSelected] = useState(null);
+
+  const handleAnswer = () => {
+    if (selected === null) return;
+    const isCorrect = selected === QUIZ_QUESTIONS[current].correctAnswer;
+    const newAnswers = [...answers, {questionIndex: current, selectedAnswer: selected, isCorrect}];
+    setAnswers(newAnswers);
+    setSelected(null);
+    
+    if (current < QUIZ_QUESTIONS.length - 1) {
+      setCurrent(current + 1);
+    } else {
+      const score = newAnswers.filter(a => a.isCorrect).length;
+      let level = 'beginner';
+      if (score >= 7) level = 'advanced';
+      else if (score >= 4) level = 'intermediate';
+      onComplete({score, level, answers: newAnswers});
+    }
+  };
+
+  const q = QUIZ_QUESTIONS[current];
+
+  return (
+    <div className="min-h-screen p-4 flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <div className="max-w-3xl w-full">
+        <div className="mb-6">
+          <div className="flex justify-between mb-2">
+            <h2 className="text-2xl font-bold text-white">Quiz Biomeccanico</h2>
+            <span className="text-emerald-400 font-semibold">{current + 1}/{QUIZ_QUESTIONS.length}</span>
+          </div>
+          <div className="h-2 bg-gray-700 rounded-full">
+            <div className="h-full bg-emerald-500 transition-all" style={{width: `${((current + 1)/QUIZ_QUESTIONS.length)*100}%`}} />
+          </div>
+        </div>
+
+        <div className="bg-gray-800/50 rounded-2xl p-6 space-y-6">
+          <h3 className="text-lg font-semibold text-white">{q.question}</h3>
+          <div className="space-y-3">
+            {q.options.map((opt, i) => (
+              <button key={i} onClick={() => setSelected(i)} className={`w-full p-4 rounded-xl border-2 text-left ${selected === i ? 'border-emerald-500 bg-emerald-500/10' : 'border-gray-700'}`}>
+                <div className="flex items-center space-x-3">
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selected === i ? 'border-emerald-500 bg-emerald-500' : 'border-gray-600'}`}>
+                    {selected === i && <span className="text-white text-sm">✓</span>}
+                  </div>
+                  <span className="text-white">{opt}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+          <button onClick={handleAnswer} disabled={selected === null} className={`w-full py-4 rounded-xl font-semibold ${selected !== null ? 'bg-emerald-500 text-white' : 'bg-gray-700 text-gray-400'}`}>
+            {current === QUIZ_QUESTIONS.length - 1 ? 'Completa Quiz →' : 'Prossima →'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AssessmentScreen({ isGym, onComplete }) {
+  const [current, setCurrent] = useState(0);
+  const [results, setResults] = useState([]);
+  const [test, setTest] = useState({weight: 0, reps: 0});
+  
+  const exercises = isGym ? ['Squat','Panca Piana','Stacco da Terra','Trazioni','Military Press'] : ['Squat','Push-up','Hip Thrust','Inverted Row'];
+  const repsTarget = isGym ? 10 : 20;
+
+  const save = () => {
+    const newResults = [...results, {exerciseName: exercises[current], weight: test.weight, reps: test.reps || repsTarget}];
+    setResults(newResults);
+    
+    if (current < exercises.length - 1) {
+      setCurrent(current + 1);
+      setTest({weight: 0, reps: 0});
+    } else {
+      onComplete(newResults);
+    }
+  };
+
+  return (
+    <div className="min-h-screen p-4 flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <div className="max-w-2xl w-full">
+        <div className="mb-6">
+          <div className="flex justify-between mb-2">
+            <h2 className="text-2xl font-bold text-white">Test Massimali</h2>
+            <span className="text-emerald-400 font-semibold">{current + 1}/{exercises.length}</span>
+          </div>
+          <div className="h-2 bg-gray-700 rounded-full">
+            <div className="h-full bg-emerald-500 transition-all" style={{width: `${((current + 1)/exercises.length)*100}%`}} />
+          </div>
+        </div>
+
+        <div className="bg-gray-800/50 rounded-2xl p-6 space-y-6">
+          <h3 className="text-2xl font-bold text-white">{exercises[current]}</h3>
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+            <p className="text-blue-400 text-sm">💡 {isGym ? `Trova il carico per ${repsTarget} reps` : `Esegui ${repsTarget} reps max`}</p>
+          </div>
+          
+          {isGym && (
+            <div>
+              <label className="block text-emerald-400 mb-2">Carico con cui fai {repsTarget} ripetizioni (kg)</label>
+              <input type="number" step="0.5" value={test.weight || ''} onChange={(e) => setTest({...test, weight: parseFloat(e.target.value) || 0, reps: repsTarget})} className="w-full bg-gray-700 text-white text-2xl text-center rounded-xl px-4 py-4 font-bold outline-none" placeholder="0" />
+            </div>
+          )}
+          
+          {!isGym && (
+            <div>
+              <label className="block text-emerald-400 mb-2">Ripetizioni completate</label>
+              <input type="number" value={test.reps || ''} onChange={(e) => setTest({...test, reps: parseInt(e.target.value) || 0})} className="w-full bg-gray-700 text-white text-2xl text-center rounded-xl px-4 py-4 font-bold outline-none" placeholder="0" />
+            </div>
+          )}
+
+          <button onClick={save} disabled={isGym ? test.weight === 0 : test.reps === 0} className={`w-full py-4 rounded-xl font-semibold ${(isGym ? test.weight > 0 : test.reps > 0) ? 'bg-emerald-500 text-white' : 'bg-gray-700 text-gray-400'}`}>
+            {current < exercises.length - 1 ? 'Prossimo →' : 'Genera Programma →'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WorkoutTracker({ workout, onExit }) {
+  const [phase, setPhase] = useState('precheck');
+  const [preCheck, setPreCheck] = useState({sleep: 7, stress: 5, energy: 7});
+  const [currentEx, setCurrentEx] = useState(0);
+  const [currentSet, setCurrentSet] = useState(0);
+  const [exData, setExData] = useState([]);
+  const [restTimer, setRestTimer] = useState(0);
+  const [isResting, setIsResting] = useState(false);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (phase === 'executing') {
+      const initial = workout.exercises.map(ex => ({
+        exerciseName: ex.name,
+        sets: Array(ex.sets).fill(null).map(() => ({completed: false, weight: ex.weight, reps: 0}))
+      }));
+      setExData(initial);
+    }
+  }, [phase, workout.exercises]);
+
+  useEffect(() => {
+    if (isResting && restTimer > 0) {
+      timerRef.current = setInterval(() => {
+        setRestTimer(prev => {
+          if (prev <= 1) {
+            setIsResting(false);
+            clearInterval(timerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [isResting, restTimer]);
+
+  const updateSet = (field, value) => {
+    const newData = [...exData];
+    newData[currentEx].sets[currentSet][field] = value;
+    setExData(newData);
+  };
+
+  const completeSet = () => {
+    const newData = [...exData];
+    newData[currentEx].sets[currentSet].completed = true;
+    setExData(newData);
+
+    const ex = workout.exercises[currentEx];
+    
+    if (currentSet < ex.sets - 1) {
+      setCurrentSet(currentSet + 1);
+      setRestTimer(ex.rest);
+      setIsResting(true);
+    } else if (currentEx < workout.exercises.length - 1) {
+      setCurrentEx(currentEx + 1);
+      setCurrentSet(0);
+      setRestTimer(workout.exercises[currentEx + 1].rest);
+      setIsResting(true);
+    } else {
+      setPhase('complete');
+    }
+  };
+
+  if (phase === 'precheck') {
+    return (
+      <div className="min-h-screen p-4 flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        <div className="max-w-2xl w-full bg-gray-800/50 rounded-2xl p-6 space-y-6">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-white mb-2">Pre-Workout Check</h2>
+            <p className="text-gray-400">Come ti senti oggi?</p>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <label className="text-emerald-400 font-semibold mb-2 block">Sonno: {preCheck.sleep}h</label>
+              <input type="range" min="0" max="12" value={preCheck.sleep} onChange={(e) => setPreCheck({...preCheck, sleep: parseInt(e.target.value)})} className="w-full accent-emerald-500" />
+            </div>
+            <div>
+              <label className="text-emerald-400 font-semibold mb-2 block">Stress: {preCheck.stress}/10</label>
+              <input type="range" min="0" max="10" value={preCheck.stress} onChange={(e) => setPreCheck({...preCheck, stress: parseInt(e.target.value)})} className="w-full accent-red-500" />
+            </div>
+            <div>
+              <label className="text-emerald-400 font-semibold mb-2 block">Energia: {preCheck.energy}/10</label>
+              <input type="range" min="0" max="10" value={preCheck.energy} onChange={(e) => setPreCheck({...preCheck, energy: parseInt(e.target.value)})} className="w-full accent-blue-500" />
+            </div>
+          </div>
+
+          {preCheck.stress > 7 && <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4"><p className="text-yellow-400 text-sm">⚠️ Stress elevato: considera di ridurre il carico</p></div>}
+
+          <div className="flex space-x-4">
+            <button onClick={onExit} className="flex-1 bg-gray-700 text-white py-3 rounded-xl font-semibold">Annulla</button>
+            <button onClick={() => setPhase('executing')} className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-semibold">Inizia 💪</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'executing') {
+    const ex = workout.exercises[currentEx];
+    const exD = exData[currentEx];
+    const completed = exD?.sets.filter(s => s.completed).length || 0;
+
+    return (
+      <div className="min-h-screen p-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        <div className="max-w-4xl mx-auto space-y-4">
+          <div className="bg-gray-800/50 rounded-xl p-4 flex justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-white">{workout.name}</h2>
+              <p className="text-gray-400 text-sm">Esercizio {currentEx + 1}/{workout.exercises.length}</p>
+            </div>
+            <button onClick={onExit} className="bg-red-500/20 text-red-400 px-4 py-2 rounded-xl">Esci</button>
+          </div>
+
+          {isResting && (
+            <div className="bg-blue-500/10 border-2 border-blue-500 rounded-xl p-6 text-center">
+              <div className="text-6xl font-bold text-blue-400 mb-2">{Math.floor(restTimer / 60)}:{(restTimer % 60).toString().padStart(2, '0')}</div>
+              <p className="text-blue-300 mb-4">Recupero...</p>
+              <button onClick={() => {setIsResting(false); setRestTimer(0); clearInterval(timerRef.current);}} className="bg-blue-500 text-white px-6 py-2 rounded-xl font-semibold">Salta ⏭️</button>
+            </div>
+          )}
+
+          {!isResting && (
+            <div className="bg-gray-800/50 rounded-xl p-6 space-y-6">
+              <div className="text-center">
+                <h3 className="text-3xl font-bold text-white mb-2">{ex.name}</h3>
+                <p className="text-emerald-400 text-lg">Serie {currentSet + 1}/{ex.sets}</p>
+                <div className="flex justify-center space-x-2 mt-3">
+                  {Array(ex.sets).fill(0).map((_, i) => <div key={i} className={`w-3 h-3 rounded-full ${i < completed ? 'bg-emerald-500' : i === currentSet ? 'bg-blue-500' : 'bg-gray-600'}`} />)}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-700/50 rounded-xl p-4 text-center">
+                  <p className="text-gray-400 text-sm">Target Peso</p>
+                  <p className="text-2xl font-bold text-white">{ex.weight > 0 ? `${ex.weight} kg` : 'BW'}</p>
+                </div>
+                <div className="bg-gray-700/50 rounded-xl p-4 text-center">
+                  <p className="text-gray-400 text-sm">Target Reps</p>
+                  <p className="text-2xl font-bold text-white">{ex.reps}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-emerald-400 mb-2 block">Peso (kg)</label>
+                  <input type="number" step="0.5" value={exD?.sets[currentSet]?.weight || 0} onChange={(e) => updateSet('weight', parseFloat(e.target.value) || 0)} className="w-full bg-gray-700 text-white text-2xl text-center rounded-xl px-4 py-3 outline-none" />
+                </div>
+                <div>
+                  <label className="text-emerald-400 mb-2 block">Reps eseguite</label>
+                  <input type="number" value={exD?.sets[currentSet]?.reps || 0} onChange={(e) => updateSet('reps', parseInt(e.target.value) || 0)} className="w-full bg-gray-700 text-white text-2xl text-center rounded-xl px-4 py-3 outline-none" />
+                </div>
+              </div>
+
+              <button onClick={completeSet} disabled={!exD?.sets[currentSet]?.reps} className={`w-full py-4 rounded-xl font-bold text-lg ${exD?.sets[currentSet]?.reps ? 'bg-emerald-500 text-white' : 'bg-gray-700 text-gray-400'}`}>
+                {currentSet === ex.sets - 1 && currentEx === workout.exercises.length - 1 ? 'Completa ✅' : 'Serie Fatta ✓'}
+              </button>
+            </div>
+          )}
+
+          <div className="bg-gray-800/50 rounded-xl p-4">
+            <h4 className="text-white font-semibold mb-3">Esercizi</h4>
+            <div className="space-y-2">
+              {workout.exercises.map((e, i) => {
+                const d = exData[i];
+                const c = d?.sets.filter(s => s.completed).length || 0;
+                return (
+                  <div key={i} className={`flex justify-between p-3 rounded-lg ${i === currentEx ? 'bg-emerald-500/20 border border-emerald-500' : 'bg-gray-700/30'}`}>
+                    <span className={`${i === currentEx ? 'text-emerald-400 font-semibold' : 'text-gray-300'}`}>{e.name}</span>
+                    <span className="text-gray-400 text-sm">{c}/{e.sets}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'complete') {
+    return (
+      <div className="min-h-screen p-4 flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        <div className="max-w-2xl w-full bg-gray-800/50 rounded-2xl p-8 space-y-6 text-center">
+          <div className="text-6xl mb-4">🎉</div>
+          <h2 className="text-4xl font-bold text-white">Completato!</h2>
+          <p className="text-gray-400 text-lg">Ottimo lavoro! Hai completato {workout.name}</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-700/50 rounded-xl p-4">
+              <p className="text-emerald-400 font-semibold">Esercizi</p>
+              <p className="text-2xl font-bold text-white">{workout.exercises.length}</p>
+            </div>
+            <div className="bg-gray-700/50 rounded-xl p-4">
+              <p className="text-emerald-400 font-semibold">Serie</p>
+              <p className="text-2xl font-bold text-white">{exData.reduce((sum, ex) => sum + ex.sets.filter(s => s.completed).length, 0)}</p>
+            </div>
+          </div>
+          <button onClick={onExit} className="w-full bg-emerald-500 text-white py-4 rounded-xl font-semibold text-lg">Torna alla Dashboard 🏠</button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
