@@ -107,6 +107,37 @@ export default function Dashboard() {
     }
   }
 
+  async function handleResetProgram() {
+    if (!confirm('Sei sicuro di voler cancellare il programma attuale? Dovrai rigenerarlo.')) {
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('training_programs')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (error) {
+        console.error('Error resetting program:', error);
+        alert('Errore nel reset del programma');
+        return;
+      }
+
+      // Ricarica lo stato
+      await checkUserProgress();
+      alert('Programma cancellato con successo!');
+
+    } catch (error) {
+      console.error('Error resetting program:', error);
+      alert('Errore nel reset del programma');
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -210,13 +241,22 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <button
-                onClick={() => navigate('/workout')}
-                className="flex items-center justify-center w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold px-8 py-6 text-lg rounded-lg shadow-lg shadow-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/70 transition-all duration-300 hover:scale-105"
-              >
-                <Dumbbell className="w-5 h-5 mr-2 pointer-events-none" />
-                Vai all'Allenamento
-              </button>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => navigate('/workout')}
+                  className="flex-1 flex items-center justify-center bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold px-8 py-6 text-lg rounded-lg shadow-lg shadow-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/70 transition-all duration-300 hover:scale-105"
+                >
+                  <Dumbbell className="w-5 h-5 mr-2 pointer-events-none" />
+                  Vai all'Allenamento
+                </button>
+                <button
+                  onClick={handleResetProgram}
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-6 rounded-lg transition-all duration-300 hover:scale-105 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/50"
+                  title="Reset Programma"
+                >
+                  🔄 Reset
+                </button>
+              </div>
             </CardContent>
           </Card>
         )}
