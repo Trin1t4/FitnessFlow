@@ -144,9 +144,8 @@ const PERFORMANCE_QUESTIONS = [
   }
 ];
 
-// Sports and roles
+// Sports and roles per opzione "Prestazioni sportive"
 const SPORTS_OPTIONS = [
-  { value: 'none', label: 'Nessuno', roles: [] },
   { value: 'calcio', label: '⚽ Calcio', roles: ['Portiere', 'Difensore', 'Centrocampista', 'Attaccante'] },
   { value: 'basket', label: '🏀 Basket', roles: ['Playmaker', 'Guardia', 'Ala', 'Centro'] },
   { value: 'pallavolo', label: '🏐 Pallavolo', roles: ['Alzatore', 'Opposto', 'Centrale', 'Libero', 'Schiacciatore'] },
@@ -174,7 +173,7 @@ export default function Assessment() {
   const [frequency, setFrequency] = useState(3);
   const [duration, setDuration] = useState(45);
   const [goal, setGoal] = useState('ipertrofia');
-  const [sport, setSport] = useState('none');
+  const [sport, setSport] = useState('');
   const [role, setRole] = useState('');
   
   // Dati biometrici editabili
@@ -190,6 +189,12 @@ export default function Assessment() {
     }
     return '0';
   }, [editWeight, editHeight]);
+
+  // Screening dolori iniziale
+  const [painScreeningComplete, setPainScreeningComplete] = useState(false);
+  const [hasPain, setHasPain] = useState<boolean | null>(null);
+  const [painAreas, setPainAreas] = useState<string[]>([]);
+  const [painIntensity, setPainIntensity] = useState<{ [key: string]: number }>({});
   
   // Quiz - with shuffled options
   const [quizComplete, setQuizComplete] = useState(false);
@@ -223,12 +228,13 @@ export default function Assessment() {
 
   const isGym = location === 'gym';
 
-  // Goals options
+  // Goals options - PRESTAZIONI SPORTIVE INCLUSO QUI
   const goalOptions = [
     { value: 'forza', label: '💪 Forza', desc: 'Aumentare forza massimale' },
     { value: 'ipertrofia', label: '🏋️ Ipertrofia', desc: 'Crescita muscolare' },
     { value: 'tonificazione', label: '✨ Tonificazione', desc: 'Definizione muscolare' },
     { value: 'dimagrimento', label: '🔥 Dimagrimento', desc: 'Perdita peso/grasso' },
+    { value: 'prestazioni_sportive', label: '⚽ Prestazioni Sportive', desc: 'Migliorare in uno sport' },
     { value: 'benessere', label: '🧘 Benessere', desc: 'Salute generale' },
     { value: 'resistenza', label: '🏃 Resistenza', desc: 'Capacità aerobica' },
     { value: 'gravidanza', label: '🤰 Gravidanza', desc: 'Pre/post parto' },
@@ -240,12 +246,27 @@ export default function Assessment() {
   const selectedSport = SPORTS_OPTIONS.find(s => s.value === sport);
   const sportRoles = selectedSport?.roles || [];
 
+  // Aree dolore disponibili
+  const painAreasOptions = [
+    { value: 'cervicale', label: 'Cervicale/Collo', icon: '🦴' },
+    { value: 'spalle', label: 'Spalle', icon: '💪' },
+    { value: 'dorsale', label: 'Zona Dorsale', icon: '🔙' },
+    { value: 'lombare', label: 'Zona Lombare', icon: '⬇️' },
+    { value: 'anche', label: 'Anche/Bacino', icon: '🦴' },
+    { value: 'ginocchia', label: 'Ginocchia', icon: '🦵' },
+    { value: 'caviglie', label: 'Caviglie/Piedi', icon: '👣' },
+    { value: 'polsi', label: 'Polsi/Mani', icon: '🤚' },
+    { value: 'gomiti', label: 'Gomiti', icon: '💪' }
+  ];
+
+  // GYM: AGGIUNTO STACCO DA TERRA
   const gymExercises = [
     { name: 'Squat', unit: 'kg' },
+    { name: 'Stacco da terra', unit: 'kg' },
     { name: 'Panca piana', unit: 'kg' },
     { name: 'Trazioni/Lat', unit: 'kg' },
     { name: 'Military press', unit: 'kg' },
-    { name: 'Pulley', unit: 'kg' }
+    { name: 'Rematore', unit: 'kg' }
   ];
 
   const homeExercises = [
@@ -290,6 +311,34 @@ export default function Assessment() {
   const current = list[currentIdx];
   const total = list.length;
 
+  const togglePainArea = (area: string) => {
+    if (painAreas.includes(area)) {
+      setPainAreas(painAreas.filter(a => a !== area));
+      const newIntensity = { ...painIntensity };
+      delete newIntensity[area];
+      setPainIntensity(newIntensity);
+    } else {
+      setPainAreas([...painAreas, area]);
+      setPainIntensity({ ...painIntensity, [area]: 5 });
+    }
+  };
+
+  const completePainScreening = () => {
+    const painData = {
+      hasPain,
+      painAreas,
+      painIntensity,
+      screenedAt: new Date().toISOString()
+    };
+    
+    const updatedOnboarding = {
+      ...JSON.parse(localStorage.getItem('onboarding_data') || '{}'),
+      painScreening: painData
+    };
+    localStorage.setItem('onboarding_data', JSON.stringify(updatedOnboarding));
+    setPainScreeningComplete(true);
+  };
+
   const completeSetup = () => {
     // Aggiorna dati biometrici nell'onboarding data
     const updatedPersonalInfo = {
@@ -328,7 +377,6 @@ export default function Assessment() {
         newTechnicalScore = technicalScore + 1;
         setTechnicalScore(newTechnicalScore);
       }
-      // "Non lo so" conta come sbagliata (non aggiunge punti)
     } else if (question.type === "performance") {
       const scores = (question as any).scores;
       newPerformanceScore = performanceScore + scores[selectedQuizAnswer];
@@ -344,7 +392,6 @@ export default function Assessment() {
       const maxPerformanceScore = PERFORMANCE_QUESTIONS.reduce((sum, q: any) => sum + Math.max(...q.scores), 0);
       const performancePercentage = Math.round((newPerformanceScore / maxPerformanceScore) * 100);
 
-      // LOGICA DETERMINAZIONE LIVELLO (dal quiz originale)
       let level: string;
       if (technicalPercentage < 50) {
         level = "beginner";
@@ -425,7 +472,8 @@ export default function Assessment() {
         level: completeOnboardingData.level,
         location: completeOnboardingData.trainingLocation,
         sport: completeOnboardingData.sport,
-        role: completeOnboardingData.role
+        role: completeOnboardingData.role,
+        painScreening: completeOnboardingData.painScreening
       };
       localStorage.setItem('assessment_data', JSON.stringify(assessmentData));
 
@@ -472,6 +520,130 @@ export default function Assessment() {
       navigate('/dashboard');
     }
   };
+
+  // STEP -1: SCREENING DOLORI
+  if (!painScreeningComplete) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">🩺 Screening Iniziale</h1>
+            <p className="text-slate-300">Valutiamo eventuali dolori o fastidi attuali</p>
+          </div>
+
+          <div className="space-y-6">
+            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 border border-slate-700">
+              <h2 className="text-xl font-bold text-white mb-4">Hai dolori o fastidi attuali?</h2>
+              <p className="text-sm text-slate-400 mb-6">
+                Questo ci aiuterà a personalizzare il programma e proteggere le zone sensibili
+              </p>
+
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <button
+                  onClick={() => setHasPain(false)}
+                  className={`p-6 rounded-lg border-2 transition ${
+                    hasPain === false
+                      ? 'border-emerald-500 bg-emerald-500/20 text-white'
+                      : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
+                  }`}
+                >
+                  <div className="text-4xl mb-2">✅</div>
+                  <div className="font-bold text-lg">Nessun dolore</div>
+                  <div className="text-sm text-slate-400 mt-1">Mi sento bene</div>
+                </button>
+                <button
+                  onClick={() => setHasPain(true)}
+                  className={`p-6 rounded-lg border-2 transition ${
+                    hasPain === true
+                      ? 'border-amber-500 bg-amber-500/20 text-white'
+                      : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
+                  }`}
+                >
+                  <div className="text-4xl mb-2">⚠️</div>
+                  <div className="font-bold text-lg">Ho dolori</div>
+                  <div className="text-sm text-slate-400 mt-1">Specificare zone</div>
+                </button>
+              </div>
+
+              {hasPain === true && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-white mb-3">Seleziona le zone con dolore/fastidio:</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {painAreasOptions.map(area => (
+                        <button
+                          key={area.value}
+                          onClick={() => togglePainArea(area.value)}
+                          className={`p-3 rounded-lg border-2 text-left transition ${
+                            painAreas.includes(area.value)
+                              ? 'border-amber-500 bg-amber-500/20 text-white'
+                              : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">{area.icon}</span>
+                            <span className="text-sm font-medium">{area.label}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {painAreas.length > 0 && (
+                    <div className="bg-slate-700/50 rounded-lg p-4">
+                      <h3 className="font-semibold text-white mb-4">Intensità del dolore (1-10):</h3>
+                      <div className="space-y-3">
+                        {painAreas.map(area => {
+                          const areaInfo = painAreasOptions.find(a => a.value === area);
+                          return (
+                            <div key={area}>
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-slate-300 text-sm">
+                                  {areaInfo?.icon} {areaInfo?.label}
+                                </span>
+                                <span className="text-white font-bold text-lg">{painIntensity[area] || 5}</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="1"
+                                max="10"
+                                value={painIntensity[area] || 5}
+                                onChange={(e) => setPainIntensity({ ...painIntensity, [area]: Number(e.target.value) })}
+                                className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                              />
+                              <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>Lieve</span>
+                                <span>Moderato</span>
+                                <span>Severo</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="bg-amber-500/10 border border-amber-500 rounded-lg p-4">
+                    <p className="text-sm text-amber-200">
+                      ⚠️ Se i dolori sono severi (8+) o persistenti, consulta un medico prima di iniziare
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={completePainScreening}
+                disabled={hasPain === null || (hasPain === true && painAreas.length === 0)}
+                className="w-full mt-6 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-lg font-semibold text-lg shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continua al Setup →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // STEP 0: Setup Screen
   if (!setupComplete) {
@@ -641,14 +813,20 @@ export default function Assessment() {
               </p>
             </div>
 
-            {/* Goal Selection */}
+            {/* Goal Selection - CON PRESTAZIONI SPORTIVE */}
             <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 border border-slate-700">
               <h2 className="text-xl font-bold text-white mb-4">🎯 Obiettivo Principale</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {goalOptions.map(opt => (
                   <button
                     key={opt.value}
-                    onClick={() => setGoal(opt.value)}
+                    onClick={() => {
+                      setGoal(opt.value);
+                      if (opt.value !== 'prestazioni_sportive') {
+                        setSport('');
+                        setRole('');
+                      }
+                    }}
                     className={`p-4 rounded-lg border-2 text-left transition ${
                       goal === opt.value
                         ? 'border-emerald-500 bg-emerald-500/20 text-white'
@@ -660,60 +838,58 @@ export default function Assessment() {
                   </button>
                 ))}
               </div>
-            </div>
 
-            {/* Sport Selection */}
-            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 border border-slate-700">
-              <h2 className="text-xl font-bold text-white mb-4">⚽ Prestazioni Sportive</h2>
-              <p className="text-sm text-slate-400 mb-4">Pratichi uno sport specifico? (opzionale)</p>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Sport</label>
-                  <select
-                    value={sport}
-                    onChange={(e) => {
-                      setSport(e.target.value);
-                      setRole(''); // Reset role when sport changes
-                    }}
-                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-                  >
-                    {SPORTS_OPTIONS.map(s => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {sportRoles.length > 0 && (
+              {/* Sport Selection - CONDIZIONALE */}
+              {goal === 'prestazioni_sportive' && (
+                <div className="mt-6 space-y-4 bg-slate-700/30 rounded-lg p-4 border border-slate-600">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Ruolo/Posizione</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Quale sport pratichi?</label>
                     <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
+                      value={sport}
+                      onChange={(e) => {
+                        setSport(e.target.value);
+                        setRole('');
+                      }}
                       className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
                     >
-                      <option value="">Seleziona ruolo...</option>
-                      {sportRoles.map(r => (
-                        <option key={r} value={r}>{r}</option>
+                      <option value="">Seleziona sport...</option>
+                      {SPORTS_OPTIONS.map(s => (
+                        <option key={s.value} value={s.value}>{s.label}</option>
                       ))}
                     </select>
                   </div>
-                )}
 
-                {sport !== 'none' && (
-                  <div className="bg-blue-500/10 border border-blue-500 rounded-lg p-3">
-                    <p className="text-sm text-blue-200">
-                      ℹ️ Il programma sarà ottimizzato per le esigenze del tuo sport
-                    </p>
-                  </div>
-                )}
-              </div>
+                  {sport && sportRoles.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Ruolo/Posizione</label>
+                      <select
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                      >
+                        <option value="">Seleziona ruolo...</option>
+                        {sportRoles.map(r => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {sport && (
+                    <div className="bg-blue-500/10 border border-blue-500 rounded-lg p-3">
+                      <p className="text-sm text-blue-200">
+                        ℹ️ Il programma sarà ottimizzato per le esigenze specifiche del tuo sport
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Confirm Button */}
             <button
               onClick={completeSetup}
-              disabled={!editAge || !editHeight || !editWeight}
+              disabled={!editAge || !editHeight || !editWeight || (goal === 'prestazioni_sportive' && !sport)}
               className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-lg font-semibold text-lg shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continua al Quiz Tecnico →
