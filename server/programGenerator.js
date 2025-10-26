@@ -5,8 +5,22 @@ export function calculateOneRepMax(weight, reps) {
   return weight * (36 / (37 - reps));
 }
 
-export function calculateTargetWeight(oneRepMax, percentage) {
-  return Math.round((oneRepMax * percentage) / 2.5) * 2.5;
+export function calculateTargetWeight(oneRM, percentage) {
+  return Math.round((oneRM * percentage) / 2.5) * 2.5;
+}
+
+export function calculateTrainingWeight(oneRM, targetReps, RIR = 2) {
+  if (!oneRM || oneRM === 0) return null;
+  
+  // targetReps = reps da eseguire
+  // RIR = Reps In Reserve (buffer di sicurezza)
+  // Calcola peso per (targetReps + RIR) usando formula inversa Brzycki
+  
+  const maxReps = targetReps + RIR;
+  const weight = oneRM * (37 - maxReps) / 36;
+  
+  // Arrotonda a 2.5kg
+  return Math.round(weight / 2.5) * 2.5;
 }
 
 // ===== IMPORTS =====
@@ -252,7 +266,7 @@ function generateUpperDay(variant, location, hasGym, equipment, painAreas, asses
   }
 
   exercises.push(createExercise("Military Press", location, hasGym, equipment, baseLoad.press, level, goal, "accessory"));
-  exercises.push(createExercise(variant === "A" ? "Curl bilanciere" : "French Press", location, hasGym, equipment, 0, level, goal, "isolation"));
+  exercises.push(createExercise(variant === "A" ? "Curl bilanciere" : "French Press", location, hasGym, equipment, baseLoad.bench * 0.3, level, goal, "isolation"));
 
   return exercises;
 }
@@ -275,10 +289,10 @@ function generateLowerDay(variant, location, hasGym, equipment, painAreas, asses
     exercises.push(createExercise(safeExercise("Stacco"), location, hasGym, equipment, baseLoad.deadlift, level, goal, "compound"));
   }
 
-  exercises.push(createExercise("Leg Curl", location, hasGym, equipment, 0, level, goal, "isolation"));
+  exercises.push(createExercise("Leg Curl", location, hasGym, equipment, baseLoad.squat * 0.3, level, goal, "isolation"));
   
   if (!painAreas.includes("ankles")) {
-    exercises.push(createExercise("Calf Raises", location, hasGym, equipment, 0, level, goal, "isolation"));
+    exercises.push(createExercise("Calf Raises", location, hasGym, equipment, baseLoad.squat * 0.5, level, goal, "isolation"));
   }
 
   return exercises;
@@ -297,8 +311,8 @@ function generatePushDay(location, hasGym, equipment, painAreas, assessments, le
   exercises.push(createExercise(safeExercise("Panca Piana"), location, hasGym, equipment, baseLoad.bench, level, goal, "compound"));
   exercises.push(createExercise("Military Press", location, hasGym, equipment, baseLoad.press, level, goal, "compound"));
   exercises.push(createExercise("Dips", location, hasGym, equipment, 0, level, goal, "compound"));
-  exercises.push(createExercise("Croci manubri", location, hasGym, equipment, 0, level, goal, "isolation"));
-  exercises.push(createExercise("French Press", location, hasGym, equipment, 0, level, goal, "isolation"));
+  exercises.push(createExercise("Croci manubri", location, hasGym, equipment, baseLoad.bench * 0.3, level, goal, "isolation"));
+  exercises.push(createExercise("French Press", location, hasGym, equipment, baseLoad.bench * 0.3, level, goal, "isolation"));
 
   return exercises;
 }
@@ -316,8 +330,8 @@ function generatePullDay(location, hasGym, equipment, painAreas, assessments, le
   exercises.push(createExercise(safeExercise("Stacco"), location, hasGym, equipment, baseLoad.deadlift, level, goal, "compound"));
   exercises.push(createExercise(safeExercise("Trazioni"), location, hasGym, equipment, baseLoad.pull, level, goal, "compound"));
   exercises.push(createExercise(safeExercise("Rematore Bilanciere"), location, hasGym, equipment, baseLoad.pull * 0.9, level, goal, "compound"));
-  exercises.push(createExercise(safeExercise("Curl bilanciere"), location, hasGym, equipment, 0, level, goal, "isolation"));
-  exercises.push(createExercise(safeExercise("Face Pull"), location, hasGym, equipment, 0, level, goal, "isolation"));
+  exercises.push(createExercise(safeExercise("Curl bilanciere"), location, hasGym, equipment, baseLoad.bench * 0.3, level, goal, "isolation"));
+  exercises.push(createExercise(safeExercise("Face Pull"), location, hasGym, equipment, baseLoad.pull * 0.2, level, goal, "isolation"));
 
   return exercises;
 }
@@ -335,8 +349,8 @@ function generateLegsDay(location, hasGym, equipment, painAreas, assessments, le
   exercises.push(createExercise(safeExercise("Squat"), location, hasGym, equipment, baseLoad.squat, level, goal, "compound"));
   exercises.push(createExercise(safeExercise("Leg Press"), location, hasGym, equipment, baseLoad.squat * 1.5, level, goal, "compound"));
   exercises.push(createExercise(safeExercise("Romanian Deadlift"), location, hasGym, equipment, baseLoad.deadlift * 0.7, level, goal, "compound"));
-  exercises.push(createExercise("Leg Curl", location, hasGym, equipment, 0, level, goal, "isolation"));
-  exercises.push(createExercise("Leg Extension", location, hasGym, equipment, 0, level, goal, "isolation"));
+  exercises.push(createExercise("Leg Curl", location, hasGym, equipment, baseLoad.squat * 0.3, level, goal, "isolation"));
+  exercises.push(createExercise("Leg Extension", location, hasGym, equipment, baseLoad.squat * 0.3, level, goal, "isolation"));
 
   return exercises;
 }
@@ -372,11 +386,32 @@ else reps = "10";
         sets,
         reps,
         rest,
-        weight: baseWeight > 0 ? calculateTargetWeight(baseWeight, 0.7) : null,
+        weight: null,
         notes: `Esercizio adattato per sicurezza`,
       };
     }
     return exerciseOrGiantSet;
+  }
+
+  // ===== CALCOLO PESO CON RIR (UNIVERSALE) =====
+  let trainingWeight = null;
+  if (baseWeight > 0) {
+    // Estrae il numero MAX dal range di reps
+    let targetReps = 10; // default
+    
+    if (typeof reps === 'string' && reps.includes('-')) {
+      // Es. "5-8" → usa 8
+      targetReps = parseInt(reps.split('-')[1]);
+    } else if (typeof reps === 'string' && !reps.includes('s')) {
+      // Es. "10" → usa 10
+      targetReps = parseInt(reps);
+    }
+    
+    // RIR basato sul livello (beginner più conservativo)
+    const RIR = level === 'beginner' ? 3 : 2;
+    
+    // Calcola peso con RIR
+    trainingWeight = calculateTrainingWeight(baseWeight, targetReps, RIR);
   }
 
   return {
@@ -384,7 +419,7 @@ else reps = "10";
     sets,
     reps,
     rest,
-    weight: baseWeight > 0 ? calculateTargetWeight(baseWeight, 0.7) : null,
+    weight: trainingWeight,
     notes: type === "compound" ? "Esercizio fondamentale" : "Esercizio complementare",
   };
 }
@@ -404,4 +439,56 @@ function getBaseLoads(assessments) {
     pull: findLoad("trazioni") || findLoad("pull"),
     press: findLoad("press") || findLoad("spalle"),
   };
+}
+
+// ===== PAIN MANAGEMENT =====
+
+export function analyzePainPersistence(workouts) {
+  const painAreas = {};
+  workouts.forEach((w) => {
+    if (w.painLevel && w.painLevel > 3 && w.painLocation) {
+      painAreas[w.painLocation] = (painAreas[w.painLocation] || 0) + 1;
+    }
+  });
+  
+  const persistentPain = Object.entries(painAreas)
+    .filter(([_, count]) => count >= 3)
+    .map(([location, _]) => location);
+  
+  return {
+    hasPersistentPain: persistentPain.length > 0,
+    persistentAreas: persistentPain,
+  };
+}
+
+export function checkRecoveryFromPain(workouts) {
+  const lastThree = workouts.slice(0, 3);
+  const noPainSessions = lastThree.filter((w) => !w.painLevel || w.painLevel <= 2);
+  
+  return {
+    canReturnToNormal: noPainSessions.length === 3,
+    painFreeSessions: noPainSessions.length,
+  };
+}
+
+export function calculateDetrainingFactor(workouts) {
+  if (workouts.length === 0) return 0.7;
+  
+  const lastWorkout = workouts[0];
+  const daysSinceLastWorkout = lastWorkout.completedAt
+    ? Math.floor((Date.now() - new Date(lastWorkout.completedAt).getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
+  
+  if (daysSinceLastWorkout < 7) return 1.0;
+  if (daysSinceLastWorkout < 14) return 0.95;
+  if (daysSinceLastWorkout < 21) return 0.9;
+  if (daysSinceLastWorkout < 30) return 0.85;
+  return 0.7;
+}
+
+export function recalibrateProgram(assessments, detrainingFactor) {
+  return assessments.map((a) => ({
+    exerciseName: a.exerciseName,
+    oneRepMax: a.oneRepMax * detrainingFactor,
+  }));
 }
