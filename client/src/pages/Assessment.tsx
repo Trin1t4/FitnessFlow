@@ -331,24 +331,16 @@ export default function Assessment() {
                   <span className="absolute right-6 top-1/2 -translate-y-1/2 text-2xl font-bold text-slate-400">kg</span>
                 </div>
                 {test.rm10 > 0 && (
-                  <div className="mt-4 bg-slate-700/50 rounded-lg p-4 border border-slate-600">
-                    <p className="text-sm text-slate-400 mb-1">📊 Stime basate sul tuo 10RM:</p>
-                    <div className="grid grid-cols-2 gap-3 mt-2">
-                      <div>
-                        <p className="text-xs text-slate-500">1RM stimato</p>
-                        <p className="text-lg font-bold text-white">
-                          {Math.round(test.rm10 * 1.33)}kg
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500">Peso partenza consigliato</p>
-                        <p className="text-lg font-bold text-emerald-400">
-                          {Math.round((test.rm10 * 1.33 * 0.83) / 2.5) * 2.5}kg
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+  <div className="mt-4 bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+    <p className="text-sm text-slate-400 mb-1">📊 1RM Stimato:</p>
+    <div className="text-center mt-2">
+      <p className="text-3xl font-bold text-emerald-400">
+        {Math.round(test.rm10 * 1.33)}kg
+      </p>
+      <p className="text-xs text-slate-500 mt-1">Massimale teorico calcolato</p>
+    </div>
+  </div>
+)}
               </div>
               <button 
                 onClick={submit} 
