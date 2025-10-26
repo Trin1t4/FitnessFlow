@@ -228,9 +228,9 @@ export default function Dashboard() {
                   <AlertCircle className="w-8 h-8 text-amber-300" />
                 </div>
                 <div>
-                  <CardTitle className="text-white text-2xl">Assessment Richiesto</CardTitle>
+                  <CardTitle className="text-white text-2xl">Screening Richiesto</CardTitle>
                   <CardDescription className="text-gray-300 text-base">
-                    Completa l'assessment per generare il tuo programma personalizzato
+                    Completa lo screening per generare il tuo programma personalizzato
                   </CardDescription>
                 </div>
               </div>
