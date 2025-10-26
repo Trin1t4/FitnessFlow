@@ -163,6 +163,11 @@ const SPORTS_OPTIONS = [
 export default function Assessment() {
   const navigate = useNavigate();
   
+  // Load onboarding data
+  const onboardingData = JSON.parse(localStorage.getItem('onboarding_data') || '{}');
+  const { personalInfo } = onboardingData;
+  const photoUrl = onboardingData.photoUrl || null;
+
   // STEP 0: Setup data collection
   const [setupComplete, setSetupComplete] = useState(false);
   const [location, setLocation] = useState<'gym' | 'home'>('gym');
@@ -171,6 +176,20 @@ export default function Assessment() {
   const [goal, setGoal] = useState('ipertrofia');
   const [sport, setSport] = useState('none');
   const [role, setRole] = useState('');
+  
+  // Dati biometrici editabili
+  const [editGender, setEditGender] = useState(personalInfo?.gender || 'M');
+  const [editAge, setEditAge] = useState(personalInfo?.age || 0);
+  const [editHeight, setEditHeight] = useState(personalInfo?.height || 0);
+  const [editWeight, setEditWeight] = useState(personalInfo?.weight || 0);
+
+  // BMI calcolato dinamicamente
+  const calcBmi = useMemo(() => {
+    if (editWeight && editHeight && editHeight > 0) {
+      return ((editWeight) / ((editHeight / 100) ** 2)).toFixed(1);
+    }
+    return '0';
+  }, [editWeight, editHeight]);
   
   // Quiz - with shuffled options
   const [quizComplete, setQuizComplete] = useState(false);
@@ -201,16 +220,6 @@ export default function Assessment() {
   const [exercises, setExercises] = useState<AssessmentExercise[]>([]);
   const [test, setTest] = useState({ variant: '', variantLevel: 1, maxReps: 0, rm10: 0 });
   const [saving, setSaving] = useState(false);
-
-  // Load onboarding data
-  const onboardingData = JSON.parse(localStorage.getItem('onboarding_data') || '{}');
-  const { personalInfo } = onboardingData;
-  const age = personalInfo?.age || 0;
-  const weight = personalInfo?.weight || 0;
-  const height = personalInfo?.height || 0;
-  const gender = personalInfo?.gender || 'M';
-  const bmi = personalInfo?.bmi || 0;
-  const photoUrl = onboardingData.photoUrl || null;
 
   const isGym = location === 'gym';
 
@@ -282,6 +291,20 @@ export default function Assessment() {
   const total = list.length;
 
   const completeSetup = () => {
+    // Aggiorna dati biometrici nell'onboarding data
+    const updatedPersonalInfo = {
+      ...onboardingData.personalInfo,
+      gender: editGender,
+      age: editAge,
+      height: editHeight,
+      weight: editWeight,
+      bmi: calcBmi
+    };
+    const updatedOnboarding = { 
+      ...onboardingData,
+      personalInfo: updatedPersonalInfo
+    };
+    localStorage.setItem('onboarding_data', JSON.stringify(updatedOnboarding));
     setSetupComplete(true);
   };
 
@@ -335,7 +358,7 @@ export default function Assessment() {
 
       // Save all data to localStorage
       const updatedOnboarding = {
-        ...onboardingData,
+        ...JSON.parse(localStorage.getItem('onboarding_data') || '{}'),
         trainingLocation: location,
         frequency,
         duration,
@@ -461,35 +484,77 @@ export default function Assessment() {
           </div>
 
           <div className="space-y-6">
-            {/* Biometric Data Recap */}
+            {/* Biometric Data Recap - EDITABILE */}
             <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 border border-slate-700">
               <h2 className="text-xl font-bold text-white mb-4">👤 Dati Biometrici</h2>
               <div className="grid grid-cols-2 gap-4">
+                
+                {/* Sesso */}
                 <div className="bg-slate-700/50 rounded-lg p-4">
-                  <p className="text-sm text-slate-400 mb-1">Genere</p>
-                  <p className="text-2xl font-bold text-white">{gender === 'M' ? '👨 Uomo' : '👩 Donna'}</p>
+                  <label className="text-sm text-slate-400 mb-1 block">Genere</label>
+                  <select
+                    value={editGender}
+                    onChange={e => setEditGender(e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  >
+                    <option value="M">👨 Uomo</option>
+                    <option value="F">👩 Donna</option>
+                  </select>
                 </div>
+
+                {/* Età */}
                 <div className="bg-slate-700/50 rounded-lg p-4">
-                  <p className="text-sm text-slate-400 mb-1">Età</p>
-                  <p className="text-2xl font-bold text-white">{age} anni</p>
+                  <label className="text-sm text-slate-400 mb-1 block">Età</label>
+                  <input
+                    type="number"
+                    min="10"
+                    max="100"
+                    value={editAge || ''}
+                    onChange={e => setEditAge(Number(e.target.value))}
+                    placeholder="0"
+                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-2 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  />
                 </div>
+
+                {/* Altezza */}
                 <div className="bg-slate-700/50 rounded-lg p-4">
-                  <p className="text-sm text-slate-400 mb-1">Altezza</p>
-                  <p className="text-2xl font-bold text-white">{height} cm</p>
+                  <label className="text-sm text-slate-400 mb-1 block">Altezza (cm)</label>
+                  <input
+                    type="number"
+                    min="100"
+                    max="250"
+                    value={editHeight || ''}
+                    onChange={e => setEditHeight(Number(e.target.value))}
+                    placeholder="0"
+                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-2 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  />
                 </div>
+
+                {/* Peso */}
                 <div className="bg-slate-700/50 rounded-lg p-4">
-                  <p className="text-sm text-slate-400 mb-1">Peso</p>
-                  <p className="text-2xl font-bold text-white">{weight} kg</p>
+                  <label className="text-sm text-slate-400 mb-1 block">Peso (kg)</label>
+                  <input
+                    type="number"
+                    min="30"
+                    max="250"
+                    step="0.1"
+                    value={editWeight || ''}
+                    onChange={e => setEditWeight(Number(e.target.value))}
+                    placeholder="0"
+                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-2 py-2 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  />
                 </div>
               </div>
-              {bmi > 0 && (
+
+              {editWeight > 0 && editHeight > 0 && (
                 <div className="mt-4 bg-emerald-500/10 border border-emerald-500 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300">BMI</span>
-                    <span className="text-2xl font-bold text-emerald-400">{bmi}</span>
+                    <span className="text-2xl font-bold text-emerald-400">{calcBmi}</span>
                   </div>
                 </div>
               )}
+
               {photoUrl && (
                 <div className="mt-4">
                   <p className="text-sm text-slate-400 mb-2">📸 Foto di riferimento caricata</p>
@@ -648,7 +713,8 @@ export default function Assessment() {
             {/* Confirm Button */}
             <button
               onClick={completeSetup}
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-lg font-semibold text-lg shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition"
+              disabled={!editAge || !editHeight || !editWeight}
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-lg font-semibold text-lg shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continua al Quiz Tecnico →
             </button>
