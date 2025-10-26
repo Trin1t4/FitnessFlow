@@ -173,13 +173,13 @@ export default function Assessment() {
     try {
       // Prepara dati completi assessment
       const assessmentData = { 
-        exercises: final, 
-        completedAt: new Date().toISOString(), 
-        completed: true,
-        location: onboardingData.location,
-        frequency: onboardingData.frequency,
-        duration: onboardingData.duration,
-        goal: onboardingData.goal,
+  exercises: final, 
+  completedAt: new Date().toISOString(), 
+  completed: true,
+  location: onboardingData.trainingLocation,  // 
+  frequency: onboardingData.activityLevel?.weeklyFrequency,  // 
+  duration: onboardingData.activityLevel?.sessionDuration,  // 
+  goal: onboardingData.goal,
         level: userLevel,
         sport: onboardingData.sport || '',
         sportRole: onboardingData.sportRole || '',
@@ -204,11 +204,11 @@ export default function Assessment() {
           .update({ 
             onboarding_completed: true,
             assessment_completed: true,
-            training_frequency: onboardingData.frequency,
-            session_duration: onboardingData.duration,
-            training_goal: onboardingData.goal,
-            training_level: userLevel,
-            training_location: onboardingData.location,
+            training_frequency: onboardingData.activityLevel?.weeklyFrequency,
+session_duration: onboardingData.activityLevel?.sessionDuration,
+training_goal: onboardingData.goal,
+training_level: userLevel,
+training_location: onboardingData.trainingLocation,
             sport: onboardingData.sport || null,
             sport_role: onboardingData.sportRole || null,
             updated_at: new Date().toISOString()
