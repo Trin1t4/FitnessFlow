@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -61,18 +62,17 @@ const TECHNICAL_QUESTIONS = [
     correctAnswer: 2,
     type: "technical"
   },
- {
-  question: "Nel pulley basso, qual è il movimento corretto delle scapole?",
-  options: [
-    "Devono rimanere completamente ferme",
-    "Solo elevazione verso le orecchie",
-    "Retrazione (avvicinamento) portando i gomiti indietro",
-    "Dipende dalla presa"
-  ],
-  correctAnswer: 2,
-  type: "technical"
-}
-
+  {
+    question: "Nel pulley basso, qual è il movimento corretto delle scapole?",
+    options: [
+      "Devono rimanere completamente ferme",
+      "Solo elevazione verso le orecchie",
+      "Retrazione (avvicinamento) portando i gomiti indietro",
+      "Dipende dalla presa"
+    ],
+    correctAnswer: 2,
+    type: "technical"
+  },
   {
     question: "Cos'è il 'valsalva' e quando si usa?",
     options: [
@@ -96,8 +96,8 @@ const PERFORMANCE_QUESTIONS = [
       "1.5x il mio peso corporeo",
       "2x o più il mio peso corporeo"
     ],
-    correctAnswer: -1, // Nessuna risposta "corretta", serve solo per valutare
-    scores: [0, 1, 2, 3], // Punteggio per ogni opzione
+    correctAnswer: -1,
+    scores: [0, 1, 2, 3],
     type: "performance"
   },
   {
@@ -129,6 +129,7 @@ const PERFORMANCE_QUESTIONS = [
 const ALL_QUESTIONS = [...TECHNICAL_QUESTIONS, ...PERFORMANCE_QUESTIONS];
 
 export default function QuizComponent() {
+  const navigate = useNavigate();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -178,48 +179,37 @@ export default function QuizComponent() {
     let message: string;
 
     if (technicalPercentage < 50) {
-      // TECNICA INSUFFICIENTE → PRINCIPIANTE (indipendentemente dai carichi)
       level = "beginner";
       levelLabel = "Principiante";
       message = "La tecnica è fondamentale per la sicurezza. Anche se i tuoi carichi sono buoni, è necessario un reset sulla tecnica prima di progredire. Inizierai con un programma focalizzato sulla forma corretta.";
     } else if (performancePercentage < 40) {
-      // TECNICA OK ma carichi bassi → INTERMEDIO
       level = "intermediate";
       levelLabel = "Intermedio";
       message = "Ottima tecnica! Ora è il momento di costruire forza con un programma strutturato per aumentare i carichi in sicurezza.";
     } else {
-      // TECNICA OK e carichi buoni → AVANZATO
       level = "advanced";
       levelLabel = "Avanzato";
       message = "Eccellente! Hai tecnica solida e buoni carichi. Sei pronto per un programma avanzato con periodizzazione e progressione ottimale.";
     }
 
-    // Salva quiz e aggiorna livello
-    const handleContinue = async () => {
+    // Salva quiz e vai all'assessment
+    const handleContinue = () => {
       try {
-        // Salva risultato quiz
-        await fetch("/api/quiz/submit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            score: technicalScore + performanceScore,
-            totalQuestions: ALL_QUESTIONS.length,
-            answers,
-            difficulty: level
-          })
-        });
-
-        // Aggiorna screening con livello determinato
-        await fetch("/api/screening/update-level", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ level })
-        });
-
-        // Naviga a assessment
-        window.location.href = "/assessment";
+        // Salva risultato quiz in localStorage
+        const quizData = {
+          level,
+          technicalScore,
+          performanceScore,
+          answers,
+          completedAt: new Date().toISOString()
+        };
+        localStorage.setItem('quiz_data', JSON.stringify(quizData));
+        
+        // Vai all'assessment
+        navigate('/assessment');
       } catch (error) {
         console.error("Error saving quiz:", error);
+        alert("Errore nel salvataggio. Riprova.");
       }
     };
 
