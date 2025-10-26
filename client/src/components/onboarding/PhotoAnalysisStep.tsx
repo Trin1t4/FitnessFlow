@@ -11,10 +11,6 @@ export default function PhotoAnalysisStep({ data, onNext }: Props) {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<BodyAnalysis | null>(data.bodyAnalysis || null);
 
-  useEffect(() => {
-    onNext({ bodyPhotos: photos, bodyAnalysis: analysis || undefined });
-  }, [photos, analysis]);
-
   const handleFileUpload = (position: keyof BodyPhotos, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -41,15 +37,24 @@ export default function PhotoAnalysisStep({ data, onNext }: Props) {
     setAnalyzing(false);
   };
 
+  const handleSubmit = () => {
+    onNext({ 
+      bodyPhotos: photos, 
+      bodyAnalysis: analysis || undefined 
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-white mb-2">Analisi Corporea (Opzionale)</h2>
-        <p className="text-slate-300">Carica 3 foto per un'analisi più accurata</p>
+        <h2 className="text-2xl font-bold text-white mb-2">📸 Analisi Corporea</h2>
+        <p className="text-slate-300">Carica 3 foto per un'analisi più accurata (opzionale)</p>
       </div>
+      
       <div className="bg-emerald-500/10 border border-emerald-500 rounded-lg p-4">
-        <p className="text-sm text-emerald-200">💡 Foto in pose naturali, buona illuminazione</p>
+        <p className="text-sm text-emerald-200">💡 Foto in pose naturali con buona illuminazione. Puoi anche saltare questo step.</p>
       </div>
+      
       <div className="grid grid-cols-3 gap-4">
         {(['front', 'side', 'back'] as const).map((pos) => (
           <div key={pos}>
@@ -79,12 +84,14 @@ export default function PhotoAnalysisStep({ data, onNext }: Props) {
           </div>
         ))}
       </div>
+      
       {analyzing && (
         <div className="bg-slate-700 rounded-lg p-6 text-center">
           <div className="animate-spin w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-slate-300">Analisi in corso...</p>
         </div>
       )}
+      
       {analysis && !analyzing && (
         <div className="bg-gradient-to-r from-emerald-500/10 to-emerald-500/20 border border-emerald-500/50 rounded-lg p-6 space-y-4">
           <h3 className="text-xl font-bold text-white">📊 Risultati Analisi</h3>
@@ -113,6 +120,15 @@ export default function PhotoAnalysisStep({ data, onNext }: Props) {
           )}
         </div>
       )}
+
+      {/* BOTTONE CONTINUA */}
+      <button
+        onClick={handleSubmit}
+        disabled={analyzing}
+        className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-lg font-semibold text-lg shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {photos.front || photos.side || photos.back ? 'Continua →' : 'Salta questo Step →'}
+      </button>
     </div>
   );
 }
