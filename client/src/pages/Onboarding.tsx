@@ -4,7 +4,9 @@ import { OnboardingData } from '../types/onboarding.types';
 import PersonalInfoStep from '../components/onboarding/PersonalInfoStep';
 import PhotoAnalysisStep from '../components/onboarding/PhotoAnalysisStep';
 import LocationStep from '../components/onboarding/LocationStep';
-import { ActivityStep, GoalStep, PainStep } from '../components/onboarding/ActivityStep';
+import ActivityStep from '../components/onboarding/ActivityStep';
+import GoalStep from '../components/onboarding/GoalStep';
+import PainStep from '../components/onboarding/PainStep';
 
 export default function Onboarding() {
   const navigate = useNavigate();
