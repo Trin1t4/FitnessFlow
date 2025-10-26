@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { OnboardingData, TrainingLocation, Equipment } from '../../types/onboarding.types';
 
 interface Props {
@@ -14,24 +14,30 @@ export default function LocationStep({ data, onNext }: Props) {
     setEquipment({ ...equipment, [key]: !equipment[key] });
   };
 
-  useEffect(() => {
+  const handleSubmit = () => {
     const isValid = location === 'gym' || Object.values(equipment).some(v => v === true);
     if (isValid) {
-      onNext({ trainingLocation: location, equipment: location === 'gym' ? { none: false } : equipment });
+      onNext({ 
+        trainingLocation: location, 
+        equipment: location === 'gym' ? { none: false } : equipment 
+      });
     }
-  }, [location, equipment]);
+  };
+
+  const isValid = location === 'gym' || Object.values(equipment).some(v => v === true);
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-white mb-2">Dove ti alleni?</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">🏋️ Dove ti alleni?</h2>
         <p className="text-slate-300">Seleziona il luogo principale</p>
       </div>
+      
       <div className="grid grid-cols-2 gap-4">
         <button 
           type="button" 
           onClick={() => setLocation('gym')} 
-          className={`p-6 rounded-lg border-2 transition ${location === 'gym' ? 'border-emerald-500 bg-emerald-500/20 text-white' : 'border-slate-600 bg-slate-700/50 text-slate-300'}`}
+          className={`p-6 rounded-lg border-2 transition ${location === 'gym' ? 'border-emerald-500 bg-emerald-500/20 text-white' : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'}`}
         >
           <div className="text-5xl mb-3">🏋️</div>
           <div className="font-semibold text-lg">Palestra</div>
@@ -40,17 +46,18 @@ export default function LocationStep({ data, onNext }: Props) {
         <button 
           type="button" 
           onClick={() => setLocation('home')} 
-          className={`p-6 rounded-lg border-2 transition ${location === 'home' ? 'border-emerald-500 bg-emerald-500/20 text-white' : 'border-slate-600 bg-slate-700/50 text-slate-300'}`}
+          className={`p-6 rounded-lg border-2 transition ${location === 'home' ? 'border-emerald-500 bg-emerald-500/20 text-white' : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'}`}
         >
           <div className="text-5xl mb-3">🏠</div>
           <div className="font-semibold text-lg">Casa</div>
           <div className="text-sm text-slate-400 mt-1">Setup personalizzato</div>
         </button>
       </div>
+      
       {location === 'home' && (
         <div className="space-y-4">
           <div className="bg-emerald-500/10 border border-emerald-500 rounded-lg p-4">
-            <p className="text-sm text-emerald-200">💡 Seleziona l'attrezzatura disponibile</p>
+            <p className="text-sm text-emerald-200">💡 Seleziona l'attrezzatura disponibile (almeno una)</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {[
@@ -68,7 +75,7 @@ export default function LocationStep({ data, onNext }: Props) {
                 key={item.key} 
                 type="button" 
                 onClick={() => toggleEquipment(item.key as keyof Equipment)} 
-                className={`p-4 rounded-lg border-2 transition text-left ${equipment[item.key as keyof Equipment] ? 'border-emerald-500 bg-emerald-500/20 text-white' : 'border-slate-600 bg-slate-700/50 text-slate-300'}`}
+                className={`p-4 rounded-lg border-2 transition text-left ${equipment[item.key as keyof Equipment] ? 'border-emerald-500 bg-emerald-500/20 text-white' : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'}`}
               >
                 <div className="text-2xl mb-1">{item.emoji}</div>
                 <div className="font-medium">{item.label}</div>
@@ -92,6 +99,15 @@ export default function LocationStep({ data, onNext }: Props) {
           )}
         </div>
       )}
+
+      {/* BOTTONE CONTINUA */}
+      <button
+        onClick={handleSubmit}
+        disabled={!isValid}
+        className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-lg font-semibold text-lg shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Continua →
+      </button>
     </div>
   );
 }
