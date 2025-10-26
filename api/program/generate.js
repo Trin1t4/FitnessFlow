@@ -61,13 +61,14 @@ export default async function handler(req, res) {
     const onboarding = userData.onboarding_data || {};
 
     // 3. Parse assessment results (1RM per esercizio)
-    const assessments = [
-      { exerciseName: 'Squat', oneRepMax: assessmentData.squat_1rm || 50 },
-      { exerciseName: 'Panca Piana', oneRepMax: assessmentData.bench_1rm || 40 },
-      { exerciseName: 'Pulley', oneRepMax: assessmentData.pullup_1rm || 40 },
-      { exerciseName: 'Military Press', oneRepMax: assessmentData.press_1rm || 30 },
-      { exerciseName: 'Stacco', oneRepMax: assessmentData.deadlift_1rm || 60 },
-    ];
+    // 3. Parse assessment results from exercises jsonb
+const exercisesData = assessmentData.exercises || [];
+const assessments = exercisesData.map(ex => ({
+  exerciseName: ex.name,
+  oneRepMax: ex.oneRepMax
+}));
+
+console.log('[API] Assessments parsed:', assessments);
 
     // 4. Prepare input for program generator
     const programInput = {
