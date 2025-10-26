@@ -100,7 +100,6 @@ export default function LocationStep({ data, onNext }: Props) {
         </div>
       )}
 
-      {/* BOTTONE CONTINUA */}
       <button
         onClick={handleSubmit}
         disabled={!isValid}
