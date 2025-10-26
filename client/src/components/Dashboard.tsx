@@ -83,44 +83,48 @@ export default function Dashboard() {
       if (!onboardingDataRaw) {
         alert('Dati onboarding mancanti. Rifai lo screening.');
         navigate('/onboarding');
-        return;
-      }
+       async function handleGenerateProgram() {
+  if (!userId || !assessmentId) {
+    alert('Dati mancanti. Riprova.');
+    return;
+  }
 
-      const onboardingData = JSON.parse(onboardingDataRaw);
+  try {
+    setGeneratingProgram(true);
 
-      // ✅ PREPARA TUTTI I PARAMETRI NECESSARI
-      const programInput = {
-        userId,
-        assessmentId,
-        // Dati essenziali per location/equipment
-        location: onboardingData.trainingLocation || 'gym', // 'gym' | 'home'
-        hasGym: onboardingData.trainingLocation === 'gym',
-        equipment: onboardingData.equipment || {
-          barbell: false,
-          dumbbellMaxKg: 0,
-          kettlebellKg: [],
-          bands: false,
-          pullupBar: false,
-          bench: false
-        },
-        // Altri parametri
-        goal: onboardingData.goal || 'muscle_gain',
-        level: onboardingData.level || 'intermediate',
-        frequency: onboardingData.frequency || 3,
-        painAreas: onboardingData.painAreas || [],
-        disabilityType: onboardingData.disabilityType || null,
-        sportRole: onboardingData.sportRole || null,
-        specificBodyParts: onboardingData.specificBodyParts || []
-      };
+    // ✅ LEGGI ONBOARDING + QUIZ + ASSESSMENT
+    const onboardingDataRaw = localStorage.getItem('onboarding_data');
+    const quizDataRaw = localStorage.getItem('quiz_data');
+    const assessmentDataRaw = localStorage.getItem('assessment_data');
 
-      console.log('📤 Sending program input:', programInput);
+    if (!onboardingDataRaw || !quizDataRaw || !assessmentDataRaw) {
+      alert('Dati mancanti. Rifai lo screening.');
+      navigate('/onboarding');
+      return;
+    }
 
-      const response = await fetch('/api/program/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(programInput),
+    const onboardingData = JSON.parse(onboardingDataRaw);
+    const quizData = JSON.parse(quizDataRaw);
+    const assessmentData = JSON.parse(assessmentDataRaw);
+
+    // ✅ UNISCI TUTTI I DATI
+    const programInput = {
+      userId,
+      assessmentId,
+      location: onboardingData.trainingLocation || 'gym',
+      hasGym: onboardingData.trainingLocation === 'gym',
+      equipment: onboardingData.equipment || {},
+      goal: onboardingData.goal || 'muscle_gain',
+      level: quizData.level || assessmentData.level || 'intermediate',  // ← DA QUIZ!
+      frequency: onboardingData.activityLevel?.weeklyFrequency || 3,
+      painAreas: onboardingData.painAreas || assessmentData.painAreas || [],
+      disabilityType: onboardingData.disabilityType || null,
+      sportRole: onboardingData.sportRole || null,
+      specificBodyParts: onboardingData.specificBodyParts || []
+    };
+
+    console.log('📤 Sending program input:', programInput);
+
       });
 
       if (!response.ok) {
