@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { AssessmentExercise } from '../types/onboarding.types';
+
+interface AssessmentExercise {
+  name: string;
+  rm10?: number;
+  variant?: {
+    level: number;
+    name: string;
+    maxReps: number;
+  };
+}
 
 export default function Assessment() {
   const navigate = useNavigate();
@@ -32,8 +41,11 @@ export default function Assessment() {
       return;
     }
     
-    setOnboardingData(JSON.parse(storedOnboarding));
-    setQuizData(JSON.parse(storedQuiz));
+    const parsedOnboarding = JSON.parse(storedOnboarding);
+    const parsedQuiz = JSON.parse(storedQuiz);
+    
+    setOnboardingData(parsedOnboarding);
+    setQuizData(parsedQuiz);
     setLoading(false);
   }, [navigate]);
 
@@ -122,7 +134,7 @@ export default function Assessment() {
 
   const submit = () => {
     if (isGym) {
-      if (!test.rm10) return;
+      if (!test.rm10 || test.rm10 <= 0) return;
       const ex: AssessmentExercise = { name: current.name, rm10: test.rm10 };
       const updated = [...exercises, ex];
       setExercises(updated);
@@ -134,7 +146,7 @@ export default function Assessment() {
         complete(updated);
       }
     } else {
-      if (!test.variant || !test.maxReps) return;
+      if (!test.variant || !test.maxReps || test.maxReps <= 0) return;
       const ex: AssessmentExercise = { 
         name: current.name, 
         variant: { 
@@ -169,12 +181,13 @@ export default function Assessment() {
         duration: onboardingData.duration,
         goal: onboardingData.goal,
         level: userLevel,
-        sport: onboardingData.sport,
-        sportRole: onboardingData.sportRole,
+        sport: onboardingData.sport || '',
+        sportRole: onboardingData.sportRole || '',
         painScreening: onboardingData.painScreening,
+        personalInfo: onboardingData.personalInfo,
         quizScores: {
-          technical: quizData.technicalScore,
-          performance: quizData.performanceScore
+          technical: quizData.technicalScore || 0,
+          performance: quizData.performanceScore || 0
         }
       };
       
@@ -196,8 +209,8 @@ export default function Assessment() {
             training_goal: onboardingData.goal,
             training_level: userLevel,
             training_location: onboardingData.location,
-            sport: onboardingData.sport,
-            sport_role: onboardingData.sportRole,
+            sport: onboardingData.sport || null,
+            sport_role: onboardingData.sportRole || null,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id);
@@ -222,15 +235,15 @@ export default function Assessment() {
           console.error('Error saving assessment:', assessmentError);
         }
 
-        // Insert quiz results
+        // Insert quiz results se non esistono già
         const { error: quizError } = await supabase
           .from('quiz_results')
           .insert({
             user_id: user.id,
-            technical_score: quizData.technicalScore,
-            performance_score: quizData.performanceScore,
+            technical_score: quizData.technicalScore || 0,
+            performance_score: quizData.performanceScore || 0,
             level: userLevel,
-            answers: quizData.answers,
+            answers: quizData.answers || [],
             completed_at: new Date().toISOString()
           });
 
@@ -328,7 +341,7 @@ export default function Assessment() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-500">Peso partenza (5 reps, RIR 2)</p>
+                        <p className="text-xs text-slate-500">Peso partenza consigliato</p>
                         <p className="text-lg font-bold text-emerald-400">
                           {Math.round((test.rm10 * 1.33 * 0.83) / 2.5) * 2.5}kg
                         </p>
@@ -339,7 +352,7 @@ export default function Assessment() {
               </div>
               <button 
                 onClick={submit} 
-                disabled={!test.rm10} 
+                disabled={!test.rm10 || test.rm10 <= 0} 
                 className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-emerald-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {currentIdx < total - 1 ? 'Prossimo Esercizio →' : 'Completa Assessment ✓'}
@@ -379,7 +392,7 @@ export default function Assessment() {
               </div>
               
               {test.variant && (
-                <div className="bg-slate-700/50 rounded-xl p-5 border border-slate-600">
+                <div className="bg-slate-700/50 rounded-xl p-5 border border-slate-600 animate-in fade-in duration-300">
                   <label className="block text-sm font-medium text-slate-300 mb-3">
                     Quante ripetizioni pulite riesci a fare?
                   </label>
@@ -400,7 +413,7 @@ export default function Assessment() {
               
               <button 
                 onClick={submit} 
-                disabled={!test.variant || !test.maxReps} 
+                disabled={!test.variant || !test.maxReps || test.maxReps <= 0} 
                 className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-emerald-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {currentIdx < total - 1 ? 'Prossimo Esercizio →' : 'Completa Assessment ✓'}
