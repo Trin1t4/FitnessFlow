@@ -18,15 +18,14 @@ export default function Onboarding() {
     setData({ ...data, ...stepData });
   };
 
- const nextStep = () => {
-  if (currentStep < totalSteps) {
-    setCurrentStep(currentStep + 1);
-  } else {
-    // SALVA E VAI AL QUIZ
-    localStorage.setItem('onboarding_data', JSON.stringify(data));
-    navigate('/quiz');  // ← Assicurati che vada al quiz
-  }
-};
+  const nextStep = () => {
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      localStorage.setItem('onboarding_data', JSON.stringify(data));
+      navigate('/quiz');
+    }
+  };
 
   const prevStep = () => {
     if (currentStep > 1) {
@@ -34,20 +33,25 @@ export default function Onboarding() {
     }
   };
 
+  const handleStepComplete = (stepData: Partial<OnboardingData>) => {
+    updateData(stepData);
+    nextStep();
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
-        return <PersonalInfoStep data={data} onNext={updateData} />;
+        return <PersonalInfoStep data={data} onNext={handleStepComplete} />;
       case 2:
-        return <PhotoAnalysisStep data={data} onNext={updateData} />;
+        return <PhotoAnalysisStep data={data} onNext={handleStepComplete} />;
       case 3:
-        return <LocationStep data={data} onNext={updateData} />;
+        return <LocationStep data={data} onNext={handleStepComplete} />;
       case 4:
-        return <ActivityStep data={data} onNext={updateData} />;
+        return <ActivityStep data={data} onNext={handleStepComplete} />;
       case 5:
-        return <GoalStep data={data} onNext={updateData} />;
+        return <GoalStep data={data} onNext={handleStepComplete} />;
       case 6:
-        return <PainStep data={data} onNext={updateData} />;
+        return <PainStep data={data} onNext={handleStepComplete} />;
       default:
         return null;
     }
@@ -68,7 +72,13 @@ export default function Onboarding() {
         <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 md:p-8 border border-slate-700">
           {renderStep()}
         </div>
-        
+        <div className="flex gap-4 mt-6">
+          {currentStep > 1 && (
+            <button onClick={prevStep} className="flex-1 bg-slate-700 text-white py-3 rounded-lg font-semibold hover:bg-slate-600 transition">
+              ← Indietro
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
