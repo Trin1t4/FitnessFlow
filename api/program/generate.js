@@ -63,13 +63,88 @@ export default async function handler(req, res) {
     // 3. Parse assessment results from exercises jsonb
     const exercisesData = assessmentData.exercises || [];
     
-    // Mappa gli esercizi con i loro 1RM calcolati
-    const assessments = exercisesData.map(ex => ({
-      exerciseName: ex.name,
-      oneRepMax: ex.oneRepMax
-    }));
+    // ✅ CONVERSIONE ASSESSMENT → 1RM
+    // 
+    // IMPORTANTE - Sistema RIR:
+    // 1. ASSESSMENT (qui): RIR = 0 (massimo sforzo)
+    //    - Palestra: 10RM = peso max per 10 reps
+    //    - Casa: Max reps con variante specifica
+    //    → Calcoliamo 1RM TEORICO
+    //
+    // 2. PROGRAMMA (dopo): RIR = 2-3 (buffer di sicurezza)
+    //    - programGenerator.ts applicherà automaticamente:
+    //      * Beginner: RIR 3 (es: 5 reps → allena come 8RM)
+    //      * Intermediate/Advanced: RIR 2 (es: 5 reps → allena come 7RM)
+    //    → Peso di lavoro = 1RM × formula con RIR
+    //
+    const assessments = exercisesData.map(ex => {
+      let oneRepMax;
+      
+      // CASO 1: Test Palestra (10RM) - 6 esercizi con bilanciere/macchine
+      // Esercizi: Squat, Panca piana, Trazioni, Military press, Stacco, Pulley
+      if (ex.rm10 && ex.rm10 > 0) {
+        // Formula Brzycki: 1RM = peso × (36 / (37 - reps))
+        // Esempio: 10RM 100kg → 1RM = 100 × (36/27) = 133kg
+        oneRepMax = ex.rm10 * (36 / (37 - 10)); // 10RM → 1RM
+        console.log(`[API] ${ex.name}: 10RM ${ex.rm10}kg → 1RM ${oneRepMax.toFixed(1)}kg`);
+      }
+      // CASO 2: Test Casa (varianti bodyweight) - 5 esercizi con progressioni
+      // Esercizi: Squat, Push-up, Trazioni, Spalle, Gambe Unilaterali (ciascuno con 4 livelli)
+      else if (ex.variant && ex.variant.level && ex.variant.maxReps) {
+        // Durante assessment: utente fa MAX reps (RIR = 0) con la variante più difficile che riesce
+        // Esempio: "Push-up normale" (Lv2) × 15 reps max
+        //
+        // Stimiamo 1RM combinando:
+        // - Peso base della variante (più difficile = più peso equivalente)
+        // - Ripetizioni massime effettuate
+        //
+        const baseWeights = {
+          'Squat': [40, 60, 80, 100],              // Lv1: Assistito, Lv2: Completo, Lv3: Jump, Lv4: Pistol
+          'Push up': [30, 45, 60, 75],             // Lv1: Ginocchia, Lv2: Normale, Lv3: Strette, Lv4: Archer
+          'Trazioni': [40, 60, 80, 100],           // Lv1: Australian, Lv2: Negative, Lv3: Assistite, Lv4: Complete
+          'Spalle': [20, 35, 50, 65],              // Lv1: Pike, Lv2: Pike push-up, Lv3: Handstand assist, Lv4: Handstand
+          'Gambe (Unilaterale)': [30, 45, 60, 75] // Lv1: Affondi, Lv2: Bulgaro, Lv3: Single leg DL, Lv4: Pistol
+        };
+        
+        const weights = baseWeights[ex.name] || [50, 60, 70, 80];
+        const levelIndex = Math.min(ex.variant.level - 1, weights.length - 1);
+        const baseWeight = weights[levelIndex];
+        
+        // Applica formula Brzycki con le reps effettive
+        const maxReps = Math.min(ex.variant.maxReps, 30); // Cap a 30 per evitare outlier
+        oneRepMax = baseWeight * (36 / (37 - maxReps));
+        
+        console.log(`[API] ${ex.name}: Lv${ex.variant.level} × ${ex.variant.maxReps} reps → 1RM stimato ${oneRepMax.toFixed(1)}kg`);
+      }
+      // CASO 3: Fallback se l'assessment ha già oneRepMax calcolato
+      else if (ex.oneRepMax) {
+        oneRepMax = ex.oneRepMax;
+        console.log(`[API] ${ex.name}: oneRepMax già presente = ${oneRepMax}kg`);
+      }
+      // CASO 4: Default sicuro se mancano tutti i dati
+      else {
+        oneRepMax = 50; // Default sicuro
+        console.warn(`[API] ${ex.name}: Nessun dato valido, usando default 50kg`);
+      }
+      
+      return {
+        exerciseName: ex.name,
+        oneRepMax: Math.round(oneRepMax * 10) / 10 // Arrotonda a 0.1kg
+      };
+    });
 
-    console.log('[API] Assessments parsed from exercises jsonb:', assessments);
+    console.log('[API] Assessments parsed:', assessments);
+
+    // ⚙️ NOTA: I pesi di ALLENAMENTO saranno calcolati dal programGenerator usando:
+    // - Questi 1RM come base
+    // - RIR 2-3 per sicurezza (beginner = RIR 3, altri = RIR 2)
+    // - Formula: peso = 1RM × (37 - (targetReps + RIR)) / 36
+    // 
+    // Esempio beginner (RIR 3):
+    // - 1RM = 133kg
+    // - Programma: 5 reps → allena come 8RM (5+3)
+    // - Peso lavoro: 133 × (37-8)/36 = 107kg
+    //
 
     // 4. Prepare input for program generator
     const programInput = {
