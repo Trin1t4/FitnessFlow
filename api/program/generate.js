@@ -60,15 +60,16 @@ export default async function handler(req, res) {
 
     const onboarding = userData.onboarding_data || {};
 
-    // 3. Parse assessment results (1RM per esercizio)
     // 3. Parse assessment results from exercises jsonb
-const exercisesData = assessmentData.exercises || [];
-const assessments = exercisesData.map(ex => ({
-  exerciseName: ex.name,
-  oneRepMax: ex.oneRepMax
-}));
+    const exercisesData = assessmentData.exercises || [];
+    
+    // Mappa gli esercizi con i loro 1RM calcolati
+    const assessments = exercisesData.map(ex => ({
+      exerciseName: ex.name,
+      oneRepMax: ex.oneRepMax
+    }));
 
-console.log('[API] Assessments parsed:', assessments);
+    console.log('[API] Assessments parsed from exercises jsonb:', assessments);
 
     // 4. Prepare input for program generator
     const programInput = {
@@ -89,7 +90,7 @@ console.log('[API] Assessments parsed:', assessments);
       pregnancyComplications: onboarding.pregnancyComplications || [],
     };
 
-    console.log('[API] Program input:', JSON.stringify(programInput, null, 2));
+    console.log('[API] Program input prepared:', JSON.stringify(programInput, null, 2));
 
     // 5. Generate program
     const generatedProgram = generateProgram(programInput);
