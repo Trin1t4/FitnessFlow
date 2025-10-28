@@ -3,10 +3,7 @@ import { generateProgram } from '../../server/programGenerator.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
@@ -16,15 +13,11 @@ export default async function handler(req, res) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse request body
-    const body = await req.json();
-    const { userId, assessmentId } = body;
+    // ✅ CORRETTO - usa req.body invece di req.json()
+    const { userId, assessmentId } = req.body;
 
     if (!userId || !assessmentId) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
     // Fetch user data from database
@@ -36,10 +29,7 @@ export default async function handler(req, res) {
 
     if (userError || !userData) {
       console.error('[API] User fetch error:', userError);
-      return new Response(JSON.stringify({ error: 'User not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return res.status(404).json({ error: 'User not found' });
     }
 
     // ✅ LOG DEBUG - USER DATA
@@ -57,10 +47,7 @@ export default async function handler(req, res) {
 
     if (assessmentError || !assessmentData) {
       console.error('[API] Assessment fetch error:', assessmentError);
-      return new Response(JSON.stringify({ error: 'Assessment not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return res.status(404).json({ error: 'Assessment not found' });
     }
 
     // Prepare program input
@@ -114,28 +101,19 @@ export default async function handler(req, res) {
 
     if (saveError) {
       console.error('[API] Error saving program:', saveError);
-      return new Response(JSON.stringify({ error: 'Failed to save program' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return res.status(500).json({ error: 'Failed to save program' });
     }
 
     console.log('[API] Program saved to database with ID:', savedProgram.id);
 
-    return new Response(JSON.stringify({ 
+    return res.status(200).json({ 
       success: true, 
       programId: savedProgram.id,
       program: savedProgram
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
     console.error('[API] Error generating program:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(500).json({ error: error.message });
   }
 }
