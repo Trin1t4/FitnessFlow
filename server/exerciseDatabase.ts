@@ -6,6 +6,7 @@ export type Location = 'gym' | 'home' | 'mixed';
 export type EquipmentType = 'barbell' | 'dumbbell' | 'kettlebell' | 'band' | 'pullup_bar' | 'bench' | 'none';
 
 export interface UserEquipment {
+ none?: boolean;
   barbell?: boolean;
   dumbbellMaxKg?: number;
   kettlebellKg?: number[];
