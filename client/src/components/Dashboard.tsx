@@ -166,12 +166,25 @@ export default function Dashboard() {
         console.error('Error deleting assessments:', assessmentError);
       }
 
-      // 3. Cancella localStorage
+      // ✅ 3. NUOVO - Reset onboarding_data nel database
+      const { error: onboardingError } = await supabase
+        .from('user_profiles')
+        .update({ 
+          onboarding_data: null,
+          onboarding_completed: false 
+        })
+        .eq('user_id', user.id);
+
+      if (onboardingError) {
+        console.error('Error resetting onboarding:', onboardingError);
+      }
+
+      // 4. Cancella localStorage
       localStorage.removeItem('onboarding_data');
       localStorage.removeItem('quiz_data');
       localStorage.removeItem('assessment_data');
 
-      // 4. Redirect automatico all'onboarding
+      // 5. Redirect automatico all'onboarding
       navigate('/onboarding');
 
     } catch (error) {
