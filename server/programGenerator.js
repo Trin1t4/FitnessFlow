@@ -555,7 +555,8 @@ function createPerformanceExercise(name, location, hasGym, equipment, baseLoad, 
     weight = null;
   }
   
-  const exerciseOrGiantSet = getExerciseForLocation(name, location, hasGym, equipment, goal, level);
+  const goal = 'performance'; // Fix: aggiungi goal
+  const exerciseOrGiantSet = getExerciseForLocation(name, location, equipment, goal, level);
   
   if (typeof exerciseOrGiantSet !== 'string') {
     return exerciseOrGiantSet;
@@ -612,7 +613,16 @@ function generateWeeklySchedule(split, daysPerWeek, location, hasGym, equipment,
 
 function generateFullBodyDay(variant, location, hasGym, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
   const exercises = [];
-  const baseLoad = getBaseLoads(assessments);
+  
+  // ✅ VALIDAZIONE ASSESSMENTS
+  console.log('[PROGRAM] 🔍 Checking assessments in generateFullBodyDay:', {
+    exists: !!assessments,
+    isArray: Array.isArray(assessments),
+    length: assessments?.length,
+    data: assessments
+  });
+  
+  const baseLoad = getBaseLoads(assessments || []);
 
   const safeExercise = (name) => {
     if (goal === 'pregnancy') return isExerciseSafeForPregnancy(name) ? name : getPregnancySafeAlternative(name);
@@ -647,7 +657,7 @@ function generateFullBodyDay(variant, location, hasGym, equipment, painAreas, as
 
 function generateUpperDay(variant, location, hasGym, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
   const exercises = [];
-  const baseLoad = getBaseLoads(assessments);
+  const baseLoad = getBaseLoads(assessments || []);
 
   const safeExercise = (name) => {
     if (goal === 'pregnancy') return isExerciseSafeForPregnancy(name) ? name : getPregnancySafeAlternative(name);
@@ -671,7 +681,7 @@ function generateUpperDay(variant, location, hasGym, equipment, painAreas, asses
 
 function generateLowerDay(variant, location, hasGym, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
   const exercises = [];
-  const baseLoad = getBaseLoads(assessments);
+  const baseLoad = getBaseLoads(assessments || []);
 
   const safeExercise = (name) => {
     if (goal === 'pregnancy') return isExerciseSafeForPregnancy(name) ? name : getPregnancySafeAlternative(name);
@@ -698,7 +708,7 @@ function generateLowerDay(variant, location, hasGym, equipment, painAreas, asses
 
 function generatePushDay(location, hasGym, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
   const exercises = [];
-  const baseLoad = getBaseLoads(assessments);
+  const baseLoad = getBaseLoads(assessments || []);
 
   const safeExercise = (name) => {
     if (goal === 'pregnancy') return isExerciseSafeForPregnancy(name) ? name : getPregnancySafeAlternative(name);
@@ -717,7 +727,7 @@ function generatePushDay(location, hasGym, equipment, painAreas, assessments, le
 
 function generatePullDay(location, hasGym, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
   const exercises = [];
-  const baseLoad = getBaseLoads(assessments);
+  const baseLoad = getBaseLoads(assessments || []);
 
   const safeExercise = (name) => {
     if (goal === 'pregnancy') return isExerciseSafeForPregnancy(name) ? name : getPregnancySafeAlternative(name);
@@ -736,7 +746,7 @@ function generatePullDay(location, hasGym, equipment, painAreas, assessments, le
 
 function generateLegsDay(location, hasGym, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
   const exercises = [];
-  const baseLoad = getBaseLoads(assessments);
+  const baseLoad = getBaseLoads(assessments || []);
 
   const safeExercise = (name) => {
     if (goal === 'pregnancy') return isExerciseSafeForPregnancy(name) ? name : getPregnancySafeAlternative(name);
@@ -774,7 +784,7 @@ function createExercise(name, location, hasGym, equipment, baseWeight, level, go
   else if (type === "accessory") rest = 120;
   else rest = 60;
 
-  const exerciseOrGiantSet = getExerciseForLocation(name, location, hasGym, equipment, 'performance', level);
+  const exerciseOrGiantSet = getExerciseForLocation(name, location, equipment, goal || 'muscle_gain', level);
 
   if (typeof exerciseOrGiantSet !== 'string') {
     if (goal === 'pregnancy' || goal === 'disability') {
@@ -816,10 +826,23 @@ function createExercise(name, location, hasGym, equipment, baseWeight, level, go
   };
 }
 
+// ✅ VALIDAZIONE COMPLETA
 function getBaseLoads(assessments) {
+  // ✅ VALIDAZIONE
+  if (!assessments || !Array.isArray(assessments)) {
+    console.warn('[PROGRAM] ⚠️ assessments is undefined or not array, using default loads');
+    return {
+      squat: 50,
+      deadlift: 60,
+      bench: 40,
+      pull: 30,
+      press: 30
+    };
+  }
+  
   const findLoad = (exercise) => {
     const assessment = assessments.find((a) =>
-      a.exerciseName.toLowerCase().includes(exercise.toLowerCase())
+      a.exerciseName?.toLowerCase().includes(exercise.toLowerCase())
     );
     return assessment ? assessment.oneRepMax : 50;
   };
