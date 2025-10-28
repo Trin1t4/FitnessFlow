@@ -13,9 +13,14 @@
       "destination": "/index.html"
     }
   ],
+ {
   "functions": {
-    "server/index.ts": {
-      "runtime": "@vercel/node@3.0.0"
+    "api/**/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
+
     }
   }
 }
