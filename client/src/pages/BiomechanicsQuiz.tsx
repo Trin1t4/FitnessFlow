@@ -47,7 +47,7 @@ export default function BiomechanicsQuiz() {
   const [selected, setSelected] = useState<number | null>(null);
   const [showExp, setShowExp] = useState(false);
   const [done, setDone] = useState(false);
-  const [result, setResult] = useState<QuizResult | null>(null);
+  const [quizScore, setQuizScore] = useState<number | null>(null);
 
   const q = QUIZ_QUESTIONS[current];
 
@@ -65,23 +65,25 @@ export default function BiomechanicsQuiz() {
       setShowExp(false);
     } else {
       const finalAnswers = [...answers, { questionId: q.id, answer: q.options[selected!], correct: selected === q.correct }];
-      const score = Math.round((finalAnswers.filter(a => a.correct).length / QUIZ_QUESTIONS.length) * 100);
-      let level: ExperienceLevel = score < 40 ? 'beginner' : score < 80 ? 'intermediate' : 'advanced';
-      let methodology = level === 'beginner' ? 'Progressione Lineare Base' : level === 'intermediate' ? 'Periodizzazione Ondulata' : 'Periodizzazione Avanzata';
-      const qr: QuizResult = { answers: finalAnswers, score, level, methodology };
-      setResult(qr);
-      setDone(true);
+      const correctCount = finalAnswers.filter(a => a.correct).length;
+      const score = Math.round((correctCount / QUIZ_QUESTIONS.length) * 100);
       
+      // ✅ SALVA SOLO IL PUNTEGGIO, NON IL LIVELLO
       const quizData = {
-        technicalScore: qr.answers.filter(a => a.correct).length,
-        answers: qr.answers,
+        score: score,
+        correctAnswers: correctCount,
+        totalQuestions: QUIZ_QUESTIONS.length,
+        answers: finalAnswers,
         completedAt: new Date().toISOString()
       };
+      
       localStorage.setItem('quiz_data', JSON.stringify(quizData));
+      setQuizScore(score);
+      setDone(true);
     }
   };
 
-  if (done && result) {
+  if (done && quizScore !== null) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
         <div className="max-w-2xl mx-auto">
@@ -94,23 +96,24 @@ export default function BiomechanicsQuiz() {
             
             <div className="bg-gradient-to-r from-emerald-500/20 to-emerald-500/20 border border-emerald-500/50 rounded-lg p-6 mb-8">
               <div className="text-center">
-                <p className="text-sm text-slate-400 mb-2">Punteggio</p>
-                <p className="text-5xl font-bold text-white mb-2">{result.score}%</p>
-                <p className="text-slate-300">{result.answers.filter(a => a.correct).length} su {QUIZ_QUESTIONS.length}</p>
+                <p className="text-sm text-slate-400 mb-2">Punteggio Quiz</p>
+                <p className="text-5xl font-bold text-white mb-2">{quizScore}%</p>
+                <p className="text-slate-300">{answers.filter(a => a.correct).length} su {QUIZ_QUESTIONS.length} corrette</p>
               </div>
             </div>
 
+            {/* ✅ INFO BOX CALCOLO 70/30 */}
             <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-5 mb-8">
               <div className="flex items-start gap-3">
                 <div className="text-2xl">ℹ️</div>
                 <div>
-                  <p className="font-semibold text-blue-300 mb-2">Il tuo livello finale sarà calcolato:</p>
+                  <p className="font-semibold text-blue-300 mb-2">Il tuo livello finale sarà calcolato combinando:</p>
                   <ul className="text-sm text-slate-300 space-y-1">
-                    <li>• <strong>70%</strong> basato sui test pratici di forza</li>
-                    <li>• <strong>30%</strong> basato sui tuoi parametri fisici (peso, età, BMI)</li>
+                    <li>• <strong>70%</strong> - Performance nei test pratici (forza relativa)</li>
+                    <li>• <strong>30%</strong> - Parametri fisici (età, BMI, composizione)</li>
                   </ul>
                   <p className="text-xs text-slate-400 mt-3">
-                    Il punteggio del quiz aiuta a personalizzare le spiegazioni, ma il livello reale viene determinato dalla tua performance negli esercizi.
+                    Il quiz aiuta a personalizzare le spiegazioni, ma il livello viene determinato dalla tua performance fisica reale.
                   </p>
                 </div>
               </div>
