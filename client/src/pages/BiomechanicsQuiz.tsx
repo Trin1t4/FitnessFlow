@@ -63,7 +63,7 @@ export default function BiomechanicsQuiz() {
       setSelected(null);
       setShowExp(false);
     } else {
-      // ✅ ULTIMA DOMANDA: Salva e vai direttamente all'assessment
+      // ✅ ULTIMA DOMANDA: Salva e vai direttamente allo screening
       const finalAnswers = [...answers, { questionId: q.id, answer: q.options[selected!], correct: selected === q.correct }];
       const correctCount = finalAnswers.filter(a => a.correct).length;
       const score = Math.round((correctCount / QUIZ_QUESTIONS.length) * 100);
@@ -78,8 +78,8 @@ export default function BiomechanicsQuiz() {
       
       localStorage.setItem('quiz_data', JSON.stringify(quizData));
       
-      // ✅ VAI DIRETTAMENTE ALL'ASSESSMENT (nessuna schermata intermedia)
-      navigate('/assessment');
+      // ✅ VAI DIRETTAMENTE ALLO SCREENING (nessuna schermata intermedia)
+      navigate('/screening');
     }
   };
 
@@ -159,7 +159,7 @@ export default function BiomechanicsQuiz() {
               onClick={next}
               className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 rounded-lg font-semibold shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition"
             >
-              {current < QUIZ_QUESTIONS.length - 1 ? 'Prossima Domanda →' : 'Inizia Test Pratici →'}
+              {current < QUIZ_QUESTIONS.length - 1 ? 'Prossima Domanda →' : 'Inizia Screening Pratico →'}
             </button>
           )}
         </div>
