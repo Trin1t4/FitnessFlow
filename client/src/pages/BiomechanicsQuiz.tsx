@@ -84,6 +84,8 @@ export default function BiomechanicsQuiz() {
   };
 
   if (done && quizScore !== null) {
+    const correctCount = answers.filter(a => a.correct).length;
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
         <div className="max-w-2xl mx-auto">
@@ -91,40 +93,62 @@ export default function BiomechanicsQuiz() {
             <div className="text-center mb-8">
               <div className="text-6xl mb-4">📚</div>
               <h1 className="text-3xl font-bold text-white mb-2">Quiz Completato!</h1>
-              <p className="text-slate-400">Passiamo ora allo Screening Pratico</p>
+              <p className="text-slate-400">Ottimo lavoro! Passiamo ora ai test pratici</p>
             </div>
             
-            <div className="bg-gradient-to-r from-emerald-500/20 to-emerald-500/20 border border-emerald-500/50 rounded-lg p-6 mb-8">
+            {/* ✅ BOX PUNTEGGIO PRINCIPALE */}
+            <div className="bg-gradient-to-r from-emerald-500/20 to-emerald-500/20 border border-emerald-500/50 rounded-lg p-6 mb-6">
               <div className="text-center">
-                <p className="text-sm text-slate-400 mb-2">Punteggio Quiz</p>
+                <p className="text-sm text-slate-400 mb-2">Punteggio Quiz Teorico</p>
                 <p className="text-5xl font-bold text-white mb-2">{quizScore}%</p>
-                <p className="text-slate-300">{answers.filter(a => a.correct).length} su {QUIZ_QUESTIONS.length} corrette</p>
-              </div>
-            </div>
-
-            {/* ✅ INFO BOX CALCOLO 70/30 */}
-            <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-5 mb-8">
-              <div className="flex items-start gap-3">
-                <div className="text-2xl">ℹ️</div>
-                <div>
-                  <p className="font-semibold text-blue-300 mb-2">Il tuo livello finale sarà calcolato combinando:</p>
-                  <ul className="text-sm text-slate-300 space-y-1">
-                    <li>• <strong>70%</strong> - Performance nei test pratici (forza relativa)</li>
-                    <li>• <strong>30%</strong> - Parametri fisici (età, BMI, composizione)</li>
-                  </ul>
-                  <p className="text-xs text-slate-400 mt-3">
-                    Il quiz aiuta a personalizzare le spiegazioni, ma il livello viene determinato dalla tua performance fisica reale.
-                  </p>
-                </div>
+                <p className="text-slate-300">{correctCount} su {QUIZ_QUESTIONS.length} risposte corrette</p>
               </div>
             </div>
 
             <button 
               onClick={() => navigate('/assessment')} 
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-lg font-semibold text-lg shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition"
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-lg font-semibold text-lg shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition mb-6"
             >
               Continua con lo Screening Pratico →
             </button>
+
+            {/* ✅ SPIEGAZIONE 70/30 ALLA FINE */}
+            <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-5">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">ℹ️</div>
+                <div>
+                  <p className="font-semibold text-blue-300 mb-2">Come viene calcolato il tuo livello finale:</p>
+                  <div className="space-y-3 text-sm text-slate-300">
+                    <div className="flex items-start gap-2">
+                      <div className="text-emerald-400 font-bold mt-0.5">70%</div>
+                      <div>
+                        <span className="font-semibold">Performance nei test pratici</span>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Forza relativa al peso corporeo, livello delle progressioni, capacità di esecuzione
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-2">
+                      <div className="text-blue-400 font-bold mt-0.5">30%</div>
+                      <div>
+                        <span className="font-semibold">Parametri fisici</span>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Età, BMI, composizione corporea
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 pt-4 border-t border-blue-500/30">
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Il quiz teorico serve per personalizzare le spiegazioni e verificare le tue conoscenze di base, 
+                      ma il livello del programma viene determinato dalla tua performance fisica reale nei test pratici.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
