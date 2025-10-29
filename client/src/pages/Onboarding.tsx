@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase'; // ← AGGIUNGI IMPORT
+import { supabase } from '../lib/supabase';
 import { OnboardingData } from '../types/onboarding.types';
 import PersonalInfoStep from '../components/onboarding/PersonalInfoStep';
 import PhotoAnalysisStep from '../components/onboarding/PhotoAnalysisStep';
@@ -13,7 +13,7 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [data, setData] = useState<Partial<OnboardingData>>({});
-  const [isSaving, setIsSaving] = useState(false); // ← AGGIUNGI STATO
+  const [isSaving, setIsSaving] = useState(false);
 
   const totalSteps = 6;
   const progress = (currentStep / totalSteps) * 100;
@@ -22,7 +22,7 @@ export default function Onboarding() {
     setData({ ...data, ...stepData });
   };
 
-  // ✅ FIX: Funzione per salvare in Supabase
+  // ✅ Salva onboarding in Supabase
   const saveOnboardingToDatabase = async (onboardingData: Partial<OnboardingData>) => {
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -57,17 +57,17 @@ export default function Onboarding() {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
-      // ✅ FIX: Salva in entrambi i posti
+      // ✅ Salva e naviga al body scan
       setIsSaving(true);
       try {
         // 1. Salva in localStorage (per compatibilità)
         localStorage.setItem('onboarding_data', JSON.stringify(data));
         
-        // 2. Salva in Supabase (NUOVO)
+        // 2. Salva in Supabase
         await saveOnboardingToDatabase(data);
         
-        // 3. Naviga al quiz
-        navigate('/quiz');
+        // 3. Naviga al body scan
+        navigate('/body-scan');
       } catch (error) {
         console.error('Error saving onboarding:', error);
         alert('Errore nel salvare i dati. Riprova.');
@@ -115,12 +115,17 @@ export default function Onboarding() {
             <span className="text-slate-300">Step {currentStep} di {totalSteps}</span>
           </div>
           <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-300" style={{ width: `${progress}%` }} />
+            <div 
+              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-300" 
+              style={{ width: `${progress}%` }} 
+            />
           </div>
         </div>
+        
         <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 md:p-8 border border-slate-700">
           {renderStep()}
         </div>
+        
         <div className="flex gap-4 mt-6">
           {currentStep > 1 && (
             <button 
@@ -131,12 +136,24 @@ export default function Onboarding() {
               ← Indietro
             </button>
           )}
-          {/* ✅ Mostra stato di caricamento */}
+          
           {isSaving && (
             <div className="flex-1 bg-emerald-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center">
               <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                <circle 
+                  className="opacity-25" 
+                  cx="12" 
+                  cy="12" 
+                  r="10" 
+                  stroke="currentColor" 
+                  strokeWidth="4" 
+                  fill="none" 
+                />
+                <path 
+                  className="opacity-75" 
+                  fill="currentColor" 
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" 
+                />
               </svg>
               Salvataggio...
             </div>
