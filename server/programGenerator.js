@@ -42,6 +42,32 @@ const BODYWEIGHT_PROGRESSIONS = {
   }
 };
 
+// ===== CONFIGURAZIONE LIVELLI =====
+
+const LEVEL_CONFIG = {
+  beginner: {
+    RIR: 3,
+    repsRange: 2,  // ±2 reps
+    startPercentage: 0.60,  // Parte al 60% settimana 1-2
+    compoundSets: 3,
+    accessorySets: 2
+  },
+  intermediate: {
+    RIR: 2,
+    repsRange: 1,  // ±1 rep
+    startPercentage: 0.75,  // Parte al 75%
+    compoundSets: 4,
+    accessorySets: 3
+  },
+  advanced: {
+    RIR: 1,
+    repsRange: 0,  // Carico preciso
+    startPercentage: 0.85,  // Parte all'85%
+    compoundSets: 5,
+    accessorySets: 3
+  }
+};
+
 // ===== HELPER FUNCTIONS =====
 
 function isBodyweightExercise(exerciseName) {
@@ -75,13 +101,18 @@ export function generateProgram(input) {
   
   console.log('[PROGRAM] 🎯 generateProgram called with:', { 
     level, 
+    frequency,
     location, 
     equipment, 
     goal,
     assessmentsCount: assessments?.length 
   });
   
+  // ✅ PERFORMANCE SPORT A CASA
   if (goal === 'performance' && sportRole) {
+    if (location === 'home' || !hasWeightedEquipment(equipment)) {
+      return generatePerformanceHomeProgram(input);
+    }
     return generatePerformanceProgramRubini(input);
   }
   
@@ -90,15 +121,22 @@ export function generateProgram(input) {
   );
 
   let split, daysPerWeek;
-  if (frequency <= 3) {
+  
+  if (frequency <= 2) {
     split = "full_body";
     daysPerWeek = frequency;
+  } else if (frequency === 3) {
+    split = "full_body";
+    daysPerWeek = 3;
   } else if (frequency === 4) {
     split = "upper_lower";
     daysPerWeek = 4;
+  } else if (frequency === 5) {
+    split = "ppl_plus";
+    daysPerWeek = 5;
   } else {
     split = "ppl";
-    daysPerWeek = frequency;
+    daysPerWeek = 6;
   }
 
   let progression;
@@ -134,17 +172,105 @@ export function generateProgram(input) {
   };
 }
 
+// ✅ PERFORMANCE HOME (PLIOMETRIA + ISOMETRIA)
+function generatePerformanceHomeProgram(input) {
+  const { level, frequency, assessments, sportRole } = input;
+  
+  console.log('[PROGRAM] 🏃 Generating PERFORMANCE HOME program for:', sportRole);
+  
+  const weeklySchedule = [];
+  
+  // Scheda A: Esplosività Lower + Core
+  weeklySchedule.push({
+    dayName: "Esplosività Gambe",
+    exercises: [
+      { name: 'Jump Squat', sets: 4, reps: '6-8', rest: 180, weight: null, notes: 'Focus esplosività' },
+      { name: 'Broad Jump', sets: 3, reps: '5', rest: 120, weight: null, notes: 'Salto in lungo' },
+      { name: 'Single Leg Hop', sets: 3, reps: '8 per gamba', rest: 90, weight: null, notes: 'Unilaterale' },
+      { name: 'Squat Isometrico', sets: 3, reps: '30-45s', rest: 90, weight: null, notes: 'Tenuta 90°' },
+      { name: 'Nordic Curl Eccentrico', sets: 3, reps: '5-6', rest: 120, weight: null, notes: 'Fase negativa lenta' },
+      { name: 'Plank Dinamico', sets: 3, reps: '45-60s', rest: 60, weight: null, notes: 'Con spostamenti braccia' }
+    ]
+  });
+  
+  // Scheda B: Esplosività Upper + Coordinazione
+  weeklySchedule.push({
+    dayName: "Esplosività Busto",
+    exercises: [
+      { name: 'Clap Push-up', sets: 4, reps: '6-8', rest: 180, weight: null, notes: 'Piegamenti esplosivi' },
+      { name: 'Medicine Ball Slam', sets: 3, reps: '10', rest: 90, weight: null, notes: 'Usa oggetto pesante' },
+      { name: 'Pull-up Esplosiva', sets: 3, reps: '5-6', rest: 120, weight: null, notes: 'Fase concentrica veloce' },
+      { name: 'Plank to Push-up', sets: 3, reps: '12-15', rest: 60, weight: null, notes: 'Coordinazione core' },
+      { name: 'Dead Hang Isometrico', sets: 3, reps: '30-45s', rest: 90, weight: null, notes: 'Tenuta sbarra' },
+      { name: 'Bear Crawl', sets: 3, reps: '30s', rest: 60, weight: null, notes: 'Coordinazione full body' }
+    ]
+  });
+  
+  // Scheda C: Conditioning + Agilità
+  weeklySchedule.push({
+    dayName: "Conditioning Sport",
+    exercises: [
+      { name: 'Burpees', sets: 4, reps: '10-12', rest: 60, weight: null, notes: 'Conditioning generale' },
+      { name: 'Lateral Bound', sets: 3, reps: '8 per lato', rest: 90, weight: null, notes: 'Agilità laterale' },
+      { name: 'Mountain Climbers', sets: 3, reps: '20-30', rest: 45, weight: null, notes: 'Velocità' },
+      { name: 'Pistol Squat Assistito', sets: 3, reps: '6-8 per gamba', rest: 120, weight: null, notes: 'Stabilità unilaterale' },
+      { name: 'Hollow Body Hold', sets: 3, reps: '30-45s', rest: 60, weight: null, notes: 'Core isometrico' },
+      { name: 'Sprint sul posto', sets: 4, reps: '20s', rest: 90, weight: null, notes: 'Conditioning anaerobico' }
+    ]
+  });
+  
+  return {
+    name: `Performance Sport HOME - ${level}`,
+    description: `${frequency}x/settimana, focus pliometria ed esplosività`,
+    split: "performance_home",
+    daysPerWeek: frequency,
+    weeklySchedule: weeklySchedule.slice(0, frequency),
+    progression: "progressive_overload_volume",
+    includesDeload: level === "intermediate" || level === "advanced",
+    deloadFrequency: 4,
+    totalWeeks: 8,
+    requiresEndCycleTest: true,
+  };
+}
+
+// ✅ GENERAZIONE SCHEDE DISTINTE (A-B-C-D)
 function generateWeeklySchedule(split, daysPerWeek, location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
   const schedule = [];
   
-  console.log('[PROGRAM] 📅 generateWeeklySchedule with:', { location, level, assessmentsCount: assessments?.length });
+  console.log('[PROGRAM] 📅 generateWeeklySchedule with:', { split, daysPerWeek, location, level });
   
   if (split === "full_body") {
-    for (let i = 0; i < daysPerWeek; i++) {
+    if (daysPerWeek === 1) {
       schedule.push({
-        dayName: i % 2 === 0 ? "Full Body A" : "Full Body B",
-        exercises: generateFullBodyDay(i % 2 === 0 ? "A" : "B", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole),
+        dayName: "Full Body",
+        exercises: generateFullBodyDay("A", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole),
       });
+    } else if (daysPerWeek === 2) {
+      schedule.push(
+        {
+          dayName: "Full Body A",
+          exercises: generateFullBodyDay("A", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole),
+        },
+        {
+          dayName: "Full Body B",
+          exercises: generateFullBodyDay("B", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole),
+        }
+      );
+    } else if (daysPerWeek === 3) {
+      schedule.push(
+        {
+          dayName: "Full Body A",
+          exercises: generateFullBodyDay("A", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole),
+        },
+        {
+          dayName: "Full Body B",
+          exercises: generateFullBodyDay("B", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole),
+        },
+        {
+          dayName: "Full Body C",
+          exercises: generateFullBodyDay("C", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole),
+        }
+      );
     }
   } else if (split === "upper_lower") {
     schedule.push(
@@ -153,27 +279,32 @@ function generateWeeklySchedule(split, daysPerWeek, location, equipment, painAre
       { dayName: "Upper B", exercises: generateUpperDay("B", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
       { dayName: "Lower B", exercises: generateLowerDay("B", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
     );
+  } else if (split === "ppl_plus") {
+    schedule.push(
+      { dayName: "Push", exercises: generatePushDay("A", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
+      { dayName: "Pull", exercises: generatePullDay("A", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
+      { dayName: "Legs", exercises: generateLegsDay("A", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
+      { dayName: "Upper", exercises: generateUpperDay("C", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
+      { dayName: "Lower", exercises: generateLowerDay("C", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
+    );
   } else {
     schedule.push(
-      { dayName: "Push", exercises: generatePushDay(location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
-      { dayName: "Pull", exercises: generatePullDay(location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
-      { dayName: "Legs", exercises: generateLegsDay(location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
+      { dayName: "Push A", exercises: generatePushDay("A", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
+      { dayName: "Pull A", exercises: generatePullDay("A", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
+      { dayName: "Legs A", exercises: generateLegsDay("A", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
+      { dayName: "Push B", exercises: generatePushDay("B", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
+      { dayName: "Pull B", exercises: generatePullDay("B", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
+      { dayName: "Legs B", exercises: generateLegsDay("B", location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
     );
-    if (daysPerWeek >= 6) {
-      schedule.push(
-        { dayName: "Push B", exercises: generatePushDay(location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
-        { dayName: "Pull B", exercises: generatePullDay(location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
-        { dayName: "Legs B", exercises: generateLegsDay(location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) },
-      );
-    }
   }
   return schedule;
 }
 
+// ✅ FULL BODY CON VARIANTI A-B-C
 function generateFullBodyDay(variant, location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
   const exercises = [];
   
-  console.log('[PROGRAM] 💪 generateFullBodyDay');
+  console.log('[PROGRAM] 💪 generateFullBodyDay variant:', variant);
   
   const baseLoad = getBaseLoads(assessments || []);
 
@@ -183,27 +314,67 @@ function generateFullBodyDay(variant, location, equipment, painAreas, assessment
     return name;
   };
 
-  if (!painAreas.includes("knee") && !painAreas.includes("lower_back")) {
-    exercises.push(createExercise(safeExercise("Squat"), location, equipment, baseLoad.squat, level, goal, "compound", assessments));
-  } else {
-    exercises.push(createExercise("Leg Press", location, equipment, baseLoad.squat * 1.3, level, goal, "compound", assessments));
+  if (variant === "A") {
+    if (!painAreas.includes("knee") && !painAreas.includes("lower_back")) {
+      exercises.push(createExercise(safeExercise("Squat"), location, equipment, baseLoad.squat, level, goal, "compound", assessments));
+    }
+    
+    if (!painAreas.includes("shoulder")) {
+      exercises.push(createExercise(safeExercise("Panca Piana"), location, equipment, baseLoad.bench, level, goal, "compound", assessments));
+    }
+    
+    exercises.push(createExercise("Trazioni", location, equipment, baseLoad.pull, level, goal, "compound", assessments));
+    
+    if (!painAreas.includes("lower_back")) {
+      exercises.push(createExercise("Romanian Deadlift", location, equipment, baseLoad.deadlift * 0.7, level, goal, "accessory", assessments));
+    }
+    
+    if (!painAreas.includes("shoulder")) {
+      exercises.push(createExercise("Lateral Raises", location, equipment, baseLoad.press * 0.3, level, goal, "isolation", assessments));
+    }
+    
+    exercises.push(createExercise(goal === 'pregnancy' ? 'Bird Dog' : 'Plank', location, equipment, 0, level, goal, "core", assessments));
   }
-
-  if (!painAreas.includes("lower_back")) {
-    exercises.push(createExercise(safeExercise(variant === "A" ? "Stacco" : "Romanian Deadlift"), location, equipment, baseLoad.deadlift, level, goal, "compound", assessments));
+  
+  else if (variant === "B") {
+    if (!painAreas.includes("lower_back")) {
+      exercises.push(createExercise(safeExercise("Stacco"), location, equipment, baseLoad.deadlift, level, goal, "compound", assessments));
+    }
+    
+    if (!painAreas.includes("shoulder")) {
+      exercises.push(createExercise(safeExercise("Panca Inclinata"), location, equipment, baseLoad.bench * 0.85, level, goal, "compound", assessments));
+    }
+    
+    exercises.push(createExercise("Rematore Bilanciere", location, equipment, baseLoad.pull * 0.9, level, goal, "compound", assessments));
+    
+    if (!painAreas.includes("knee")) {
+      exercises.push(createExercise("Affondi", location, equipment, baseLoad.squat * 0.6, level, goal, "accessory", assessments));
+    }
+    
+    if (!painAreas.includes("shoulder")) {
+      exercises.push(createExercise("Military Press", location, equipment, baseLoad.press, level, goal, "accessory", assessments));
+    }
+    
+    exercises.push(createExercise("Leg Raises", location, equipment, 0, level, goal, "core", assessments));
   }
-
-  if (!painAreas.includes("shoulder")) {
-    exercises.push(createExercise(safeExercise(variant === "A" ? "Panca Piana" : "Panca Inclinata"), location, equipment, baseLoad.bench, level, goal, "compound", assessments));
+  
+  else if (variant === "C") {
+    if (!painAreas.includes("knee")) {
+      exercises.push(createExercise(safeExercise("Front Squat"), location, equipment, baseLoad.squat * 0.8, level, goal, "compound", assessments));
+    }
+    
+    exercises.push(createExercise("Dips", location, equipment, 0, level, goal, "compound", assessments));
+    
+    exercises.push(createExercise("Trazioni Presa Stretta", location, equipment, baseLoad.pull * 0.95, level, goal, "compound", assessments));
+    
+    if (!painAreas.includes("lower_back")) {
+      exercises.push(createExercise("Good Morning", location, equipment, baseLoad.deadlift * 0.5, level, goal, "accessory", assessments));
+    }
+    
+    exercises.push(createExercise("Face Pull", location, equipment, baseLoad.pull * 0.2, level, goal, "isolation", assessments));
+    
+    exercises.push(createExercise("Dead Bug", location, equipment, 0, level, goal, "core", assessments));
   }
-
-  exercises.push(createExercise(variant === "A" ? "Trazioni" : "Rematore", location, equipment, baseLoad.pull, level, goal, "compound", assessments));
-
-  if (!painAreas.includes("shoulder")) {
-    exercises.push(createExercise("Military Press", location, equipment, baseLoad.press, level, goal, "accessory", assessments));
-  }
-
-  exercises.push(createExercise(goal === 'pregnancy' ? 'Bird Dog' : 'Plank', location, equipment, 0, level, goal, "core", assessments));
 
   return exercises;
 }
@@ -221,13 +392,26 @@ function generateUpperDay(variant, location, equipment, painAreas, assessments, 
   if (variant === "A") {
     exercises.push(createExercise(safeExercise("Panca Piana"), location, equipment, baseLoad.bench, level, goal, "compound", assessments));
     exercises.push(createExercise("Trazioni", location, equipment, baseLoad.pull, level, goal, "compound", assessments));
-  } else {
+    exercises.push(createExercise("Military Press", location, equipment, baseLoad.press, level, goal, "compound", assessments));
+    exercises.push(createExercise("Curl Bilanciere", location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
+    exercises.push(createExercise("Tricep Pushdown", location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
+  }
+  
+  else if (variant === "B") {
     exercises.push(createExercise(safeExercise("Panca Inclinata"), location, equipment, baseLoad.bench * 0.85, level, goal, "compound", assessments));
     exercises.push(createExercise("Rematore Bilanciere", location, equipment, baseLoad.pull * 0.9, level, goal, "compound", assessments));
+    exercises.push(createExercise("Arnold Press", location, equipment, baseLoad.press * 0.85, level, goal, "compound", assessments));
+    exercises.push(createExercise("Hammer Curl", location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
+    exercises.push(createExercise("French Press", location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
   }
-
-  exercises.push(createExercise("Military Press", location, equipment, baseLoad.press, level, goal, "accessory", assessments));
-  exercises.push(createExercise(variant === "A" ? "Curl bilanciere" : "French Press", location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
+  
+  else if (variant === "C") {
+    exercises.push(createExercise("Dips", location, equipment, 0, level, goal, "compound", assessments));
+    exercises.push(createExercise("Chin-up", location, equipment, baseLoad.pull * 0.95, level, goal, "compound", assessments));
+    exercises.push(createExercise("Push Press", location, equipment, baseLoad.press * 1.1, level, goal, "compound", assessments));
+    exercises.push(createExercise("Face Pull", location, equipment, baseLoad.pull * 0.2, level, goal, "isolation", assessments));
+    exercises.push(createExercise("Lateral Raises", location, equipment, baseLoad.press * 0.3, level, goal, "isolation", assessments));
+  }
 
   return exercises;
 }
@@ -245,133 +429,153 @@ function generateLowerDay(variant, location, equipment, painAreas, assessments, 
   if (variant === "A") {
     exercises.push(createExercise(safeExercise("Squat"), location, equipment, baseLoad.squat, level, goal, "compound", assessments));
     exercises.push(createExercise(safeExercise("Romanian Deadlift"), location, equipment, baseLoad.deadlift * 0.7, level, goal, "compound", assessments));
+    exercises.push(createExercise("Leg Curl", location, equipment, baseLoad.squat * 0.3, level, goal, "isolation", assessments));
+    exercises.push(createExercise("Leg Extension", location, equipment, baseLoad.squat * 0.3, level, goal, "isolation", assessments));
+    if (!painAreas.includes("ankles")) {
+      exercises.push(createExercise("Calf Raises", location, equipment, baseLoad.squat * 0.5, level, goal, "isolation", assessments));
+    }
+  }
+  
+  else if (variant === "B") {
+    exercises.push(createExercise(safeExercise("Stacco"), location, equipment, baseLoad.deadlift, level, goal, "compound", assessments));
+    exercises.push(createExercise(safeExercise("Front Squat"), location, equipment, baseLoad.squat * 0.8, level, goal, "compound", assessments));
+    exercises.push(createExercise("Affondi", location, equipment, baseLoad.squat * 0.6, level, goal, "accessory", assessments));
+    exercises.push(createExercise("Nordic Curl", location, equipment, 0, level, goal, "accessory", assessments));
+    if (!painAreas.includes("ankles")) {
+      exercises.push(createExercise("Seated Calf Raises", location, equipment, baseLoad.squat * 0.4, level, goal, "isolation", assessments));
+    }
+  }
+  
+  else if (variant === "C") {
+    exercises.push(createExercise(safeExercise("Sumo Deadlift"), location, equipment, baseLoad.deadlift * 0.9, level, goal, "compound", assessments));
+    exercises.push(createExercise("Squat Bulgaro", location, equipment, baseLoad.squat * 0.6, level, goal, "compound", assessments));
+    exercises.push(createExercise("Leg Press", location, equipment, baseLoad.squat * 1.3, level, goal, "accessory", assessments));
+    exercises.push(createExercise("Good Morning", location, equipment, baseLoad.deadlift * 0.5, level, goal, "accessory", assessments));
+    exercises.push(createExercise("Hip Thrust", location, equipment, baseLoad.squat * 0.8, level, goal, "accessory", assessments));
+  }
+
+  return exercises;
+}
+
+function generatePushDay(variant, location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
+  const exercises = [];
+  const baseLoad = getBaseLoads(assessments || []);
+
+  const safeExercise = (name) => {
+    if (goal === 'pregnancy') return isExerciseSafeForPregnancy(name) ? name : getPregnancySafeAlternative(name);
+    if (goal === 'disability') return isExerciseSafeForDisability(name, disabilityType) ? name : getDisabilitySafeAlternative(name);
+    return name;
+  };
+
+  if (variant === "A") {
+    exercises.push(createExercise(safeExercise("Panca Piana"), location, equipment, baseLoad.bench, level, goal, "compound", assessments));
+    exercises.push(createExercise("Military Press", location, equipment, baseLoad.press, level, goal, "compound", assessments));
+    exercises.push(createExercise("Panca Inclinata Manubri", location, equipment, baseLoad.bench * 0.7, level, goal, "accessory", assessments));
+    exercises.push(createExercise("Lateral Raises", location, equipment, baseLoad.press * 0.3, level, goal, "isolation", assessments));
+    exercises.push(createExercise("Tricep Pushdown", location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
+  } else {
+    exercises.push(createExercise(safeExercise("Panca Inclinata"), location, equipment, baseLoad.bench * 0.85, level, goal, "compound", assessments));
+    exercises.push(createExercise("Arnold Press", location, equipment, baseLoad.press * 0.85, level, goal, "compound", assessments));
+    exercises.push(createExercise("Dips", location, equipment, 0, level, goal, "compound", assessments));
+    exercises.push(createExercise("Croci Cavi Alti", location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
+    exercises.push(createExercise("French Press", location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
+  }
+
+  return exercises;
+}
+
+function generatePullDay(variant, location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
+  const exercises = [];
+  const baseLoad = getBaseLoads(assessments || []);
+
+  const safeExercise = (name) => {
+    if (goal === 'pregnancy') return isExerciseSafeForPregnancy(name) ? name : getPregnancySafeAlternative(name);
+    if (goal === 'disability') return isExerciseSafeForDisability(name, disabilityType) ? name : getDisabilitySafeAlternative(name);
+    return name;
+  };
+
+  if (variant === "A") {
+    exercises.push(createExercise(safeExercise("Stacco"), location, equipment, baseLoad.deadlift, level, goal, "compound", assessments));
+    exercises.push(createExercise(safeExercise("Trazioni"), location, equipment, baseLoad.pull, level, goal, "compound", assessments));
+    exercises.push(createExercise(safeExercise("Rematore Bilanciere"), location, equipment, baseLoad.pull * 0.9, level, goal, "compound", assessments));
+    exercises.push(createExercise(safeExercise("Curl Bilanciere"), location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
+    exercises.push(createExercise(safeExercise("Face Pull"), location, equipment, baseLoad.pull * 0.2, level, goal, "isolation", assessments));
+  } else {
+    exercises.push(createExercise(safeExercise("Romanian Deadlift"), location, equipment, baseLoad.deadlift * 0.7, level, goal, "compound", assessments));
+    exercises.push(createExercise("Chin-up", location, equipment, baseLoad.pull * 0.95, level, goal, "compound", assessments));
+    exercises.push(createExercise(safeExercise("Rematore Manubri"), location, equipment, baseLoad.pull * 0.8, level, goal, "compound", assessments));
+    exercises.push(createExercise(safeExercise("Hammer Curl"), location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
+    exercises.push(createExercise(safeExercise("Shrugs"), location, equipment, baseLoad.deadlift * 0.4, level, goal, "isolation", assessments));
+  }
+
+  return exercises;
+}
+
+function generateLegsDay(variant, location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
+  const exercises = [];
+  const baseLoad = getBaseLoads(assessments || []);
+
+  const safeExercise = (name) => {
+    if (goal === 'pregnancy') return isExerciseSafeForPregnancy(name) ? name : getPregnancySafeAlternative(name);
+    if (goal === 'disability') return isExerciseSafeForDisability(name, disabilityType) ? name : getDisabilitySafeAlternative(name);
+    return name;
+  };
+
+  if (variant === "A") {
+    exercises.push(createExercise(safeExercise("Squat"), location, equipment, baseLoad.squat, level, goal, "compound", assessments));
+    exercises.push(createExercise(safeExercise("Romanian Deadlift"), location, equipment, baseLoad.deadlift * 0.7, level, goal, "compound", assessments));
+    exercises.push(createExercise("Leg Press", location, equipment, baseLoad.squat * 1.3, level, goal, "accessory", assessments));
+    exercises.push(createExercise("Leg Curl", location, equipment, baseLoad.squat * 0.3, level, goal, "isolation", assessments));
+    exercises.push(createExercise("Leg Extension", location, equipment, baseLoad.squat * 0.3, level, goal, "isolation", assessments));
   } else {
     exercises.push(createExercise(safeExercise("Front Squat"), location, equipment, baseLoad.squat * 0.8, level, goal, "compound", assessments));
-    exercises.push(createExercise(safeExercise("Stacco"), location, equipment, baseLoad.deadlift, level, goal, "compound", assessments));
-  }
-
-  exercises.push(createExercise("Leg Curl", location, equipment, baseLoad.squat * 0.3, level, goal, "isolation", assessments));
-  
-  if (!painAreas.includes("ankles")) {
-    exercises.push(createExercise("Calf Raises", location, equipment, baseLoad.squat * 0.5, level, goal, "isolation", assessments));
+    exercises.push(createExercise(safeExercise("Stacco Sumo"), location, equipment, baseLoad.deadlift * 0.9, level, goal, "compound", assessments));
+    exercises.push(createExercise("Squat Bulgaro", location, equipment, baseLoad.squat * 0.6, level, goal, "accessory", assessments));
+    exercises.push(createExercise("Nordic Curl", location, equipment, 0, level, goal, "accessory", assessments));
+    exercises.push(createExercise("Hip Thrust", location, equipment, baseLoad.squat * 0.8, level, goal, "accessory", assessments));
   }
 
   return exercises;
 }
 
-function generatePushDay(location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
-  const exercises = [];
-  const baseLoad = getBaseLoads(assessments || []);
-
-  const safeExercise = (name) => {
-    if (goal === 'pregnancy') return isExerciseSafeForPregnancy(name) ? name : getPregnancySafeAlternative(name);
-    if (goal === 'disability') return isExerciseSafeForDisability(name, disabilityType) ? name : getDisabilitySafeAlternative(name);
-    return name;
-  };
-
-  exercises.push(createExercise(safeExercise("Panca Piana"), location, equipment, baseLoad.bench, level, goal, "compound", assessments));
-  exercises.push(createExercise("Military Press", location, equipment, baseLoad.press, level, goal, "compound", assessments));
-  exercises.push(createExercise("Dips", location, equipment, 0, level, goal, "compound", assessments));
-  exercises.push(createExercise("Croci manubri", location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
-  exercises.push(createExercise("French Press", location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
-
-  return exercises;
-}
-
-function generatePullDay(location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
-  const exercises = [];
-  const baseLoad = getBaseLoads(assessments || []);
-
-  const safeExercise = (name) => {
-    if (goal === 'pregnancy') return isExerciseSafeForPregnancy(name) ? name : getPregnancySafeAlternative(name);
-    if (goal === 'disability') return isExerciseSafeForDisability(name, disabilityType) ? name : getDisabilitySafeAlternative(name);
-    return name;
-  };
-
-  exercises.push(createExercise(safeExercise("Stacco"), location, equipment, baseLoad.deadlift, level, goal, "compound", assessments));
-  exercises.push(createExercise(safeExercise("Trazioni"), location, equipment, baseLoad.pull, level, goal, "compound", assessments));
-  exercises.push(createExercise(safeExercise("Rematore Bilanciere"), location, equipment, baseLoad.pull * 0.9, level, goal, "compound", assessments));
-  exercises.push(createExercise(safeExercise("Curl bilanciere"), location, equipment, baseLoad.bench * 0.3, level, goal, "isolation", assessments));
-  exercises.push(createExercise(safeExercise("Face Pull"), location, equipment, baseLoad.pull * 0.2, level, goal, "isolation", assessments));
-
-  return exercises;
-}
-
-function generateLegsDay(location, equipment, painAreas, assessments, level, goal, specificBodyParts, disabilityType, sportRole) {
-  const exercises = [];
-  const baseLoad = getBaseLoads(assessments || []);
-
-  const safeExercise = (name) => {
-    if (goal === 'pregnancy') return isExerciseSafeForPregnancy(name) ? name : getPregnancySafeAlternative(name);
-    if (goal === 'disability') return isExerciseSafeForDisability(name, disabilityType) ? name : getDisabilitySafeAlternative(name);
-    return name;
-  };
-
-  exercises.push(createExercise(safeExercise("Squat"), location, equipment, baseLoad.squat, level, goal, "compound", assessments));
-  exercises.push(createExercise(safeExercise("Leg Press"), location, equipment, baseLoad.squat * 1.5, level, goal, "compound", assessments));
-  exercises.push(createExercise(safeExercise("Romanian Deadlift"), location, equipment, baseLoad.deadlift * 0.7, level, goal, "compound", assessments));
-  exercises.push(createExercise("Leg Curl", location, equipment, baseLoad.squat * 0.3, level, goal, "isolation", assessments));
-  exercises.push(createExercise("Leg Extension", location, equipment, baseLoad.squat * 0.3, level, goal, "isolation", assessments));
-
-  return exercises;
-}
-
-// ✅ FIX COMPLETO: USA VARIANTI DALL'ASSESSMENT
+// ✅ CREATE EXERCISE CON RANGE RIDOTTO E PARTENZA GRADUALE
 function createExercise(name, location, equipment, baseWeight, level, goal, type, assessments) {
-  let sets, reps, rest;
+  const config = LEVEL_CONFIG[level] || LEVEL_CONFIG.intermediate;
+  
+  let sets = type === "compound" ? config.compoundSets : config.accessorySets;
+  let rest = type === "compound" ? 180 : type === "accessory" ? 120 : 60;
 
-  console.log('[PROGRAM] 🎯 createExercise:', { name, location, level, type });
+  console.log('[PROGRAM] 🎯 createExercise:', { name, level, type, sets });
 
-  // Sets basati su livello
-  if (level === "beginner") {
-    sets = type === "compound" ? 3 : 2;
-  } else if (level === "intermediate") {
-    sets = type === "compound" ? 4 : 3;
-  } else {
-    sets = type === "compound" ? 5 : 3;
-  }
-
-  rest = type === "compound" ? 180 : type === "accessory" ? 120 : 60;
-
-  // ✅ CERCA ASSESSMENT PER QUESTO ESERCIZIO
+  // Cerca assessment
   const assessment = assessments?.find(a => 
     a.exerciseName && name.toLowerCase().includes(a.exerciseName.toLowerCase())
   );
 
-  console.log('[PROGRAM] 🔍 Assessment found:', assessment ? {
-    exerciseName: assessment.exerciseName,
-    variant: assessment.variant,
-    level: assessment.level,
-    maxReps: assessment.maxReps,
-    oneRepMax: assessment.oneRepMax
-  } : 'none');
-
-  // ✅ SE HAI VARIANT E LEVEL, USA PROGRESSIONE
+  // ✅ USA PROGRESSIONE BODYWEIGHT
   if (assessment?.variant && assessment?.level && BODYWEIGHT_PROGRESSIONS[assessment.exerciseName]) {
     const progressionName = BODYWEIGHT_PROGRESSIONS[assessment.exerciseName][assessment.level];
     const targetReps = assessment.maxReps || 12;
+    const range = config.repsRange;
     
-    console.log('[PROGRAM] ✅ Using bodyweight progression:', {
+    console.log('[PROGRAM] ✅ Bodyweight progression:', {
       base: assessment.exerciseName,
       level: assessment.level,
       progression: progressionName,
-      targetReps
+      repsRange: `${targetReps - range}-${targetReps + range}`
     });
     
     return {
       name: progressionName,
       sets,
-      reps: `${Math.max(6, targetReps - 2)}-${targetReps + 2}`,
+      reps: range > 0 ? `${targetReps - range}-${targetReps + range}` : `${targetReps}`,
       rest,
       weight: null,
       notes: `Progressione livello ${assessment.level} - ${assessment.variant}`,
     };
   }
 
-  // Altrimenti usa logica standard
   const exerciseOrGiantSet = getExerciseForLocation(name, location, equipment, goal || 'muscle_gain', level);
-
-  console.log('[PROGRAM] ✅ getExerciseForLocation returned:', exerciseOrGiantSet);
 
   if (typeof exerciseOrGiantSet !== 'string') {
     if (goal === 'pregnancy' || goal === 'disability') {
@@ -391,70 +595,46 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
   const isBodyweight = isBodyweightExercise(exerciseOrGiantSet);
   const hasEquipment = hasWeightedEquipment(equipment);
 
-  console.log('[PROGRAM] 🔍 Exercise analysis:', { 
-    name: exerciseOrGiantSet, 
-    isBodyweight, 
-    hasEquipment,
-    location 
-  });
-
-  // Determina reps
+  // ✅ RANGE REPS BASATO SU LIVELLO
+  let targetReps = 10;
+  let reps;
+  
   if (isBodyweight) {
-    if (type === "compound") reps = "12-15";
-    else if (type === "accessory") reps = "15-20";
-    else if (type === "isolation") reps = "20-25";
-    else if (type === "core") reps = "30-60s";
-    else reps = "15-20";
+    targetReps = type === "compound" ? 12 : type === "accessory" ? 15 : 20;
   } else {
-    if (type === "compound") reps = "5";
-    else if (type === "accessory") reps = "10";
-    else if (type === "isolation") reps = "12";
-    else if (type === "core") reps = "30-60s";
-    else reps = "10";
+    targetReps = type === "compound" ? 5 : type === "accessory" ? 10 : 12;
+  }
+  
+  if (type === "core") {
+    reps = "30-60s";
+  } else {
+    const range = config.repsRange;
+    reps = range > 0 ? `${targetReps - range}-${targetReps + range}` : `${targetReps}`;
   }
 
-  // Calcolo peso
+  // ✅ CALCOLO PESO CON PARTENZA GRADUALE
   let trainingWeight = null;
   
   if (isBodyweight) {
     trainingWeight = null;
-    console.log('[PROGRAM] ⭕ No weight (bodyweight exercise)');
+    console.log('[PROGRAM] ⭕ No weight (bodyweight)');
     
-  } else if (location === 'gym') {
+  } else if (location === 'gym' || hasEquipment) {
     if (baseWeight > 0) {
-      let targetReps = 10;
-      if (typeof reps === 'string' && reps.includes('-')) {
-        targetReps = parseInt(reps.split('-')[1]);
-      } else if (typeof reps === 'string' && !reps.includes('s')) {
-        targetReps = parseInt(reps);
-      }
-      const RIR = level === 'beginner' ? 3 : 2;
-      trainingWeight = calculateTrainingWeight(baseWeight, targetReps, RIR);
-      console.log('[PROGRAM] ✅ Full weight (gym):', trainingWeight);
-    }
-    
-  } else if (hasEquipment) {
-    if (baseWeight > 0) {
-      let targetReps = 10;
-      if (typeof reps === 'string' && reps.includes('-')) {
-        targetReps = parseInt(reps.split('-')[1]);
-      } else if (typeof reps === 'string' && !reps.includes('s')) {
-        targetReps = parseInt(reps);
-      }
-      const RIR = level === 'beginner' ? 3 : 2;
-      trainingWeight = calculateTrainingWeight(baseWeight, targetReps, RIR);
+      // ✅ PARTENZA GRADUALE PRINCIPIANTI (60% week 1-2)
+      const startWeight = baseWeight * config.startPercentage;
+      const finalReps = typeof reps === 'string' && reps.includes('-') 
+        ? parseInt(reps.split('-')[1]) 
+        : targetReps;
       
-      if (equipment.dumbbellMaxKg && trainingWeight > equipment.dumbbellMaxKg) {
+      trainingWeight = calculateTrainingWeight(startWeight, finalReps, config.RIR);
+      
+      // Cap al massimo disponibile
+      if (hasEquipment && equipment.dumbbellMaxKg && trainingWeight > equipment.dumbbellMaxKg) {
         trainingWeight = equipment.dumbbellMaxKg;
-        console.log('[PROGRAM] ⚠️ Weight capped to max dumbbell:', trainingWeight);
-      } else if (equipment.kettlebellKg && equipment.kettlebellKg.length > 0) {
-        const maxKettlebell = Math.max(...equipment.kettlebellKg);
-        if (trainingWeight > maxKettlebell) {
-          trainingWeight = maxKettlebell;
-          console.log('[PROGRAM] ⚠️ Weight capped to max kettlebell:', trainingWeight);
-        }
       }
-      console.log('[PROGRAM] ✅ Small equipment weight:', trainingWeight);
+      
+      console.log(`[PROGRAM] ✅ Training weight (${level}): ${baseWeight}kg → ${config.startPercentage * 100}% = ${trainingWeight}kg (RIR ${config.RIR})`);
     }
   }
 
@@ -464,13 +644,13 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
     reps,
     rest,
     weight: trainingWeight,
-    notes: type === "compound" ? "Esercizio fondamentale" : "Esercizio complementare",
+    notes: type === "compound" ? `RIR ${config.RIR} - Week 1-2 al ${config.startPercentage * 100}%` : "Esercizio complementare",
   };
 }
 
 function getBaseLoads(assessments) {
   if (!assessments || !Array.isArray(assessments)) {
-    console.warn('[PROGRAM] ⚠️ assessments is undefined or not array, using default loads');
+    console.warn('[PROGRAM] ⚠️ assessments undefined, using defaults');
     return {
       squat: 50,
       deadlift: 60,
@@ -504,8 +684,6 @@ function calculateTrainingWeight(oneRM, targetReps, RIR = 2) {
   
   return Math.round(weight / 2.5) * 2.5;
 }
-
-// ===== SAFETY FUNCTIONS =====
 
 function isExerciseSafeForPregnancy(exerciseName) {
   const unsafeExercises = [
@@ -566,13 +744,9 @@ function getDisabilitySafeAlternative(exerciseName) {
   return exerciseName;
 }
 
-// ===== PERFORMANCE RUBINI =====
-
 function generatePerformanceProgramRubini(input) {
   return generateProgram({ ...input, goal: 'strength' });
 }
-
-// ===== EXPORTS =====
 
 export function analyzePainPersistence(workouts) {
   const painAreas = {};
