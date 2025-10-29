@@ -72,7 +72,6 @@ export default function BiomechanicsQuiz() {
       setResult(qr);
       setDone(true);
       
-      // Salva SOLO il punteggio tecnico - livello finale calcolato DOPO screening
       const quizData = {
         technicalScore: qr.answers.filter(a => a.correct).length,
         answers: qr.answers,
@@ -100,8 +99,6 @@ export default function BiomechanicsQuiz() {
                 <p className="text-slate-300">{result.answers.filter(a => a.correct).length} su {QUIZ_QUESTIONS.length}</p>
               </div>
             </div>
-
-            {/* ✅ RIMOSSO: Sezione Livello e Metodologia */}
 
             <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-5 mb-8">
               <div className="flex items-start gap-3">
