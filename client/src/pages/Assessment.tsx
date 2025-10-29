@@ -12,6 +12,19 @@ interface AssessmentExercise {
   };
 }
 
+interface LevelResult {
+  level: string;
+  finalScore: string;
+  practicalScore: string;
+  physicalScore: string;
+  breakdown: {
+    bmi: string;
+    bmiScore: string;
+    age: number;
+    ageScore: number;
+  };
+}
+
 export default function Assessment() {
   const navigate = useNavigate();
   
@@ -23,6 +36,10 @@ export default function Assessment() {
   const [exercises, setExercises] = useState<AssessmentExercise[]>([]);
   const [test, setTest] = useState({ variant: '', variantLevel: 1, maxReps: 0, rm10: 0 });
   const [saving, setSaving] = useState(false);
+  
+  // ✅ NUOVO: State per schermata risultati
+  const [showResults, setShowResults] = useState(false);
+  const [levelResult, setLevelResult] = useState<LevelResult | null>(null);
 
   useEffect(() => {
     const storedOnboarding = localStorage.getItem('onboarding_data');
@@ -137,7 +154,7 @@ export default function Assessment() {
         setCurrentIdx(currentIdx + 1);
         setTest({ variant: '', variantLevel: 1, maxReps: 0, rm10: 0 });
       } else {
-        complete(updated);
+        completeAssessment(updated);
       }
     } else {
       if (!test.variant || !test.maxReps || test.maxReps <= 0) return;
@@ -156,13 +173,12 @@ export default function Assessment() {
         setCurrentIdx(currentIdx + 1);
         setTest({ variant: '', variantLevel: 1, maxReps: 0, rm10: 0 });
       } else {
-        complete(updated);
+        completeAssessment(updated);
       }
     }
   };
 
-  // ✅ CALCOLO LIVELLO FINALE CON FORMULA 70% PRATICO + 30% FISICO
-  const calculateFinalLevel = (practicalExercises: AssessmentExercise[]) => {
+  const calculateFinalLevel = (practicalExercises: AssessmentExercise[]): LevelResult => {
     console.log('[ASSESSMENT] 🧮 Calculating final level...');
     
     const bodyweight = onboardingData.personalInfo?.weight || 70;
@@ -170,11 +186,9 @@ export default function Assessment() {
     const age = onboardingData.personalInfo?.age || 30;
     const gender = onboardingData.personalInfo?.gender || 'male';
 
-    // ===== 1. PRACTICAL SCORE (70%) =====
     let practicalScore = 0;
     
     if (isGym) {
-      // GYM: Forza relativa al peso corporeo
       const standards = {
         'Squat': gender === 'male' ? 1.5 : 1.0,
         'Stacco da terra': gender === 'male' ? 2.0 : 1.3,
@@ -204,7 +218,6 @@ export default function Assessment() {
       practicalScore = count > 0 ? totalScore / count : 50;
       
     } else {
-      // HOME: Media level normalizzata
       let totalLevel = 0;
       let count = 0;
       
@@ -213,9 +226,8 @@ export default function Assessment() {
           const level = ex.variant.level;
           const maxReps = ex.variant.maxReps;
           
-          // Punteggio da 0-100 basato su level (1-5) e reps
-          const levelScore = (level / 5) * 70; // Max 70 punti da level
-          const repsScore = Math.min(maxReps / 20, 1) * 30; // Max 30 punti da reps
+          const levelScore = (level / 5) * 70;
+          const repsScore = Math.min(maxReps / 20, 1) * 30;
           const exerciseScore = levelScore + repsScore;
           
           totalLevel += exerciseScore;
@@ -230,7 +242,6 @@ export default function Assessment() {
     
     console.log(`[ASSESSMENT] 💪 Practical Score (70%): ${practicalScore.toFixed(1)}%`);
 
-    // ===== 2. PHYSICAL PARAMS SCORE (30%) =====
     const bmi = bodyweight / ((height / 100) ** 2);
     const bmiScore = bmi >= 18.5 && bmi <= 25 ? 100 : 
                      bmi < 18.5 ? Math.max(0, 50 + (bmi - 18.5) * 10) :
@@ -245,7 +256,6 @@ export default function Assessment() {
     
     console.log(`[ASSESSMENT] 📊 Physical Score (30%): BMI=${bmi.toFixed(1)} (${bmiScore.toFixed(0)}/100), Age=${age} (${ageScore}/100) → ${physicalScore.toFixed(1)}%`);
 
-    // ===== 3. WEIGHTED FINAL SCORE (70% + 30%) =====
     const finalScore = (practicalScore * 0.7) + (physicalScore * 0.3);
     
     let finalLevel: string;
@@ -274,24 +284,29 @@ export default function Assessment() {
     };
   };
 
-  const complete = async (final: AssessmentExercise[]) => {
+  // ✅ MOSTRA SCHERMATA RISULTATI INVECE DI SALVARE SUBITO
+  const completeAssessment = (final: AssessmentExercise[]) => {
+    const result = calculateFinalLevel(final);
+    setLevelResult(result);
+    setShowResults(true);
+  };
+
+  // ✅ SALVA E VAI ALLA DASHBOARD
+  const saveAndContinue = async () => {
+    if (!levelResult) return;
+    
     setSaving(true);
     
     try {
-      // ✅ CALCOLA LIVELLO FINALE
-      const levelResult = calculateFinalLevel(final);
-      
-      console.log('[ASSESSMENT] ✅ Level calculation complete:', levelResult);
-      
       const assessmentData = { 
-        exercises: final, 
+        exercises: exercises, 
         completedAt: new Date().toISOString(), 
         completed: true,
         location: onboardingData.trainingLocation,
         frequency: onboardingData.activityLevel?.weeklyFrequency,
         duration: onboardingData.activityLevel?.sessionDuration,
         goal: onboardingData.goal,
-        level: levelResult.level, // ✅ LIVELLO CORRETTO (70% + 30%)
+        level: levelResult.level,
         finalScore: levelResult.finalScore,
         practicalScore: levelResult.practicalScore,
         physicalScore: levelResult.physicalScore,
@@ -308,7 +323,7 @@ export default function Assessment() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        const { error: profileError } = await supabase
+        await supabase
           .from('user_profiles')
           .update({ 
             onboarding_completed: true,
@@ -316,7 +331,7 @@ export default function Assessment() {
             training_frequency: onboardingData.activityLevel?.weeklyFrequency,
             session_duration: onboardingData.activityLevel?.sessionDuration,
             training_goal: onboardingData.goal,
-            training_level: levelResult.level, // ✅ LIVELLO CORRETTO
+            training_level: levelResult.level,
             training_location: onboardingData.trainingLocation,
             sport: onboardingData.sport || null,
             sport_role: onboardingData.sportRole || null,
@@ -324,43 +339,102 @@ export default function Assessment() {
           })
           .eq('user_id', user.id);
 
-        if (profileError) {
-          console.error('[ASSESSMENT] Error updating profile:', profileError);
-        }
-
-        const { error: assessmentError } = await supabase
+        await supabase
           .from('assessments')
           .insert({
             user_id: user.id,
             assessment_type: isGym ? 'gym' : 'home',
-            exercises: final,
-            level: levelResult.level, // ✅ LIVELLO CORRETTO
+            exercises: exercises,
+            level: levelResult.level,
             final_score: parseFloat(levelResult.finalScore),
             practical_score: parseFloat(levelResult.practicalScore),
             physical_score: parseFloat(levelResult.physicalScore),
             completed: true,
             completed_at: new Date().toISOString()
           });
-
-        if (assessmentError) {
-          console.error('[ASSESSMENT] Error saving assessment:', assessmentError);
-        }
       }
     } catch (error) {
-      console.error('[ASSESSMENT] Error in complete:', error);
+      console.error('[ASSESSMENT] Error:', error);
     } finally {
       setSaving(false);
       navigate('/dashboard');
     }
   };
 
+  // ✅ SCHERMATA RISULTATI FINALI
+  if (showResults && levelResult) {
+    const levelEmoji = levelResult.level === 'advanced' ? '🔥' : levelResult.level === 'intermediate' ? '💪' : '🌱';
+    const levelColor = levelResult.level === 'advanced' ? 'emerald' : levelResult.level === 'intermediate' ? 'blue' : 'amber';
+    const levelText = levelResult.level === 'advanced' ? 'Avanzato' : levelResult.level === 'intermediate' ? 'Intermedio' : 'Principiante';
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-8 border border-slate-700">
+            <div className="text-center mb-8">
+              <div className="text-6xl mb-4">{levelEmoji}</div>
+              <h1 className="text-3xl font-bold text-white mb-2">Assessment Completato!</h1>
+              <p className="text-slate-400">Ecco il tuo profilo fitness completo</p>
+            </div>
+            
+            {/* LIVELLO FINALE */}
+            <div className={`bg-gradient-to-r from-${levelColor}-500/20 to-${levelColor}-500/20 border border-${levelColor}-500/50 rounded-lg p-6 mb-6`}>
+              <div className="text-center">
+                <p className="text-sm text-slate-400 mb-2">Il tuo livello</p>
+                <p className="text-5xl font-bold text-white mb-2">{levelText}</p>
+                <p className="text-slate-300">Punteggio totale: {levelResult.finalScore}%</p>
+              </div>
+            </div>
+
+            {/* BREAKDOWN PUNTEGGI */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                <p className="text-xs text-slate-400 mb-1">Quiz Teorico</p>
+                <p className="text-2xl font-bold text-white">{quizData.score}%</p>
+                <p className="text-xs text-slate-500 mt-1">Conoscenze base</p>
+              </div>
+              
+              <div className="bg-emerald-500/20 rounded-lg p-4 border border-emerald-500/50">
+                <p className="text-xs text-emerald-300 mb-1">Performance (70%)</p>
+                <p className="text-2xl font-bold text-white">{levelResult.practicalScore}%</p>
+                <p className="text-xs text-emerald-200 mt-1">Forza relativa</p>
+              </div>
+              
+              <div className="bg-blue-500/20 rounded-lg p-4 border border-blue-500/50">
+                <p className="text-xs text-blue-300 mb-1">Parametri Fisici (30%)</p>
+                <p className="text-2xl font-bold text-white">{levelResult.physicalScore}%</p>
+                <p className="text-xs text-blue-200 mt-1">BMI {levelResult.breakdown.bmi}, {levelResult.breakdown.age} anni</p>
+              </div>
+            </div>
+
+            {/* SPIEGAZIONE */}
+            <div className="bg-slate-700/30 rounded-lg p-5 mb-6">
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Il tuo livello <strong className="text-white">{levelText}</strong> è stato calcolato combinando la tua performance nei test pratici (70%) con i parametri fisici età e BMI (30%). 
+                Il programma di allenamento sarà calibrato su questo livello per garantire progressi ottimali e sicuri.
+              </p>
+            </div>
+
+            <button 
+              onClick={saveAndContinue}
+              disabled={saving}
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition disabled:opacity-50"
+            >
+              {saving ? 'Salvataggio...' : 'Genera il Mio Programma →'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (saving) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-          <p className="text-white text-lg font-semibold mb-2">Calcolo livello finale...</p>
-          <p className="text-slate-400 text-sm">Analisi performance (70%) + parametri fisici (30%)</p>
+          <p className="text-white text-lg font-semibold mb-2">Creazione programma...</p>
+          <p className="text-slate-400 text-sm">Personalizzazione in corso</p>
         </div>
       </div>
     );
@@ -380,7 +454,6 @@ export default function Assessment() {
               style={{ width: `${progress}%` }} 
             />
           </div>
-          {/* ✅ MOSTRA SOLO LOCATION E QUIZ SCORE - NO LIVELLO */}
           <div className="flex justify-between text-sm text-slate-400 mt-2">
             <span>Location: <span className="text-emerald-400 font-semibold">{isGym ? '🏋️ Palestra' : '🏠 Casa'}</span></span>
             <span>Quiz: <span className="text-emerald-400 font-semibold">{quizData.score}%</span></span>
@@ -438,7 +511,7 @@ export default function Assessment() {
                 disabled={!test.rm10 || test.rm10 <= 0} 
                 className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-emerald-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                {currentIdx < total - 1 ? 'Prossimo Esercizio →' : 'Completa Assessment ✓'}
+                {currentIdx < total - 1 ? 'Prossimo Esercizio →' : 'Vedi Risultati Finali →'}
               </button>
             </div>
           ) : (
@@ -498,7 +571,7 @@ export default function Assessment() {
                 disabled={!test.variant || !test.maxReps || test.maxReps <= 0} 
                 className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-emerald-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                {currentIdx < total - 1 ? 'Prossimo Esercizio →' : 'Completa Assessment ✓'}
+                {currentIdx < total - 1 ? 'Prossimo Esercizio →' : 'Vedi Risultati Finali →'}
               </button>
             </div>
           )}
