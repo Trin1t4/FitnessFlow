@@ -46,8 +46,6 @@ export default function BiomechanicsQuiz() {
   const [answers, setAnswers] = useState<QuizAnswer[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [showExp, setShowExp] = useState(false);
-  const [done, setDone] = useState(false);
-  const [quizScore, setQuizScore] = useState<number | null>(null);
 
   const q = QUIZ_QUESTIONS[current];
 
@@ -60,15 +58,16 @@ export default function BiomechanicsQuiz() {
 
   const next = () => {
     if (current < QUIZ_QUESTIONS.length - 1) {
+      // ✅ Prossima domanda
       setCurrent(current + 1);
       setSelected(null);
       setShowExp(false);
     } else {
+      // ✅ ULTIMA DOMANDA: Salva e vai direttamente all'assessment
       const finalAnswers = [...answers, { questionId: q.id, answer: q.options[selected!], correct: selected === q.correct }];
       const correctCount = finalAnswers.filter(a => a.correct).length;
       const score = Math.round((correctCount / QUIZ_QUESTIONS.length) * 100);
       
-      // ✅ SALVA SOLO IL PUNTEGGIO, NON IL LIVELLO
       const quizData = {
         score: score,
         correctAnswers: correctCount,
@@ -78,82 +77,11 @@ export default function BiomechanicsQuiz() {
       };
       
       localStorage.setItem('quiz_data', JSON.stringify(quizData));
-      setQuizScore(score);
-      setDone(true);
+      
+      // ✅ VAI DIRETTAMENTE ALL'ASSESSMENT (nessuna schermata intermedia)
+      navigate('/assessment');
     }
   };
-
-  if (done && quizScore !== null) {
-    const correctCount = answers.filter(a => a.correct).length;
-    
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-8 border border-slate-700">
-            <div className="text-center mb-8">
-              <div className="text-6xl mb-4">📚</div>
-              <h1 className="text-3xl font-bold text-white mb-2">Quiz Completato!</h1>
-              <p className="text-slate-400">Ottimo lavoro! Passiamo ora ai test pratici</p>
-            </div>
-            
-            {/* ✅ BOX PUNTEGGIO PRINCIPALE */}
-            <div className="bg-gradient-to-r from-emerald-500/20 to-emerald-500/20 border border-emerald-500/50 rounded-lg p-6 mb-6">
-              <div className="text-center">
-                <p className="text-sm text-slate-400 mb-2">Punteggio Quiz Teorico</p>
-                <p className="text-5xl font-bold text-white mb-2">{quizScore}%</p>
-                <p className="text-slate-300">{correctCount} su {QUIZ_QUESTIONS.length} risposte corrette</p>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => navigate('/assessment')} 
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-lg font-semibold text-lg shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition mb-6"
-            >
-              Continua con lo Screening Pratico →
-            </button>
-
-            {/* ✅ SPIEGAZIONE 70/30 ALLA FINE */}
-            <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-5">
-              <div className="flex items-start gap-3">
-                <div className="text-2xl">ℹ️</div>
-                <div>
-                  <p className="font-semibold text-blue-300 mb-2">Come viene calcolato il tuo livello finale:</p>
-                  <div className="space-y-3 text-sm text-slate-300">
-                    <div className="flex items-start gap-2">
-                      <div className="text-emerald-400 font-bold mt-0.5">70%</div>
-                      <div>
-                        <span className="font-semibold">Performance nei test pratici</span>
-                        <p className="text-xs text-slate-400 mt-1">
-                          Forza relativa al peso corporeo, livello delle progressioni, capacità di esecuzione
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-2">
-                      <div className="text-blue-400 font-bold mt-0.5">30%</div>
-                      <div>
-                        <span className="font-semibold">Parametri fisici</span>
-                        <p className="text-xs text-slate-400 mt-1">
-                          Età, BMI, composizione corporea
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 pt-4 border-t border-blue-500/30">
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Il quiz teorico serve per personalizzare le spiegazioni e verificare le tue conoscenze di base, 
-                      ma il livello del programma viene determinato dalla tua performance fisica reale nei test pratici.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
@@ -231,7 +159,7 @@ export default function BiomechanicsQuiz() {
               onClick={next}
               className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 rounded-lg font-semibold shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition"
             >
-              {current < QUIZ_QUESTIONS.length - 1 ? 'Prossima Domanda →' : 'Vedi Risultati →'}
+              {current < QUIZ_QUESTIONS.length - 1 ? 'Prossima Domanda →' : 'Inizia Test Pratici →'}
             </button>
           )}
         </div>
