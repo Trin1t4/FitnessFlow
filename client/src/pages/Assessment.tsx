@@ -161,7 +161,7 @@ export default function Assessment() {
     }
   };
 
-  // ✅ CALCOLO LIVELLO FINALE CON FORMULA 70% + 30%
+  // ✅ CALCOLO LIVELLO FINALE CON FORMULA 70% PRATICO + 30% FISICO
   const calculateFinalLevel = (practicalExercises: AssessmentExercise[]) => {
     console.log('[ASSESSMENT] 🧮 Calculating final level...');
     
@@ -245,7 +245,7 @@ export default function Assessment() {
     
     console.log(`[ASSESSMENT] 📊 Physical Score (30%): BMI=${bmi.toFixed(1)} (${bmiScore.toFixed(0)}/100), Age=${age} (${ageScore}/100) → ${physicalScore.toFixed(1)}%`);
 
-    // ===== 3. WEIGHTED FINAL SCORE =====
+    // ===== 3. WEIGHTED FINAL SCORE (70% + 30%) =====
     const finalScore = (practicalScore * 0.7) + (physicalScore * 0.3);
     
     let finalLevel: string;
@@ -281,6 +281,8 @@ export default function Assessment() {
       // ✅ CALCOLA LIVELLO FINALE
       const levelResult = calculateFinalLevel(final);
       
+      console.log('[ASSESSMENT] ✅ Level calculation complete:', levelResult);
+      
       const assessmentData = { 
         exercises: final, 
         completedAt: new Date().toISOString(), 
@@ -289,7 +291,7 @@ export default function Assessment() {
         frequency: onboardingData.activityLevel?.weeklyFrequency,
         duration: onboardingData.activityLevel?.sessionDuration,
         goal: onboardingData.goal,
-        level: levelResult.level, // ✅ LIVELLO CORRETTO
+        level: levelResult.level, // ✅ LIVELLO CORRETTO (70% + 30%)
         finalScore: levelResult.finalScore,
         practicalScore: levelResult.practicalScore,
         physicalScore: levelResult.physicalScore,
@@ -306,7 +308,7 @@ export default function Assessment() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        await supabase
+        const { error: profileError } = await supabase
           .from('user_profiles')
           .update({ 
             onboarding_completed: true,
@@ -322,7 +324,11 @@ export default function Assessment() {
           })
           .eq('user_id', user.id);
 
-        await supabase
+        if (profileError) {
+          console.error('[ASSESSMENT] Error updating profile:', profileError);
+        }
+
+        const { error: assessmentError } = await supabase
           .from('assessments')
           .insert({
             user_id: user.id,
@@ -335,9 +341,13 @@ export default function Assessment() {
             completed: true,
             completed_at: new Date().toISOString()
           });
+
+        if (assessmentError) {
+          console.error('[ASSESSMENT] Error saving assessment:', assessmentError);
+        }
       }
     } catch (error) {
-      console.error('Error in complete:', error);
+      console.error('[ASSESSMENT] Error in complete:', error);
     } finally {
       setSaving(false);
       navigate('/dashboard');
@@ -349,8 +359,8 @@ export default function Assessment() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-          <p className="text-white text-lg font-semibold mb-2">Calcolo livello e salvataggio...</p>
-          <p className="text-slate-400 text-sm">Stiamo creando il tuo programma personalizzato</p>
+          <p className="text-white text-lg font-semibold mb-2">Calcolo livello finale...</p>
+          <p className="text-slate-400 text-sm">Analisi performance (70%) + parametri fisici (30%)</p>
         </div>
       </div>
     );
@@ -370,6 +380,7 @@ export default function Assessment() {
               style={{ width: `${progress}%` }} 
             />
           </div>
+          {/* ✅ MOSTRA SOLO LOCATION E QUIZ SCORE - NO LIVELLO */}
           <div className="flex justify-between text-sm text-slate-400 mt-2">
             <span>Location: <span className="text-emerald-400 font-semibold">{isGym ? '🏋️ Palestra' : '🏠 Casa'}</span></span>
             <span>Quiz: <span className="text-emerald-400 font-semibold">{quizData.score}%</span></span>
