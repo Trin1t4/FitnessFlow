@@ -29,12 +29,6 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    console.log('[API] 🔍 USER DATA:', {
-      location: userData.onboarding_data?.trainingLocation,
-      equipment: userData.onboarding_data?.equipment,
-      goal: userData.onboarding_data?.goal
-    });
-
     // Fetch assessment data
     const { data: assessmentData, error: assessmentError } = await supabase
       .from('assessments')
@@ -47,66 +41,61 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Assessment not found' });
     }
 
-    console.log('[API] 📊 RAW ASSESSMENT:', {
-      assessment_type: assessmentData.assessment_type,
-      has_exercises: !!assessmentData.exercises,
-      exercises_length: assessmentData.exercises?.length
-    });
+    const onboardingData = userData.onboarding_data || {};
 
-    // ✅ FIX: Converti exercises JSON in formato assessments
+    console.log('[API] 🎯 Starting intelligent level calculation...');
+
+    // ✅ CALCOLO LIVELLO INTELLIGENTE
+    const intelligentLevel = calculateIntelligentLevel(
+      assessmentData, 
+      onboardingData
+    );
+
+    console.log('[API] 📊 Intelligent Level Result:', intelligentLevel);
+
+    // ✅ CONVERTI ASSESSMENT IN FORMATO STANDARD
     let assessments = [];
     
     if (assessmentData.assessment_type === 'home' && assessmentData.exercises) {
-      // CASA: converti da exercises JSON a formato standard
-      assessments = convertHomeAssessmentToStandard(assessmentData.exercises);
-      console.log('[API] 🏠 Converted HOME assessment:', assessments);
+      assessments = convertHomeAssessmentToStandard(
+        assessmentData.exercises,
+        intelligentLevel.bodyweight
+      );
+      console.log('[API] 🏠 Home assessment converted:', assessments);
       
     } else if (assessmentData.assessment_type === 'gym') {
-      // PALESTRA: usa 1RM dalle colonne
-      assessments = [
-        { exerciseName: 'Squat', oneRepMax: assessmentData.squat_1rm || 50 },
-        { exerciseName: 'Panca', oneRepMax: assessmentData.bench_1rm || 40 },
-        { exerciseName: 'Stacco', oneRepMax: assessmentData.deadlift_1rm || 60 },
-        { exerciseName: 'Trazioni', oneRepMax: assessmentData.pullup_1rm || 30 },
-        { exerciseName: 'Press', oneRepMax: assessmentData.press_1rm || 30 }
-      ];
-      console.log('[API] 🏋️ GYM assessment:', assessments);
-      
-    } else {
-      // FALLBACK: valori di default
-      assessments = [
-        { exerciseName: 'Squat', oneRepMax: 50 },
-        { exerciseName: 'Panca', oneRepMax: 40 },
-        { exerciseName: 'Stacco', oneRepMax: 60 },
-        { exerciseName: 'Trazioni', oneRepMax: 30 },
-        { exerciseName: 'Press', oneRepMax: 30 }
-      ];
-      console.warn('[API] ⚠️ Using default assessments');
+      assessments = convertGymAssessmentToStandard(
+        assessmentData,
+        intelligentLevel.bodyweight
+      );
+      console.log('[API] 🏋️ Gym assessment converted:', assessments);
     }
 
-    const onboardingData = userData.onboarding_data || {};
-    
+    // ✅ PREPARA INPUT PROGRAMMA
     const programInput = {
       userId,
       assessmentId,
       location: onboardingData.trainingLocation || 'gym',
       equipment: onboardingData.equipment || {},
       goal: onboardingData.goal || 'muscle_gain',
-      level: assessmentData.level || 'beginner',
+      level: intelligentLevel.finalLevel, // ✅ USA LIVELLO INTELLIGENTE
       frequency: onboardingData.activityLevel?.weeklyFrequency || 3,
       painAreas: onboardingData.painAreas || [],
       disabilityType: onboardingData.disabilityType || null,
       sportRole: onboardingData.sportRole || null,
       specificBodyParts: onboardingData.specificBodyParts || [],
-      assessments: assessments // ✅ FIX: usa assessments convertiti
+      assessments: assessments,
+      exerciseVariants: assessmentData.exercises || [] // ✅ PASSA VARIANTI
     };
 
-    console.log('[API] 📤 FINAL INPUT:', {
-      location: programInput.location,
-      equipment: programInput.equipment,
-      goal: programInput.goal,
+    console.log('[API] 📤 Final Program Input:', {
       level: programInput.level,
-      assessments: programInput.assessments
+      location: programInput.location,
+      assessments: programInput.assessments.map(a => ({
+        name: a.exerciseName,
+        oneRepMax: a.oneRepMax,
+        variant: a.variant
+      }))
     });
 
     // Generate program
@@ -147,7 +136,8 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
       success: true, 
       programId: savedProgram.id,
-      program: savedProgram
+      program: savedProgram,
+      levelAnalysis: intelligentLevel // ✅ RITORNA ANALISI LIVELLO
     });
 
   } catch (error) {
@@ -156,51 +146,193 @@ export default async function handler(req, res) {
   }
 }
 
-// ✅ FIX: Funzione per convertire assessment HOME in formato standard
-function convertHomeAssessmentToStandard(exercises) {
-  if (!exercises || !Array.isArray(exercises)) {
-    return [];
+// ===== CALCOLO LIVELLO INTELLIGENTE (70% QUIZ + 30% FISICO) =====
+
+function calculateIntelligentLevel(assessmentData, onboardingData) {
+  console.log('[LEVEL] 🧮 Starting level calculation...');
+  
+  const bodyweight = onboardingData.biometrics?.weight || 70; // kg
+  const height = onboardingData.biometrics?.height || 175; // cm
+  const age = onboardingData.biometrics?.age || 30;
+  const gender = onboardingData.biometrics?.gender || 'male';
+
+  // ===== 1. QUIZ/TEST SCORE (70%) =====
+  let quizScore = 0;
+  let quizMaxScore = 0;
+
+  if (assessmentData.assessment_type === 'home' && assessmentData.exercises) {
+    // CASA: Calcola da progressioni bodyweight
+    assessmentData.exercises.forEach(ex => {
+      const level = ex.variant?.level || 1;
+      const maxReps = ex.variant?.maxReps || 1;
+      
+      // Score basato su livello progressione (1-5) e reps
+      const exerciseScore = level * 20 + Math.min(maxReps, 20); // Max 100 + 20 = 120
+      quizScore += exerciseScore;
+      quizMaxScore += 120;
+      
+      console.log(`[LEVEL] 📊 ${ex.name}: level=${level}, maxReps=${maxReps}, score=${exerciseScore}`);
+    });
+  } else if (assessmentData.assessment_type === 'gym') {
+    // PALESTRA: Calcola da 1RM relativi al peso corporeo
+    const exercises = [
+      { name: 'Squat', rm: assessmentData.squat_1rm, standard: gender === 'male' ? 1.5 : 1.0 },
+      { name: 'Bench', rm: assessmentData.bench_1rm, standard: gender === 'male' ? 1.0 : 0.6 },
+      { name: 'Deadlift', rm: assessmentData.deadlift_1rm, standard: gender === 'male' ? 2.0 : 1.3 },
+      { name: 'Press', rm: assessmentData.press_1rm, standard: gender === 'male' ? 0.75 : 0.5 },
+      { name: 'Pullup', rm: assessmentData.pullup_1rm, standard: gender === 'male' ? 1.0 : 0.8 }
+    ];
+
+    exercises.forEach(ex => {
+      if (ex.rm && ex.rm > 0) {
+        const relativeStrength = ex.rm / bodyweight;
+        const percentOfStandard = (relativeStrength / ex.standard) * 100;
+        
+        // Score 0-120 basato su % dello standard
+        const exerciseScore = Math.min(percentOfStandard, 150) * 0.8; // Max 120
+        quizScore += exerciseScore;
+        quizMaxScore += 120;
+        
+        console.log(`[LEVEL] 🏋️ ${ex.name}: ${ex.rm}kg / ${bodyweight}kg BW = ${relativeStrength.toFixed(2)}x (${percentOfStandard.toFixed(0)}% standard) → score=${exerciseScore.toFixed(0)}`);
+      }
+    });
   }
+
+  const quizPercentage = quizMaxScore > 0 ? (quizScore / quizMaxScore) * 100 : 50;
+  console.log(`[LEVEL] 📝 Quiz Score: ${quizScore.toFixed(0)}/${quizMaxScore} = ${quizPercentage.toFixed(1)}%`);
+
+  // ===== 2. PARAMETRI FISICI SCORE (30%) =====
+  
+  // BMI
+  const bmi = bodyweight / ((height / 100) ** 2);
+  const bmiScore = bmi >= 18.5 && bmi <= 25 ? 100 : 
+                   bmi < 18.5 ? Math.max(0, 50 + (bmi - 18.5) * 10) :
+                   Math.max(0, 100 - (bmi - 25) * 5);
+
+  // Età (peak 20-30 anni)
+  const ageScore = age <= 30 ? 100 :
+                   age <= 40 ? 90 :
+                   age <= 50 ? 80 :
+                   age <= 60 ? 70 : 60;
+
+  const physicalScore = (bmiScore * 0.6 + ageScore * 0.4);
+  console.log(`[LEVEL] 💪 Physical Score: BMI=${bmi.toFixed(1)} (${bmiScore.toFixed(0)}/100), Age=${age} (${ageScore}/100) → ${physicalScore.toFixed(1)}%`);
+
+  // ===== 3. MEDIA PONDERATA (70% Quiz + 30% Fisico) =====
+  const weightedScore = (quizPercentage * 0.7) + (physicalScore * 0.3);
+  console.log(`[LEVEL] ⚖️ Weighted Score: ${quizPercentage.toFixed(1)}% × 0.7 + ${physicalScore.toFixed(1)}% × 0.3 = ${weightedScore.toFixed(1)}%`);
+
+  // ===== 4. DETERMINA LIVELLO FINALE =====
+  let finalLevel;
+  if (weightedScore >= 75) {
+    finalLevel = 'advanced';
+  } else if (weightedScore >= 50) {
+    finalLevel = 'intermediate';
+  } else {
+    finalLevel = 'beginner';
+  }
+
+  console.log(`[LEVEL] 🎯 FINAL LEVEL: ${finalLevel.toUpperCase()} (score: ${weightedScore.toFixed(1)}%)`);
+
+  return {
+    finalLevel,
+    weightedScore: weightedScore.toFixed(1),
+    quizScore: quizPercentage.toFixed(1),
+    physicalScore: physicalScore.toFixed(1),
+    bodyweight,
+    bmi: bmi.toFixed(1),
+    age,
+    breakdown: {
+      quiz: `${quizPercentage.toFixed(1)}% (70% weight)`,
+      physical: `${physicalScore.toFixed(1)}% (30% weight)`,
+      final: `${weightedScore.toFixed(1)}%`
+    }
+  };
+}
+
+// ===== CONVERSIONE HOME ASSESSMENT =====
+
+function convertHomeAssessmentToStandard(exercises, bodyweight) {
+  if (!exercises || !Array.isArray(exercises)) return [];
 
   const assessments = [];
 
   exercises.forEach(ex => {
     const maxReps = ex.variant?.maxReps || 8;
     const level = ex.variant?.level || 1;
+    const variantName = ex.variant?.name || '';
     
-    // Calcola un "peso virtuale" basato su maxReps e level
-    // Più reps e livello alto = "peso" più alto (rappresenta forza relativa)
-    const virtualWeight = maxReps * level * 5; // Es: 8 reps * level 4 * 5 = 160
+    // Calcola "peso virtuale" per bodyweight
+    // Level 4 con 8 reps = forte (~ 1.2x BW)
+    // Level 1 con 8 reps = debole (~ 0.6x BW)
+    const strengthMultiplier = 0.4 + (level * 0.2); // 0.6x a 1.4x
+    const repsMultiplier = Math.min(maxReps / 10, 1.5); // Max 1.5x
+    const virtualWeight = bodyweight * strengthMultiplier * repsMultiplier;
     
     // Mappa nomi esercizi
     let mappedName = ex.name;
     if (ex.name === 'Squat') mappedName = 'Squat';
-    else if (ex.name === 'Push-up') mappedName = 'Panca'; // Push-up ~ Panca
+    else if (ex.name === 'Push-up') mappedName = 'Panca';
     else if (ex.name === 'Trazioni') mappedName = 'Trazioni';
     else if (ex.name.includes('Spalle')) mappedName = 'Press';
-    else if (ex.name.includes('Gambe')) mappedName = 'Stacco'; // Gambe unilaterali ~ Stacco
+    else if (ex.name.includes('Gambe')) mappedName = 'Stacco';
     
     assessments.push({
       exerciseName: mappedName,
-      oneRepMax: virtualWeight,
-      maxReps: maxReps, // ✅ IMPORTANTE: mantieni maxReps per progressioni bodyweight
+      oneRepMax: Math.round(virtualWeight),
+      maxReps: maxReps,
       level: level,
-      variant: ex.variant?.name
+      variant: variantName
     });
   });
 
-  // Aggiungi esercizi mancanti con valori di default
-  const requiredExercises = ['Squat', 'Panca', 'Stacco', 'Trazioni', 'Press'];
-  requiredExercises.forEach(required => {
-    if (!assessments.find(a => a.exerciseName === required)) {
+  // Aggiungi esercizi mancanti
+  const required = ['Squat', 'Panca', 'Stacco', 'Trazioni', 'Press'];
+  required.forEach(req => {
+    if (!assessments.find(a => a.exerciseName === req)) {
       assessments.push({
-        exerciseName: required,
-        oneRepMax: 50,
+        exerciseName: req,
+        oneRepMax: Math.round(bodyweight * 0.6),
         maxReps: 8,
-        level: 1
+        level: 1,
+        variant: 'Base'
       });
     }
   });
+
+  return assessments;
+}
+
+// ===== CONVERSIONE GYM ASSESSMENT =====
+
+function convertGymAssessmentToStandard(assessmentData, bodyweight) {
+  const assessments = [
+    { 
+      exerciseName: 'Squat', 
+      oneRepMax: assessmentData.squat_1rm || bodyweight * 1.2,
+      relativeStrength: (assessmentData.squat_1rm || 0) / bodyweight
+    },
+    { 
+      exerciseName: 'Panca', 
+      oneRepMax: assessmentData.bench_1rm || bodyweight * 0.8,
+      relativeStrength: (assessmentData.bench_1rm || 0) / bodyweight
+    },
+    { 
+      exerciseName: 'Stacco', 
+      oneRepMax: assessmentData.deadlift_1rm || bodyweight * 1.5,
+      relativeStrength: (assessmentData.deadlift_1rm || 0) / bodyweight
+    },
+    { 
+      exerciseName: 'Trazioni', 
+      oneRepMax: assessmentData.pullup_1rm || bodyweight * 0.8,
+      relativeStrength: (assessmentData.pullup_1rm || 0) / bodyweight
+    },
+    { 
+      exerciseName: 'Press', 
+      oneRepMax: assessmentData.press_1rm || bodyweight * 0.6,
+      relativeStrength: (assessmentData.press_1rm || 0) / bodyweight
+    }
+  ];
 
   return assessments;
 }
