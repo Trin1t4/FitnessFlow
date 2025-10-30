@@ -68,6 +68,77 @@ const LEVEL_CONFIG = {
   }
 }
 
+// ===== MOTOR RECOVERY CONFIGURATION =====
+
+const MOTOR_RECOVERY_GOALS = {
+  'ankle_stability': {
+    name: 'Stabilità Caviglia',
+    exercises: [
+      { name: 'Single Leg Stance', sets: 3, reps: '30-60s', rest: 60 },
+      { name: 'Ankle Circles', sets: 3, reps: '15 per direzione', rest: 45 },
+      { name: 'Seated Ankle Dorsiflexion', sets: 3, reps: '20', rest: 60 },
+      { name: 'Calf Raises su Una Gamba', sets: 3, reps: '12-15', rest: 90 },
+      { name: 'Balance Board Work', sets: 3, reps: '45s', rest: 60 },
+      { name: 'Proprioceptive Training', sets: 3, reps: '30-45s', rest: 60 }
+    ]
+  },
+  'knee_stability': {
+    name: 'Stabilità Ginocchio',
+    exercises: [
+      { name: 'Isometric Quad Hold', sets: 3, reps: '30-45s', rest: 60 },
+      { name: 'Short Arc Quads', sets: 3, reps: '15-20', rest: 60 },
+      { name: 'VMO (Vastus Medialis Obliquus) Work', sets: 3, reps: '15', rest: 60 },
+      { name: 'Glute Bridge Isometric', sets: 3, reps: '30-45s', rest: 90 },
+      { name: 'Single Leg Balance', sets: 3, reps: '45s', rest: 60 },
+      { name: 'Step-Up Recovery', sets: 3, reps: '10 per lato', rest: 90 }
+    ]
+  },
+  'hip_mobility': {
+    name: 'Mobilità Anca',
+    exercises: [
+      { name: 'Hip Flexor Stretch', sets: 3, reps: '45s', rest: 60 },
+      { name: 'Pigeon Pose', sets: 3, reps: '60s', rest: 90 },
+      { name: 'Clamshells', sets: 3, reps: '15', rest: 60 },
+      { name: 'Hip Rotations', sets: 3, reps: '12 per lato', rest: 60 },
+      { name: 'Glute Activation (Bridges)', sets: 3, reps: '15-20', rest: 90 },
+      { name: 'Fire Log Stretch', sets: 3, reps: '45-60s', rest: 90 }
+    ]
+  },
+  'shoulder_stability': {
+    name: 'Stabilità Spalla',
+    exercises: [
+      { name: 'Scapular Push-up', sets: 3, reps: '12-15', rest: 60 },
+      { name: 'Shoulder Blade Squeeze', sets: 3, reps: '15-20', rest: 60 },
+      { name: 'External Rotation (Prone)', sets: 3, reps: '15', rest: 60 },
+      { name: 'Band Pull-Apart', sets: 3, reps: '20', rest: 60 },
+      { name: 'Dead Hang Hold', sets: 3, reps: '20-30s', rest: 90 },
+      { name: 'Shoulder Shrugs (Isometric)', sets: 3, reps: '30-45s', rest: 60 }
+    ]
+  },
+  'lower_back_rehabilitation': {
+    name: 'Riabilitazione Schiena',
+    exercises: [
+      { name: 'Quadruped Bird Dogs', sets: 3, reps: '12 per lato', rest: 60 },
+      { name: 'Dead Bugs', sets: 3, reps: '12-15', rest: 60 },
+      { name: 'Modified Planks', sets: 3, reps: '20-30s', rest: 60 },
+      { name: 'Glute Bridges', sets: 3, reps: '15-20', rest: 90 },
+      { name: 'Cat-Cow Stretches', sets: 3, reps: '10', rest: 60 },
+      { name: 'Child Pose Hold', sets: 3, reps: '45-60s', rest: 90 }
+    ]
+  },
+  'wrist_mobility': {
+    name: 'Mobilità Polso',
+    exercises: [
+      { name: 'Wrist Circles', sets: 3, reps: '15 per direzione', rest: 45 },
+      { name: 'Wrist Flexor Stretch', sets: 3, reps: '45s', rest: 60 },
+      { name: 'Wrist Extensor Stretch', sets: 3, reps: '45s', rest: 60 },
+      { name: 'Pronate/Supinate Movements', sets: 3, reps: '15', rest: 60 },
+      { name: 'Wall Wrist Holds', sets: 3, reps: '30-45s', rest: 90 },
+      { name: 'Wrist Curls (Light)', sets: 3, reps: '15-20', rest: 60 }
+    ]
+  }
+}
+
 // ===== HELPER FUNCTIONS =====
 
 function isBodyweightExercise(exerciseName) {
@@ -79,7 +150,7 @@ function isBodyweightExercise(exerciseName) {
     'leg raise', 'australian pull-up', 'inverted row', 'floor pull',
     'dead hang', 'scapular', 'floor slide', 'bird dog', 'l-sit', 'assistito',
     'squat bulgaro', 'affondi', 'glute bridge', 'wall sit', 'calf raises',
-    'chin-up', 'negative', 'isometric', 'hold', 'ytw'
+    'chin-up', 'negative', 'isometric', 'hold', 'ytw', 'mobility', 'stretch'
   ]
 
   const name = exerciseName.toLowerCase()
@@ -295,7 +366,55 @@ function convertToBodyweight(exerciseName, level) {
   return 'Burpees'
 }
 
-// ===== GENERAZIONE PROGRAMMA =====
+// ===== MOTOR RECOVERY SCREENING & BRANCHING =====
+
+export function generateMotorRecoveryProgram(input) {
+  const { level, painAreas = [], location, goal } = input
+
+  console.log('[PROGRAM] 🏥 Generating MOTOR RECOVERY program for:', { painAreas, goal })
+
+  if (!painAreas || painAreas.length === 0) {
+    console.warn('[PROGRAM] ⚠️ No pain areas specified for motor recovery')
+    return null
+  }
+
+  const weeklySchedule = []
+
+  painAreas.forEach(area => {
+    const recoveryConfig = MOTOR_RECOVERY_GOALS[area]
+
+    if (!recoveryConfig) {
+      console.warn(`[PROGRAM] ⚠️ No recovery config for: ${area}`)
+      return
+    }
+
+    weeklySchedule.push({
+      dayName: recoveryConfig.name,
+      focus: area,
+      exercises: recoveryConfig.exercises.map(ex => ({
+        ...ex,
+        weight: null,
+        notes: '⚠️ Recupero motorio - NO carico'
+      }))
+    })
+  })
+
+  return {
+    name: `Riabilitazione ${level} - Recupero Motorio`,
+    description: `Programma specifico per ${painAreas.join(', ')}`,
+    split: 'motor_recovery',
+    daysPerWeek: painAreas.length,
+    weeklySchedule,
+    progression: 'low_intensity_stability',
+    includesDeload: true,
+    deloadFrequency: 2,
+    totalWeeks: 4,
+    requiresEndCycleTest: false,
+    isRecoveryProgram: true
+  }
+}
+
+// ===== GENERAZIONE PROGRAMMA STANDARD =====
 
 export function generateProgram(input) {
   const { level, frequency, location, equipment, painAreas = [], assessments = [], goal, disabilityType, sportRole } = input
@@ -306,8 +425,14 @@ export function generateProgram(input) {
     location,
     equipment,
     goal,
+    painAreas,
     assessmentsCount: assessments?.length
   })
+
+  // ===== BRANCHING: Se il goal è recupero motorio =====
+  if (goal === 'motor_recovery' || goal === 'rehabilitation') {
+    return generateMotorRecoveryProgram({ level, painAreas, location, goal })
+  }
 
   let split, daysPerWeek
 
@@ -370,7 +495,6 @@ export function generatePerformanceHomeProgram(input) {
 
   const weeklySchedule = []
 
-  // Scheda A: Esplosività Lower + Core
   weeklySchedule.push({
     dayName: 'Esplosività Gambe',
     exercises: [
@@ -383,7 +507,6 @@ export function generatePerformanceHomeProgram(input) {
     ]
   })
 
-  // Scheda B: Esplosività Upper + Coordinazione
   weeklySchedule.push({
     dayName: 'Esplosività Busto',
     exercises: [
@@ -396,7 +519,6 @@ export function generatePerformanceHomeProgram(input) {
     ]
   })
 
-  // Scheda C: Conditioning + Agilità
   weeklySchedule.push({
     dayName: 'Conditioning Sport',
     exercises: [
@@ -434,43 +556,44 @@ function generateWeeklySchedule(split, daysPerWeek, location, equipment, painAre
     if (daysPerWeek === 1) {
       schedule.push({
         dayName: 'Full Body',
+        location,
         exercises: generateFullBodyDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole)
       })
     } else if (daysPerWeek === 2) {
       schedule.push(
-        { dayName: 'Full Body A', exercises: generateFullBodyDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-        { dayName: 'Full Body B', exercises: generateFullBodyDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) }
+        { dayName: 'Full Body A', location, exercises: generateFullBodyDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+        { dayName: 'Full Body B', location, exercises: generateFullBodyDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) }
       )
     } else if (daysPerWeek === 3) {
       schedule.push(
-        { dayName: 'Full Body A', exercises: generateFullBodyDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-        { dayName: 'Full Body B', exercises: generateFullBodyDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-        { dayName: 'Full Body C', exercises: generateFullBodyDay('C', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) }
+        { dayName: 'Full Body A', location, exercises: generateFullBodyDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+        { dayName: 'Full Body B', location, exercises: generateFullBodyDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+        { dayName: 'Full Body C', location, exercises: generateFullBodyDay('C', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) }
       )
     }
   } else if (split === 'upper_lower') {
     schedule.push(
-      { dayName: 'Upper A', exercises: generateUpperDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-      { dayName: 'Lower A', exercises: generateLowerDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-      { dayName: 'Upper B', exercises: generateUpperDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-      { dayName: 'Lower B', exercises: generateLowerDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) }
+      { dayName: 'Upper A', location, exercises: generateUpperDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+      { dayName: 'Lower A', location, exercises: generateLowerDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+      { dayName: 'Upper B', location, exercises: generateUpperDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+      { dayName: 'Lower B', location, exercises: generateLowerDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) }
     )
   } else if (split === 'ppl_plus') {
     schedule.push(
-      { dayName: 'Push', exercises: generatePushDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-      { dayName: 'Pull', exercises: generatePullDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-      { dayName: 'Legs', exercises: generateLegsDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-      { dayName: 'Upper', exercises: generateUpperDay('C', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-      { dayName: 'Lower', exercises: generateLowerDay('C', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) }
+      { dayName: 'Push', location, exercises: generatePushDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+      { dayName: 'Pull', location, exercises: generatePullDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+      { dayName: 'Legs', location, exercises: generateLegsDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+      { dayName: 'Upper', location, exercises: generateUpperDay('C', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+      { dayName: 'Lower', location, exercises: generateLowerDay('C', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) }
     )
   } else {
     schedule.push(
-      { dayName: 'Push A', exercises: generatePushDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-      { dayName: 'Pull A', exercises: generatePullDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-      { dayName: 'Legs A', exercises: generateLegsDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-      { dayName: 'Push B', exercises: generatePushDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-      { dayName: 'Pull B', exercises: generatePullDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
-      { dayName: 'Legs B', exercises: generateLegsDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) }
+      { dayName: 'Push A', location, exercises: generatePushDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+      { dayName: 'Pull A', location, exercises: generatePullDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+      { dayName: 'Legs A', location, exercises: generateLegsDay('A', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+      { dayName: 'Push B', location, exercises: generatePushDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+      { dayName: 'Pull B', location, exercises: generatePullDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) },
+      { dayName: 'Legs B', location, exercises: generateLegsDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) }
     )
   }
 
