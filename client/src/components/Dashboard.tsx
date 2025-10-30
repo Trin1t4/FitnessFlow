@@ -80,17 +80,26 @@ export default function Dashboard() {
 
       // ✅ LEGGI ONBOARDING + QUIZ DA LOCALSTORAGE
       const onboardingDataRaw = localStorage.getItem('onboarding_data');
-      const quizDataRaw = localStorage.getItem('quiz_data');
+const quizDataRaw = localStorage.getItem('quiz_data');
 
-      if (!onboardingDataRaw) {
-        alert('Dati onboarding mancanti. Rifai lo screening.');
-        navigate('/onboarding');
-        setGeneratingProgram(false);
-        return;
-      }
+if (!onboardingDataRaw) {
+  alert('Dati onboarding mancanti. Rifai lo screening.');
+  navigate('/onboarding');
+  setGeneratingProgram(false);
+  return;
+}
 
-      const onboardingData = JSON.parse(onboardingDataRaw);
-      const quizData = quizDataRaw ? JSON.parse(quizDataRaw) : null;
+const onboardingData = JSON.parse(onboardingDataRaw);
+const quizData = quizDataRaw ? JSON.parse(quizDataRaw) : null;
+
+// ✅ Se goal !== motor_recovery, quiz_data DEVE esistere
+if (onboardingData.goal !== 'motor_recovery' && !quizDataRaw) {
+  alert('Dati quiz mancanti. Rifai lo screening.');
+  navigate('/quiz');
+  setGeneratingProgram(false);
+  return;
+}
+
 
       // ✅ BRANCH CONDIZIONALE: Recovery vs Normale
       let programInput;
