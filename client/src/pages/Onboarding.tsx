@@ -57,17 +57,23 @@ export default function Onboarding() {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
-      // ✅ Salva e naviga al body scan
+      // ✅ Salva e naviga (con branch condizionale)
       setIsSaving(true);
       try {
-        // 1. Salva in localStorage (per compatibilità)
+        // 1. Salva in localStorage
         localStorage.setItem('onboarding_data', JSON.stringify(data));
         
         // 2. Salva in Supabase
         await saveOnboardingToDatabase(data);
         
-        // 3. Naviga al body scan
-        navigate('/body-scan');
+        // 3. ✅ BRANCH CONDIZIONALE: Recupero Motorio vs Flow Normale
+        if (data.goal === 'motor_recovery') {
+          console.log('[ONBOARDING] Motor recovery goal detected → navigating to /recovery-screening');
+          navigate('/recovery-screening');
+        } else {
+          console.log('[ONBOARDING] Standard goal → navigating to /body-scan');
+          navigate('/body-scan');
+        }
       } catch (error) {
         console.error('Error saving onboarding:', error);
         alert('Errore nel salvare i dati. Riprova.');
