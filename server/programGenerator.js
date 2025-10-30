@@ -68,41 +68,6 @@ const LEVEL_CONFIG = {
   }
 }
 
-// ===== PRE-WORKOUT SCREENING QUESTIONNAIRE =====
-
-const PRE_WORKOUT_SCREENING = {
-  sleep: {
-    question: 'Quante ore hai dormito stanotte?',
-    options: [
-      { value: 'poor', label: 'Meno di 5 ore', intensity_reduction: 0.7 },
-      { value: 'fair', label: '5-7 ore', intensity_reduction: 0.85 },
-      { value: 'good', label: '7-9 ore', intensity_reduction: 1.0 },
-      { value: 'excellent', label: 'Più di 9 ore', intensity_reduction: 1.0 }
-    ]
-  },
-  stress: {
-    question: 'Come è il tuo livello di stress oggi? (1-5)',
-    options: [
-      { value: 1, label: 'Molto basso', intensity_reduction: 1.0 },
-      { value: 2, label: 'Basso', intensity_reduction: 0.95 },
-      { value: 3, label: 'Moderato', intensity_reduction: 0.9 },
-      { value: 4, label: 'Alto', intensity_reduction: 0.8 },
-      { value: 5, label: 'Molto alto', intensity_reduction: 0.6 }
-    ]
-  },
-  pain: {
-    question: 'Hai dolori attuali? Dove e quanto intensi? (1-10)',
-    options: [
-      { area: 'neck', intensity: 0, multiplier: 1.0 },
-      { area: 'shoulder', intensity: 0, multiplier: 1.0 },
-      { area: 'lower_back', intensity: 0, multiplier: 1.0 },
-      { area: 'knee', intensity: 0, multiplier: 1.0 },
-      { area: 'ankle', intensity: 0, multiplier: 1.0 },
-      { area: 'wrist', intensity: 0, multiplier: 1.0 }
-    ]
-  }
-}
-
 // ===== MOTOR RECOVERY CONFIGURATION (+ COLLO) =====
 
 const MOTOR_RECOVERY_GOALS = {
@@ -196,7 +161,7 @@ const MOTOR_RECOVERY_GOALS = {
   }
 }
 
-// ===== HELPER FUNCTIONS =====
+// ===== HELPER FUNCTIONS (UNICO BLOCCO - NO DUPLICATI) =====
 
 function isBodyweightExercise(exerciseName) {
   const bodyweightKeywords = [
@@ -216,7 +181,6 @@ function isBodyweightExercise(exerciseName) {
 
 function hasWeightedEquipment(equipment) {
   if (!equipment) return false
-
   return !!(
     equipment.barbell ||
     (equipment.dumbbellMaxKg && equipment.dumbbellMaxKg > 0) ||
@@ -224,11 +188,8 @@ function hasWeightedEquipment(equipment) {
   )
 }
 
-// ===== CONVERSIONE BODYWEIGHT COMPLETA =====
-
 function convertToBodyweight(exerciseName, level) {
   const name = exerciseName.toLowerCase()
-
   console.log(`[CONVERT] Converting "${exerciseName}" to bodyweight for ${level}`)
 
   // GAMBE - SQUAT
@@ -393,9 +354,7 @@ function convertToBodyweight(exerciseName, level) {
     return 'Scapular Pull-up'
   }
 
-  if (name.includes('shrug')) {
-    return 'Dead Hang'
-  }
+  if (name.includes('shrug')) return 'Dead Hang'
 
   // CORE
   if (name.includes('plank')) {
@@ -416,21 +375,153 @@ function convertToBodyweight(exerciseName, level) {
     return 'Toes to Bar'
   }
 
-  // DEFAULT FALLBACK
   console.warn(`[CONVERT] ⚠️ No bodyweight alternative for: "${exerciseName}"`)
   if (level === 'beginner') return 'Plank'
   if (level === 'intermediate') return 'Mountain Climbers'
   return 'Burpees'
 }
 
-// ===== PRE-WORKOUT SCREENING & ADAPTATION =====
+function mapBodyweightToGymExercise(bodyweightName) {
+  const mapping = {
+    'Push-up Standard': 'Panca Piana',
+    'Push-up su Ginocchia': 'Panca Piana',
+    'Pike Push-up': 'Military Press',
+    'Handstand Push-up Assistito': 'Military Press',
+    'Dips su Sedia': 'Dips',
+    'Floor Pull (asciugamano)': 'Lat Pulldown',
+    'Inverted Row 45°': 'Rematore Bilanciere',
+    'Australian Pull-up': 'Trazioni Assistite',
+    'Squat Assistito': 'Squat',
+    'Squat Completo': 'Squat',
+    'Affondi': 'Leg Press',
+    'Glute Bridge': 'Hip Thrust',
+    'Plank': 'Ab Wheel'
+  }
+  return mapping[bodyweightName] || bodyweightName
+}
+
+function getBaseLoads(assessments) {
+  if (!assessments || !Array.isArray(assessments)) {
+    console.warn('[PROGRAM] ⚠️ assessments undefined, using defaults')
+    return { squat: 50, deadlift: 60, bench: 40, pull: 30, press: 30 }
+  }
+
+  const findLoad = (exercise) => {
+    const assessment = assessments.find((a) =>
+      a.exerciseName?.toLowerCase().includes(exercise.toLowerCase())
+    )
+    return assessment ? assessment.oneRepMax : 50
+  }
+
+  return {
+    squat: findLoad('squat'),
+    deadlift: findLoad('stacco'),
+    bench: findLoad('panca'),
+    pull: findLoad('trazioni') || findLoad('pull'),
+    press: findLoad('press') || findLoad('spalle')
+  }
+}
+
+function calculateTrainingWeight(oneRM, targetReps, RIR = 2) {
+  if (!oneRM || oneRM === 0) return null
+  const maxReps = targetReps + RIR
+  const weight = oneRM * (37 - maxReps) / 36
+  return Math.round(weight / 2.5) * 2.5
+}
+
+function calculateSleepReduction(hours) {
+  if (hours < 5) return 0.7
+  if (hours < 6) return 0.80
+  if (hours < 7) return 0.90
+  if (hours <= 9) return 1.0
+  return 0.95
+}
+
+function calculateStressReduction(stressLevel) {
+  if (stressLevel <= 1) return 1.0
+  if (stressLevel === 2) return 0.95
+  if (stressLevel === 3) return 0.90
+  if (stressLevel === 4) return 0.80
+  return 0.60
+}
+
+function generateScreeningWarnings(sleepHours, stressLevel, painAreas) {
+  const warnings = []
+  if (sleepHours < 6) warnings.push('⚠️ Poco sonno: riduci volume e intensità')
+  if (stressLevel >= 4) warnings.push('⚠️ Stress alto: riduci carichi pesanti')
+  if (painAreas.length > 0) warnings.push(`⚠️ Dolori presenti: salta esercizi che li coinvolgono`)
+  return warnings
+}
+
+function isExerciseSafeForPregnancy(exerciseName) {
+  const unsafeExercises = [
+    'Crunch', 'Sit-up', 'V-ups', 'Leg Raises', 'Bicycle Crunch',
+    'Panca Piana', 'Bench Press', 'Floor Press',
+    'Stacco', 'Deadlift', 'Romanian Deadlift', 'Good Morning',
+    'Box Jump', 'Burpees', 'Jump Squat', 'Jump Lunge',
+    'Front Squat', 'Back Squat'
+  ]
+  return !unsafeExercises.some(unsafe =>
+    exerciseName.toLowerCase().includes(unsafe.toLowerCase())
+  )
+}
+
+function isExerciseSafeForDisability(exerciseName, disabilityType) {
+  const complexExercises = [
+    'Clean', 'Snatch', 'Clean & Jerk',
+    'Bulgarian Split Squat', 'Single Leg RDL', 'Pistol Squat',
+    'Overhead Squat', 'Snatch Grip Deadlift'
+  ]
+  return !complexExercises.some(complex =>
+    exerciseName.toLowerCase().includes(complex.toLowerCase())
+  )
+}
+
+function getPregnancySafeAlternative(exerciseName) {
+  const alternatives = {
+    'Panca Piana': 'Panca Inclinata 45°',
+    'Bench Press': 'Incline Press',
+    'Stacco': 'Hip Thrust',
+    'Deadlift': 'Goblet Squat',
+    'Squat': 'Goblet Squat',
+    'Crunch': 'Bird Dog'
+  }
+  for (const [unsafe, safe] of Object.entries(alternatives)) {
+    if (exerciseName.toLowerCase().includes(unsafe.toLowerCase())) return safe
+  }
+  return exerciseName
+}
+
+function getDisabilitySafeAlternative(exerciseName) {
+  const alternatives = {
+    'Bulgarian Split Squat': 'Leg Press',
+    'Single Leg RDL': 'Seated Leg Curl',
+    'Pistol Squat': 'Chair Squat'
+  }
+  for (const [complex, simple] of Object.entries(alternatives)) {
+    if (exerciseName.toLowerCase().includes(complex.toLowerCase())) return simple
+  }
+  return exerciseName
+}
+
+function adjustRepsForDetraining(repsString, detrainingFactor) {
+  if (typeof repsString !== 'string') return repsString
+  if (repsString.includes('-')) {
+    const [min, max] = repsString.split('-').map(Number)
+    const newMin = Math.round(min * detrainingFactor)
+    const newMax = Math.round(max * detrainingFactor)
+    return `${newMin}-${newMax}`
+  }
+  return Math.round(Number(repsString) * detrainingFactor).toString()
+}
+
+// ===== PRE-WORKOUT SCREENING =====
 
 export function conductPreWorkoutScreening(completedScreening) {
   const { sleepHours = 7, stressLevel = 3, painAreas = [] } = completedScreening
 
   console.log('[SCREENING] 📋 Pre-workout assessment:', { sleepHours, stressLevel, painAreas })
 
-  // Calcola reduction factor da screening
   const sleepReduction = calculateSleepReduction(sleepHours)
   const stressReduction = calculateStressReduction(stressLevel)
   const combinedReduction = Math.min(sleepReduction, stressReduction)
@@ -452,32 +543,6 @@ export function conductPreWorkoutScreening(completedScreening) {
   }
 }
 
-function calculateSleepReduction(hours) {
-  if (hours < 5) return 0.7
-  if (hours < 6) return 0.80
-  if (hours < 7) return 0.90
-  if (hours <= 9) return 1.0
-  return 0.95 // Troppo sonno può ridurre energia
-}
-
-function calculateStressReduction(stressLevel) {
-  if (stressLevel <= 1) return 1.0
-  if (stressLevel === 2) return 0.95
-  if (stressLevel === 3) return 0.90
-  if (stressLevel === 4) return 0.80
-  return 0.60
-}
-
-function generateScreeningWarnings(sleepHours, stressLevel, painAreas) {
-  const warnings = []
-
-  if (sleepHours < 6) warnings.push('⚠️ Poco sonno: riduci volume e intensità')
-  if (stressLevel >= 4) warnings.push('⚠️ Stress alto: riduci carichi pesanti')
-  if (painAreas.length > 0) warnings.push(`⚠️ Dolori presenti: salta esercizi che li coinvolgono`)
-
-  return warnings
-}
-
 // ===== RUNTIME SESSION ADAPTATION =====
 
 export function adaptSessionToRuntimeContext(plannedSession, runtimeContext) {
@@ -492,25 +557,21 @@ export function adaptSessionToRuntimeContext(plannedSession, runtimeContext) {
 
   let adaptedSession = { ...plannedSession }
 
-  // ===== STEP 1: SE LOCATION DIVERSA =====
   if (actualLocation && actualLocation !== plannedSession.location) {
     console.log(`[RUNTIME] 📍 Location change: ${plannedSession.location} → ${actualLocation}`)
     adaptedSession = adaptLocationChange(adaptedSession, actualLocation, currentAssessments)
   }
 
-  // ===== STEP 2: SE DOLORI EMERGENTI =====
   if (emergingPainAreas.length > 0) {
     console.log('[RUNTIME] 🩹 Pain areas detected:', emergingPainAreas)
     adaptedSession = adaptToPain(adaptedSession, emergingPainAreas, actualLocation || plannedSession.location)
   }
 
-  // ===== STEP 3: SE DETRAINING =====
   if (detrainingFactor < 1.0) {
     console.log('[RUNTIME] 📉 Detraining factor:', detrainingFactor)
     adaptedSession = recalibrateSessionForDetraining(adaptedSession, detrainingFactor)
   }
 
-  // ===== STEP 4: SE SCREENING RESULTS =====
   if (screeningResults?.recommendations) {
     console.log('[RUNTIME] 📋 Applying screening results:', screeningResults.recommendations)
     adaptedSession = applyScreeningReductions(adaptedSession, screeningResults)
@@ -522,8 +583,6 @@ export function adaptSessionToRuntimeContext(plannedSession, runtimeContext) {
   return adaptedSession
 }
 
-// ===== RAMO 1: CAMBIO LOCATION =====
-
 function adaptLocationChange(plannedSession, newLocation, assessments) {
   console.log(`[ADAPT] Location change: ${plannedSession.location} → ${newLocation}`)
 
@@ -531,11 +590,9 @@ function adaptLocationChange(plannedSession, newLocation, assessments) {
     if (plannedSession.location === 'gym' && newLocation === 'home') {
       return convertGymExerciseToHome(exercise, assessments)
     }
-
     if (plannedSession.location === 'home' && newLocation === 'gym') {
       return convertHomeExerciseToGym(exercise, assessments)
     }
-
     return exercise
   })
 
@@ -562,7 +619,6 @@ function convertGymExerciseToHome(exercise, assessments) {
       notes: `🔄 ${exercise.name} (${exercise.weight}kg) → ${bodyweightName}`
     }
   }
-
   return exercise
 }
 
@@ -588,28 +644,6 @@ function convertHomeExerciseToGym(exercise, assessments) {
     notes: `🔄 ${exercise.name} → ${gymEquivalent} (${estimatedWeight}kg)`
   }
 }
-
-function mapBodyweightToGymExercise(bodyweightName) {
-  const mapping = {
-    'Push-up Standard': 'Panca Piana',
-    'Push-up su Ginocchia': 'Panca Piana',
-    'Pike Push-up': 'Military Press',
-    'Handstand Push-up Assistito': 'Military Press',
-    'Dips su Sedia': 'Dips',
-    'Floor Pull (asciugamano)': 'Lat Pulldown',
-    'Inverted Row 45°': 'Rematore Bilanciere',
-    'Australian Pull-up': 'Trazioni Assistite',
-    'Squat Assistito': 'Squat',
-    'Squat Completo': 'Squat',
-    'Affondi': 'Leg Press',
-    'Glute Bridge': 'Hip Thrust',
-    'Plank': 'Ab Wheel'
-  }
-
-  return mapping[bodyweightName] || bodyweightName
-}
-
-// ===== RAMO 2: ADATTAMENTO DOLORI EMERGENTI =====
 
 function adaptToPain(plannedSession, painAreas, location) {
   console.log('[ADAPT] Adapting to pain:', painAreas)
@@ -657,7 +691,6 @@ function adaptExerciseForPain(exercise, painAreas) {
     }
   }
 
-  // Riduci intensità se rimane l'esercizio
   return {
     ...exercise,
     weight: exercise.weight ? exercise.weight * 0.7 : null,
@@ -665,8 +698,6 @@ function adaptExerciseForPain(exercise, painAreas) {
     notes: `⚠️ Pain-adapted: reduced intensity`
   }
 }
-
-// ===== RAMO 3: ADATTAMENTO DETRAINING =====
 
 function recalibrateSessionForDetraining(plannedSession, detrainingFactor) {
   console.log('[ADAPT] Detraining factor:', detrainingFactor)
@@ -685,19 +716,6 @@ function recalibrateSessionForDetraining(plannedSession, detrainingFactor) {
     isAdapted: true
   }
 }
-
-function adjustRepsForDetraining(repsString, detrainingFactor) {
-  if (typeof repsString !== 'string') return repsString
-  if (repsString.includes('-')) {
-    const [min, max] = repsString.split('-').map(Number)
-    const newMin = Math.round(min * detrainingFactor)
-    const newMax = Math.round(max * detrainingFactor)
-    return `${newMin}-${newMax}`
-  }
-  return Math.round(Number(repsString) * detrainingFactor).toString()
-}
-
-// ===== RAMO 4: ADATTAMENTO SCREENING RESULTS =====
 
 function applyScreeningReductions(plannedSession, screeningResults) {
   const { intensityMultiplier, shouldReduceVolume } = screeningResults.recommendations
@@ -1206,12 +1224,10 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
 
   console.log('[PROGRAM] 🎯 createExercise:', { name, level, type, location })
 
-  // ===== 1. CERCA ASSESSMENT =====
   const assessment = assessments?.find(a =>
     a.exerciseName && name.toLowerCase().includes(a.exerciseName.toLowerCase())
   )
 
-  // ===== 2. USA PROGRESSIONE BODYWEIGHT DA ASSESSMENT =====
   if (assessment?.variant && assessment?.level && BODYWEIGHT_PROGRESSIONS[assessment.exerciseName]) {
     const progressionName = BODYWEIGHT_PROGRESSIONS[assessment.exerciseName][assessment.level]
     const targetReps = assessment.maxReps || 12
@@ -1229,7 +1245,6 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
     }
   }
 
-  // ===== 3. SE CASA SENZA ATTREZZI → CONVERTI A BODYWEIGHT =====
   const hasEquipment = hasWeightedEquipment(equipment)
 
   if (location === 'home' && !hasEquipment) {
@@ -1249,7 +1264,6 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
     }
   }
 
-  // ===== 4. LOGICA STANDARD (gym o home con attrezzi) =====
   const exerciseOrGiantSet = getExerciseForLocation(name, location, equipment, goal || 'muscle_gain', level)
 
   if (typeof exerciseOrGiantSet !== 'string') {
@@ -1269,7 +1283,6 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
 
   const isBodyweight = isBodyweightExercise(exerciseOrGiantSet)
 
-  // ===== 5. CALCOLA REPS =====
   let targetReps = 10
   let reps
 
@@ -1286,7 +1299,6 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
     reps = range > 0 ? `${targetReps - range}-${targetReps + range}` : `${targetReps}`
   }
 
-  // ===== 6. CALCOLA PESO =====
   let trainingWeight = null
 
   if (isBodyweight) {
@@ -1319,109 +1331,7 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
   }
 }
 
-// ===== HELPER FUNCTIONS =====
-
-function getBaseLoads(assessments) {
-  if (!assessments || !Array.isArray(assessments)) {
-    console.warn('[PROGRAM] ⚠️ assessments undefined, using defaults')
-    return {
-      squat: 50,
-      deadlift: 60,
-      bench: 40,
-      pull: 30,
-      press: 30
-    }
-  }
-
-  const findLoad = (exercise) => {
-    const assessment = assessments.find((a) =>
-      a.exerciseName?.toLowerCase().includes(exercise.toLowerCase())
-    )
-    return assessment ? assessment.oneRepMax : 50
-  }
-
-  return {
-    squat: findLoad('squat'),
-    deadlift: findLoad('stacco'),
-    bench: findLoad('panca'),
-    pull: findLoad('trazioni') || findLoad('pull'),
-    press: findLoad('press') || findLoad('spalle')
-  }
-}
-
-function calculateTrainingWeight(oneRM, targetReps, RIR = 2) {
-  if (!oneRM || oneRM === 0) return null
-
-  const maxReps = targetReps + RIR
-  const weight = oneRM * (37 - maxReps) / 36
-
-  return Math.round(weight / 2.5) * 2.5
-}
-
-function isExerciseSafeForPregnancy(exerciseName) {
-  const unsafeExercises = [
-    'Crunch', 'Sit-up', 'V-ups', 'Leg Raises', 'Bicycle Crunch',
-    'Panca Piana', 'Bench Press', 'Floor Press',
-    'Stacco', 'Deadlift', 'Romanian Deadlift', 'Good Morning',
-    'Box Jump', 'Burpees', 'Jump Squat', 'Jump Lunge',
-    'Front Squat', 'Back Squat'
-  ]
-
-  return !unsafeExercises.some(unsafe =>
-    exerciseName.toLowerCase().includes(unsafe.toLowerCase())
-  )
-}
-
-function isExerciseSafeForDisability(exerciseName, disabilityType) {
-  const complexExercises = [
-    'Clean', 'Snatch', 'Clean & Jerk',
-    'Bulgarian Split Squat', 'Single Leg RDL', 'Pistol Squat',
-    'Overhead Squat', 'Snatch Grip Deadlift'
-  ]
-
-  return !complexExercises.some(complex =>
-    exerciseName.toLowerCase().includes(complex.toLowerCase())
-  )
-}
-
-function getPregnancySafeAlternative(exerciseName) {
-  const alternatives = {
-    'Panca Piana': 'Panca Inclinata 45°',
-    'Bench Press': 'Incline Press',
-    'Stacco': 'Hip Thrust',
-    'Deadlift': 'Goblet Squat',
-    'Squat': 'Goblet Squat',
-    'Crunch': 'Bird Dog'
-  }
-
-  for (const [unsafe, safe] of Object.entries(alternatives)) {
-    if (exerciseName.toLowerCase().includes(unsafe.toLowerCase())) {
-      return safe
-    }
-  }
-  return exerciseName
-}
-
-function getDisabilitySafeAlternative(exerciseName) {
-  const alternatives = {
-    'Bulgarian Split Squat': 'Leg Press',
-    'Single Leg RDL': 'Seated Leg Curl',
-    'Pistol Squat': 'Chair Squat'
-  }
-
-  for (const [complex, simple] of Object.entries(alternatives)) {
-    if (exerciseName.toLowerCase().includes(complex.toLowerCase())) {
-      return simple
-    }
-  }
-  return exerciseName
-}
-
-export function generatePerformanceProgramRubini(input) {
-  return generateProgram({ ...input, goal: 'strength' })
-}
-
-// ===== PAIN & RECOVERY MANAGEMENT =====
+// ===== EXPORT RECOVERY FUNCTIONS =====
 
 export function analyzePainPersistence(workouts) {
   const painAreas = {}
@@ -1471,4 +1381,8 @@ export function recalibrateProgram(assessments, detrainingFactor) {
     exerciseName: a.exerciseName,
     oneRepMax: a.oneRepMax * detrainingFactor
   })) || []
+}
+
+export function generatePerformanceProgramRubini(input) {
+  return generateProgram({ ...input, goal: 'strength' })
 }
