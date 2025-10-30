@@ -27,7 +27,7 @@ interface LevelResult {
   };
 }
 
-export default function Assessment() {
+export default function Screening() {  // 
   const navigate = useNavigate();
   
   const [onboardingData, setOnboardingData] = useState<any>(null);
