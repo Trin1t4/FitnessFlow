@@ -7,11 +7,11 @@ import { Activity, Calendar, TrendingUp, Dumbbell, Clock, CheckCircle, AlertCirc
 export default function Dashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [hasScreening, setHasScreening] = useState(false); // ✅ CAMBIATO DA hasAssessment
+  const [hasScreening, setHasScreening] = useState(false);
   const [hasProgram, setHasProgram] = useState(false);
   const [generatingProgram, setGeneratingProgram] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [screeningId, setScreeningId] = useState<string | null>(null); // ✅ CAMBIATO DA assessmentId
+  const [screeningId, setScreeningId] = useState<string | null>(null);
 
   useEffect(() => {
     checkUserProgress();
@@ -29,10 +29,8 @@ export default function Dashboard() {
 
       setUserId(user.id);
 
-      // ✅ CAMBIATO: screenings invece di assessments (se hai la tabella)
-      // Se la tabella si chiama ancora "assessments" nel DB, lascia "assessments"
       const { data: screeningData, error: screeningError } = await supabase
-        .from('assessments') // ← Lascia così se la tabella DB si chiama "assessments"
+        .from('assessments')
         .select('id, completed')
         .eq('user_id', user.id)
         .eq('completed', true)
@@ -80,77 +78,74 @@ export default function Dashboard() {
     try {
       setGeneratingProgram(true);
 
-      // ✅ LEGGI ONBOARDING + QUIZ + SCREENING DA LOCALSTORAGE
+      // ✅ LEGGI ONBOARDING + QUIZ DA LOCALSTORAGE
       const onboardingDataRaw = localStorage.getItem('onboarding_data');
       const quizDataRaw = localStorage.getItem('quiz_data');
-      const screeningDataRaw = localStorage.getItem('screening_data'); // ✅ CAMBIATO DA assessment_data
 
-      if (!onboardingDataRaw || !quizDataRaw || !screeningDataRaw) {
-        alert('Dati mancanti. Rifai lo screening.');
+      if (!onboardingDataRaw) {
+        alert('Dati onboarding mancanti. Rifai lo screening.');
         navigate('/onboarding');
+        setGeneratingProgram(false);
         return;
       }
 
       const onboardingData = JSON.parse(onboardingDataRaw);
-      const quizData = JSON.parse(quizDataRaw);
-      const screeningData = JSON.parse(screeningDataRaw);
+      const quizData = quizDataRaw ? JSON.parse(quizDataRaw) : null;
 
-      // ✅ UNISCI TUTTI I DATI
-     // ✅ BRANCH CONDIZIONALE: Recovery vs Normale
-let programInput;
+      // ✅ BRANCH CONDIZIONALE: Recovery vs Normale
+      let programInput;
 
-if (onboardingData.goal === 'motor_recovery') {
-  // ✅ RECOVERY FLOW
-  const recoveryDataRaw = localStorage.getItem('recovery_screening_data');
-  
-  if (!recoveryDataRaw) {
-    alert('Dati recovery mancanti. Rifai lo screening.');
-    navigate('/recovery-screening');
-    setGeneratingProgram(false);
-    return;
-  }
-  
-  const recoveryData = JSON.parse(recoveryDataRaw);
-  
-  programInput = {
-    userId,
-    location: onboardingData.trainingLocation,
-    equipment: onboardingData.equipment || {},
-    goal: 'motor_recovery',
-    recoveryScreening: recoveryData  // ✅ Dati specifici recovery
-  };
-  
-} else {
-  // ✅ FLOW NORMALE (esistente)
-  const screeningDataRaw = localStorage.getItem('screening_data');
-  
-  if (!screeningDataRaw) {
-    alert('Dati screening mancanti. Rifai lo screening.');
-    navigate('/onboarding');
-    setGeneratingProgram(false);
-    return;
-  }
-  
-  const screeningData = JSON.parse(screeningDataRaw);
-  
-  programInput = {
-    userId,
-    assessmentId: screeningId,
-    location: onboardingData.trainingLocation,
-    hasGym: onboardingData.trainingLocation === 'gym',
-    equipment: onboardingData.equipment || {},
-    goal: onboardingData.goal || 'muscle_gain',
-    level: quizData.level || screeningData.level || 'intermediate',
-    frequency: onboardingData.activityLevel?.weeklyFrequency || 3,
-    painAreas: onboardingData.painAreas || screeningData.painAreas || [],
-    disabilityType: onboardingData.disabilityType || null,
-    sportRole: onboardingData.sportRole || null,
-    specificBodyParts: onboardingData.specificBodyParts || []
-  };
-}
+      if (onboardingData.goal === 'motor_recovery') {
+        // ✅ RECOVERY FLOW
+        const recoveryDataRaw = localStorage.getItem('recovery_screening_data');
+        
+        if (!recoveryDataRaw) {
+          alert('Dati recovery mancanti. Rifai lo screening.');
+          navigate('/recovery-screening');
+          setGeneratingProgram(false);
+          return;
+        }
+        
+        const recoveryData = JSON.parse(recoveryDataRaw);
+        
+        programInput = {
+          userId,
+          location: onboardingData.trainingLocation,
+          equipment: onboardingData.equipment || {},
+          goal: 'motor_recovery',
+          recoveryScreening: recoveryData
+        };
+        
+      } else {
+        // ✅ FLOW NORMALE (esistente)
+        const screeningDataRaw = localStorage.getItem('screening_data');
+        
+        if (!screeningDataRaw || !quizDataRaw) {
+          alert('Dati screening mancanti. Rifai lo screening.');
+          navigate('/onboarding');
+          setGeneratingProgram(false);
+          return;
+        }
+        
+        const screeningData = JSON.parse(screeningDataRaw);
+        
+        programInput = {
+          userId,
+          assessmentId: screeningId,
+          location: onboardingData.trainingLocation,
+          hasGym: onboardingData.trainingLocation === 'gym',
+          equipment: onboardingData.equipment || {},
+          goal: onboardingData.goal || 'muscle_gain',
+          level: quizData.level || screeningData.level || 'intermediate',
+          frequency: onboardingData.activityLevel?.weeklyFrequency || 3,
+          painAreas: onboardingData.painAreas || screeningData.painAreas || [],
+          disabilityType: onboardingData.disabilityType || null,
+          sportRole: onboardingData.sportRole || null,
+          specificBodyParts: onboardingData.specificBodyParts || []
+        };
+      }
 
-console.log('📤 Sending program input:', programInput);
-
+      console.log('📤 Sending program input:', programInput);
 
       const response = await fetch('/api/program/generate', {
         method: 'POST',
@@ -197,7 +192,7 @@ console.log('📤 Sending program input:', programInput);
         console.error('Error deleting programs:', programError);
       }
 
-      // 2. Cancella screenings (tabella ancora si chiama "assessments" nel DB)
+      // 2. Cancella screenings
       const { error: screeningError } = await supabase
         .from('assessments')
         .delete()
@@ -207,7 +202,17 @@ console.log('📤 Sending program input:', programInput);
         console.error('Error deleting screenings:', screeningError);
       }
 
-      // 3. Reset onboarding_data nel database
+      // 3. Cancella recovery screenings (se esistono)
+      const { error: recoveryError } = await supabase
+        .from('recovery_screenings')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (recoveryError) {
+        console.error('Error deleting recovery screenings:', recoveryError);
+      }
+
+      // 4. Reset onboarding_data nel database
       const { error: onboardingError } = await supabase
         .from('user_profiles')
         .update({ 
@@ -220,12 +225,13 @@ console.log('📤 Sending program input:', programInput);
         console.error('Error resetting onboarding:', onboardingError);
       }
 
-      // 4. Cancella localStorage
+      // 5. Cancella localStorage
       localStorage.removeItem('onboarding_data');
       localStorage.removeItem('quiz_data');
-      localStorage.removeItem('screening_data'); // ✅ CAMBIATO DA assessment_data
+      localStorage.removeItem('screening_data');
+      localStorage.removeItem('recovery_screening_data'); // ✅ Aggiunto
 
-      // 5. Redirect automatico all'onboarding
+      // 6. Redirect automatico all'onboarding
       navigate('/onboarding');
 
     } catch (error) {
