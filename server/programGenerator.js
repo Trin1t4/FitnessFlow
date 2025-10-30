@@ -336,19 +336,6 @@ export function generateProgram(input) {
   
   // ✅ PERFORMANCE SPORT A CASA
  
-    return generatePerformanceProgramRubini(input);
-  }
-  
-    // ✅ RECOVERY MOTOR - BRANCH SEPARATO
-  if (goal === 'motor_recovery') {
-    // Import recovery generator (se non già in cima al file)
-    
-  }
-
-  const specificBodyParts = input.specificBodyParts?.map(part => 
-    part === 'upper_chest' ? 'chest' : part
-  );
-
   let split, daysPerWeek;
   
   if (frequency <= 2) {
