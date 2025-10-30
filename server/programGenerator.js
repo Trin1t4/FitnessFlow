@@ -345,8 +345,7 @@ export function generateProgram(input) {
     // ✅ RECOVERY MOTOR - BRANCH SEPARATO
   if (goal === 'motor_recovery') {
     // Import recovery generator (se non già in cima al file)
-    const { generateRecoveryProgram } = await import('./recoveryProgramGenerator.js');
-    return generateRecoveryProgram(input);
+    
   }
 
   const specificBodyParts = input.specificBodyParts?.map(part => 
