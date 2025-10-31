@@ -1,7 +1,5 @@
-// client/src/components/PostSetScreening.tsx
-
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabase';
 
 interface PostSetScreeningProps {
   workoutId: string;
@@ -12,9 +10,9 @@ interface PostSetScreeningProps {
   onComplete: (feedback: SetFeedback) => void;
 }
 
-interface SetFeedback {
+export interface SetFeedback {
   completed: boolean;
-  rpe: number | null; // Scala RPE Borg 1-10
+  rpe: number | null;
   repsDone: number | null;
   reason: 'pain' | 'fatigue' | 'other' | null;
   reasonDetails: string | null;
@@ -37,15 +35,12 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
   const [reason, setReason] = useState<'pain' | 'fatigue' | 'other' | null>(null);
   const [reasonDetails, setReasonDetails] = useState<string>('');
 
-  // Target RPE in base alla serie e obiettivo
   const getTargetRPE = (): { min: number; max: number } => {
     if (goalType === 'strength' || goalType === 'power') {
-      // Tolleranza più alta per forza/potenza
       if (setNumber === 1) return { min: 7, max: 8 };
       if (setNumber === 2) return { min: 7.5, max: 8.5 };
       return { min: 8, max: 9 };
     } else {
-      // Hypertrophy/Endurance
       if (setNumber === 1) return { min: 6.5, max: 7.5 };
       if (setNumber === 2) return { min: 7, max: 8 };
       return { min: 7.5, max: 8.5 };
@@ -112,7 +107,6 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
       adjustmentType,
     };
 
-    // Salva in Supabase
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (userData.user) {
@@ -156,19 +150,19 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
 
     return (
       <div className="rpe-scale">
-        <h3>Quanto faticosa è stata questa serie?</h3>
-        <p className="text-sm text-gray-600 mb-4">Scala RPE (Rate of Perceived Exertion)</p>
+        <h3 className="text-2xl font-bold text-white mb-2">Quanto faticosa è stata questa serie?</h3>
+        <p className="text-sm text-gray-400 mb-4">Scala Borg RPE</p>
         <div className="grid grid-cols-5 gap-2">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
             <button
               key={value}
               onClick={() => handleRPESelection(value)}
-              className={`p-4 border rounded-lg hover:bg-blue-100 transition ${
-                value >= 7 ? 'border-orange-400' : 'border-gray-300'
+              className={`p-4 border-2 rounded-lg font-bold text-lg ${
+                value >= 7 ? 'border-orange-400 bg-orange-50' : 'border-gray-300 bg-gray-50'
               }`}
             >
-              <div className="text-2xl font-bold">{value}</div>
-              <div className="text-xs text-gray-600">{rpeDescriptions[value]}</div>
+              <div className="text-2xl font-bold text-gray-900">{value}</div>
+              <div className="text-xs text-gray-700 mt-1">{rpeDescriptions[value]}</div>
             </button>
           ))}
         </div>
@@ -176,79 +170,96 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
     );
   };
 
-  return (
-    <div className="post-set-screening bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto">
-      {step === 'initial' && (
-        <div className="initial-question">
-          <h2 className="text-2xl font-bold mb-4">Hai completato la serie?</h2>
+  if (step === 'initial' || completed === null) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Hai completato la serie?</h2>
           <div className="flex gap-4">
             <button
               onClick={() => handleInitialResponse(true)}
-              className="flex-1 bg-green-500 text-white py-4 px-6 rounded-lg hover:bg-green-600 transition"
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white py-4 px-6 rounded-lg font-bold text-lg"
             >
               ✅ Sì
             </button>
             <button
               onClick={() => handleInitialResponse(false)}
-              className="flex-1 bg-red-500 text-white py-4 px-6 rounded-lg hover:bg-red-600 transition"
+              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-lg font-bold text-lg"
             >
               ❌ No
             </button>
           </div>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {step === 'rpe' && renderRPEScale()}
+  if (step === 'rpe') {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-8">
+          {renderRPEScale()}
+        </div>
+      </div>
+    );
+  }
 
-      {step === 'incomplete' && (
-        <div className="incomplete-details">
-          <h3 className="text-xl font-bold mb-4">Quante ripetizioni hai fatto?</h3>
+  if (step === 'incomplete') {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Quante ripetizioni hai fatto?</h3>
           <input
             type="number"
             min="0"
             max={targetReps}
             value={repsDone}
             onChange={(e) => setRepsDone(parseInt(e.target.value) || 0)}
-            className="w-full p-3 border rounded-lg mb-4"
+            className="w-full p-3 border-2 border-gray-300 rounded-lg mb-4 text-lg font-bold"
             placeholder={`Target: ${targetReps} reps`}
+            autoFocus
           />
           <button
             onClick={handleIncompleteSubmit}
             disabled={repsDone === 0}
-            className="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 disabled:bg-gray-300 transition"
+            className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white py-3 rounded-lg font-bold"
           >
             Continua
           </button>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {step === 'reason' && (
-        <div className="reason-details">
-          <h3 className="text-xl font-bold mb-4">Perché non hai completato la serie?</h3>
+  if (step === 'reason') {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Perché non hai completato?</h3>
           <div className="flex flex-col gap-3 mb-4">
             <button
               onClick={() => setReason('pain')}
-              className={`p-4 border rounded-lg hover:bg-red-100 transition ${
+              className={`p-4 border-2 rounded-lg font-semibold ${
                 reason === 'pain' ? 'bg-red-100 border-red-500' : 'border-gray-300'
               }`}
             >
-              🩹 Dolore / Fastidio
+              🩹 Dolore
             </button>
             <button
               onClick={() => setReason('fatigue')}
-              className={`p-4 border rounded-lg hover:bg-orange-100 transition ${
+              className={`p-4 border-2 rounded-lg font-semibold ${
                 reason === 'fatigue' ? 'bg-orange-100 border-orange-500' : 'border-gray-300'
               }`}
             >
-              💪 Fatica muscolare eccessiva
+              💪 Fatica
             </button>
             <button
               onClick={() => setReason('other')}
-              className={`p-4 border rounded-lg hover:bg-gray-100 transition ${
+              className={`p-4 border-2 rounded-lg font-semibold ${
                 reason === 'other' ? 'bg-gray-100 border-gray-500' : 'border-gray-300'
               }`}
             >
-              📝 Altro motivo
+              📝 Altro
             </button>
           </div>
 
@@ -257,30 +268,22 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
               <textarea
                 value={reasonDetails}
                 onChange={(e) => setReasonDetails(e.target.value)}
-                placeholder="Descrivi brevemente (opzionale)"
-                className="w-full p-3 border rounded-lg mb-4"
+                placeholder="Descrivi (opzionale)"
+                className="w-full p-3 border-2 border-gray-300 rounded-lg mb-4 text-sm"
                 rows={3}
               />
               <button
                 onClick={handleReasonSubmit}
-                className="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-bold"
               >
-                Invia Feedback
+                Invia
               </button>
-
-              {reason === 'pain' && (
-                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    ⚠️ <strong>Attenzione:</strong> Hai segnalato dolore. L'allenamento verrà
-                    ritarato per meglio adattarsi alle tue condizioni. Se il dolore persiste,
-                    consulta un professionista.
-                  </p>
-                </div>
-              )}
             </>
           )}
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  }
+
+  return null;
 };
