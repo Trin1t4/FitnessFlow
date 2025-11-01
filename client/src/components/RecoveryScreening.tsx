@@ -1,328 +1,331 @@
-import React, { useState } from 'react';
+postset = """import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
 
-interface RecoveryScreeningProps {
-  onComplete: (data: RecoveryData) => void;
-  onSkip?: () => void;
+interface PostSetScreeningProps {
+  workoutId: string;
+  exerciseId: string;
+  setNumber: number;
+  targetReps: number;
+  goalType: 'hypertrophy' | 'strength' | 'endurance' | 'power';
+  onComplete: (feedback: SetFeedback) => void;
 }
 
-export interface RecoveryData {
-  sleepHours: number;
-  stressLevel: number;
-  hasInjury: boolean;
-  injuryDetails: string | null;
-  menstrualCycle: 'follicular' | 'ovulation' | 'luteal' | 'menstruation' | null;
-  isFemale: boolean;
-  timestamp: string;
+export interface SetFeedback {
+  completed: boolean;
+  rpe: number | null;
+  repsDone: number | null;
+  reason: 'pain' | 'fatigue' | 'other' | null;
+  reasonDetails: string | null;
+  needsAdjustment: boolean;
+  adjustmentType: 'increase' | 'decrease' | 'maintain' | null;
 }
 
-const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
+export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
+  workoutId,
+  exerciseId,
+  setNumber,
+  targetReps,
+  goalType,
   onComplete,
-  onSkip,
 }) => {
-  const [step, setStep] = useState<'sleep' | 'stress' | 'injury' | 'cycle' | 'summary'>('sleep');
-  const [sleepHours, setSleepHours] = useState<number>(7);
-  const [stressLevel, setStressLevel] = useState<number>(5);
-  const [hasInjury, setHasInjury] = useState<boolean>(false);
-  const [injuryDetails, setInjuryDetails] = useState<string>('');
-  const [menstrualCycle, setMenstrualCycle] = useState<'follicular' | 'ovulation' | 'luteal' | 'menstruation' | null>(null);
-  const [isFemale, setIsFemale] = useState<boolean>(false);
+  const [step, setStep] = useState<'initial' | 'rpe' | 'incomplete' | 'reason'>('initial');
+  const [completed, setCompleted] = useState<boolean | null>(null);
+  const [rpe, setRpe] = useState<number | null>(null);
+  const [repsDone, setRepsDone] = useState<number>(0);
+  const [reason, setReason] = useState<'pain' | 'fatigue' | 'other' | null>(null);
+  const [reasonDetails, setReasonDetails] = useState<string>('');
 
-  const handleNext = () => {
-    if (step === 'sleep') {
-      setStep('stress');
-    } else if (step === 'stress') {
-      setStep('injury');
-    } else if (step === 'injury') {
-      if (isFemale) {
-        setStep('cycle');
-      } else {
-        setStep('summary');
-      }
-    } else if (step === 'cycle') {
-      setStep('summary');
+  const getTargetRPE = (): { min: number; max: number } => {
+    if (goalType === 'strength' || goalType === 'power') {
+      if (setNumber === 1) return { min: 7, max: 8 };
+      if (setNumber === 2) return { min: 7.5, max: 8.5 };
+      return { min: 8, max: 9 };
+    } else {
+      if (setNumber === 1) return { min: 6.5, max: 7.5 };
+      if (setNumber === 2) return { min: 7, max: 8 };
+      return { min: 7.5, max: 8.5 };
     }
   };
 
-  const handleBack = () => {
-    if (step === 'stress') {
-      setStep('sleep');
-    } else if (step === 'injury') {
-      setStep('stress');
-    } else if (step === 'cycle') {
-      setStep('injury');
-    } else if (step === 'summary') {
-      if (isFemale) {
-        setStep('cycle');
-      } else {
-        setStep('injury');
-      }
+  const handleInitialResponse = (isCompleted: boolean) => {
+    setCompleted(isCompleted);
+    if (isCompleted) {
+      setStep('rpe');
+    } else {
+      setStep('incomplete');
     }
   };
 
-  const handleComplete = () => {
-    const recoveryData: RecoveryData = {
-      sleepHours,
-      stressLevel,
-      hasInjury,
-      injuryDetails: hasInjury ? injuryDetails : null,
-      menstrualCycle: isFemale ? menstrualCycle : null,
-      isFemale,
-      timestamp: new Date().toISOString(),
+  const handleRPESelection = (selectedRPE: number) => {
+    setRpe(selectedRPE);
+    submitFeedback(true, selectedRPE, null, null, null);
+  };
+
+  const handleIncompleteSubmit = () => {
+    if (repsDone > 0) {
+      setStep('reason');
+    }
+  };
+
+  const handleReasonSubmit = () => {
+    submitFeedback(false, null, repsDone, reason, reasonDetails);
+  };
+
+  const submitFeedback = async (
+    isCompleted: boolean,
+    rpeValue: number | null,
+    reps: number | null,
+    failReason: 'pain' | 'fatigue' | 'other' | null,
+    details: string | null
+  ) => {
+    const target = getTargetRPE();
+    let needsAdjustment = false;
+    let adjustmentType: 'increase' | 'decrease' | 'maintain' | null = null;
+
+    if (isCompleted && rpeValue !== null) {
+      if (rpeValue < target.min) {
+        needsAdjustment = true;
+        adjustmentType = 'increase';
+      } else if (rpeValue > target.max) {
+        needsAdjustment = true;
+        adjustmentType = 'decrease';
+      } else {
+        adjustmentType = 'maintain';
+      }
+    } else if (!isCompleted) {
+      needsAdjustment = true;
+      adjustmentType = 'decrease';
+    }
+
+    const feedback: SetFeedback = {
+      completed: isCompleted,
+      rpe: rpeValue,
+      repsDone: reps,
+      reason: failReason,
+      reasonDetails: details,
+      needsAdjustment,
+      adjustmentType,
     };
 
-    onComplete(recoveryData);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData.user) {
+        await supabase.from('set_feedback').insert({
+          user_id: userData.user.id,
+          workout_id: workoutId,
+          exercise_id: exerciseId,
+          set_number: setNumber,
+          completed: isCompleted,
+          rpe: rpeValue,
+          reps_done: reps,
+          target_reps: targetReps,
+          reason: failReason,
+          reason_details: details,
+          needs_adjustment: needsAdjustment,
+          adjustment_type: adjustmentType,
+          goal_type: goalType,
+          created_at: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.error('Error saving set feedback:', error);
+    }
+
+    onComplete(feedback);
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
-        {step === 'sleep' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Come sta la tua ripresa?</h2>
-              <p className="text-sm text-gray-600">Iniziamo con qualche domanda rapida</p>
-            </div>
-            <div className="space-y-4">
-              <p className="font-semibold text-gray-900">Quante ore hai dormito stanotte?</p>
-              <input
-                type="number"
-                min="0"
-                max="24"
-                value={sleepHours}
-                onChange={(e) => setSleepHours(parseFloat(e.target.value) || 0)}
-                className="w-full p-3 border-2 border-gray-300 rounded-lg text-lg font-bold focus:outline-none focus:border-blue-500"
-              />
-              <div className="text-xs text-gray-500">
-                {sleepHours < 6 && '⚠️ Sonno insufficiente'}
-                {sleepHours >= 6 && sleepHours <= 9 && '✅ Sonno ottimale'}
-                {sleepHours > 9 && '⚠️ Sonno eccessivo'}
-              </div>
-            </div>
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={onSkip}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 py-3 rounded-lg font-semibold transition"
-              >
-                Salta
-              </button>
-              <button
-                onClick={handleNext}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold transition"
-              >
-                Avanti
-              </button>
-            </div>
-          </div>
-        )}
+  const renderRPEScale = () => {
+    const rpeDescriptions: { [key: number]: string } = {
+      1: 'Molto facile',
+      2: 'Facile',
+      3: 'Leggero',
+      4: 'Moderato',
+      5: 'Moderato+',
+      6: 'Impegnativo',
+      7: 'Difficile',
+      8: 'Molto difficile',
+      9: 'Quasi massimale',
+      10: 'Massimale',
+    };
 
-        {step === 'stress' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Livello di stress</h2>
-            </div>
-            <div className="space-y-4">
-              <p className="font-semibold text-gray-900">Quanto sei stressato oggi?</p>
-              <div className="flex items-center gap-4">
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={stressLevel}
-                  onChange={(e) => setStressLevel(parseInt(e.target.value))}
-                  className="flex-1 cursor-pointer"
-                />
-                <span className="text-3xl font-bold text-gray-900 w-12 text-center">{stressLevel}</span>
-              </div>
-              <div className="text-xs text-gray-500">1 = Rilassato | 10 = Massimamente stressato</div>
-              {stressLevel >= 8 && (
-                <div className="p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
-                  <p className="text-sm text-yellow-800">⚠️ Stress elevato: considera un allenamento leggero o deload</p>
-                </div>
-              )}
-            </div>
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={handleBack}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 py-3 rounded-lg font-semibold transition"
-              >
-                Indietro
-              </button>
-              <button
-                onClick={handleNext}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold transition"
-              >
-                Avanti
-              </button>
-            </div>
-          </div>
-        )}
+    const targetRPE = getTargetRPE();
 
-        {step === 'injury' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Dolori o fastidi?</h2>
-            </div>
-            <div className="space-y-4">
-              <p className="font-semibold text-gray-900">Hai dolori o fastidi oggi?</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setHasInjury(false);
-                    setInjuryDetails('');
-                  }}
-                  className={`flex-1 p-4 border-2 rounded-lg font-semibold transition cursor-pointer ${
-                    !hasInjury ? 'bg-green-100 border-green-500' : 'border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  ✅ No
-                </button>
-                <button
-                  onClick={() => setHasInjury(true)}
-                  className={`flex-1 p-4 border-2 rounded-lg font-semibold transition cursor-pointer ${
-                    hasInjury ? 'bg-red-100 border-red-500' : 'border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  🩹 Sì
-                </button>
-              </div>
-              {hasInjury && (
-                <textarea
-                  value={injuryDetails}
-                  onChange={(e) => setInjuryDetails(e.target.value)}
-                  placeholder="Descrivi il fastidio (es. dolore alla spalla, mal di schiena)"
-                  className="w-full p-3 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-                  rows={3}
-                />
-              )}
-            </div>
-            <div className="flex gap-3 pt-4">
+    return (
+      <div className="rpe-scale space-y-4">
+        <div className="text-center mb-6">
+          <h3 className="text-3xl font-bold text-gray-900 mb-2">Scala Borg RPE (1-10)</h3>
+          <p className="text-sm text-gray-600">Quanto era faticosa questa serie?</p>
+          <p className="text-xs text-emerald-600 font-semibold mt-2">
+            Target: {targetRPE.min}-{targetRPE.max}
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-5 gap-3">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => {
+            const isTarget = value >= targetRPE.min && value <= targetRPE.max;
+            const isSelected = rpe === value;
+            
+            return (
               <button
-                onClick={handleBack}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 py-3 rounded-lg font-semibold transition"
+                key={value}
+                onClick={() => handleRPESelection(value)}
+                className={`p-3 border-2 rounded-lg font-bold transition-all duration-200 cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-500 text-white border-emerald-600 scale-105 shadow-lg'
+                    : isTarget
+                    ? 'bg-emerald-100 text-emerald-900 border-emerald-400 hover:bg-emerald-200'
+                    : value >= 7
+                    ? 'bg-orange-100 text-orange-900 border-orange-300 hover:bg-orange-200'
+                    : 'bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200'
+                }`}
               >
-                Indietro
+                <div className="text-2xl font-bold">{value}</div>
+                <div className="text-xs mt-1 font-medium">{rpeDescriptions[value]}</div>
               </button>
-              <button
-                onClick={handleNext}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold transition"
-              >
-                {isFemale ? 'Avanti' : 'Riepilogo'}
-              </button>
-            </div>
-          </div>
-        )}
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
-        {step === 'cycle' && isFemale && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Fase del ciclo</h2>
-            </div>
-            <div className="space-y-3">
-              <p className="font-semibold text-gray-900">In quale fase sei del ciclo mestruale?</p>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => setMenstrualCycle('menstruation')}
-                  className={`p-3 border-2 rounded-lg font-semibold text-sm transition cursor-pointer ${
-                    menstrualCycle === 'menstruation' ? 'bg-red-100 border-red-500' : 'border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  🔴 Mestruazione (Giorni 1-5)
-                </button>
-                <button
-                  onClick={() => setMenstrualCycle('follicular')}
-                  className={`p-3 border-2 rounded-lg font-semibold text-sm transition cursor-pointer ${
-                    menstrualCycle === 'follicular' ? 'bg-green-100 border-green-500' : 'border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  🟢 Follicolare (Giorni 6-12)
-                </button>
-                <button
-                  onClick={() => setMenstrualCycle('ovulation')}
-                  className={`p-3 border-2 rounded-lg font-semibold text-sm transition cursor-pointer ${
-                    menstrualCycle === 'ovulation' ? 'bg-yellow-100 border-yellow-500' : 'border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  🟡 Ovulazione (Giorni 13-15)
-                </button>
-                <button
-                  onClick={() => setMenstrualCycle('luteal')}
-                  className={`p-3 border-2 rounded-lg font-semibold text-sm transition cursor-pointer ${
-                    menstrualCycle === 'luteal' ? 'bg-orange-100 border-orange-500' : 'border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  🟠 Luteale (Giorni 16-28)
-                </button>
-              </div>
-            </div>
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={handleBack}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 py-3 rounded-lg font-semibold transition"
-              >
-                Indietro
-              </button>
-              <button
-                onClick={handleNext}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold transition"
-              >
-                Riepilogo
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 'summary' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Riepilogo</h2>
-            </div>
-            <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Sonno:</span>
-                <span className="font-bold text-gray-900">{sleepHours}h</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Stress:</span>
-                <span className="font-bold text-gray-900">{stressLevel}/10</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Dolori:</span>
-                <span className="font-bold text-gray-900">{hasInjury ? '🩹 Sì' : '✅ No'}</span>
-              </div>
-              {isFemale && menstrualCycle && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Ciclo:</span>
-                  <span className="font-bold text-gray-900">
-                    {menstrualCycle === 'menstruation' && 'Mestruazione'}
-                    {menstrualCycle === 'follicular' && 'Follicolare'}
-                    {menstrualCycle === 'ovulation' && 'Ovulazione'}
-                    {menstrualCycle === 'luteal' && 'Luteale'}
-                  </span>
-                </div>
-              )}
-            </div>
-            {sleepHours < 6 && (
-              <div className="p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
-                <p className="text-sm text-yellow-800">⚠️ Sonno insufficiente: AdaptFlow ridurrà l'intensità</p>
-              </div>
-            )}
-            {stressLevel >= 8 && (
-              <div className="p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
-                <p className="text-sm text-yellow-800">⚠️ Stress elevato: considera un allenamento leggero</p>
-              </div>
-            )}
+  if (step === 'initial' || completed === null) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Hai completato la serie?</h2>
+          <div className="flex gap-4">
             <button
-              onClick={handleComplete}
-              className="w-full bg-green-500 hover:bg-green-600 text-white py-4 rounded-lg font-bold text-lg transition"
+              onClick={() => handleInitialResponse(true)}
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white py-4 px-6 rounded-lg font-bold text-lg transition-colors cursor-pointer"
             >
-              Inizia Allenamento
+              ✅ Sì
+            </button>
+            <button
+              onClick={() => handleInitialResponse(false)}
+              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-lg font-bold text-lg transition-colors cursor-pointer"
+            >
+              ❌ No
             </button>
           </div>
-        )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (step === 'rpe') {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-8">
+          {renderRPEScale()}
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'incomplete') {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
+          <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Quante ripetizioni hai fatto?</h3>
+          <input
+            type="number"
+            min="0"
+            max={targetReps}
+            value={repsDone}
+            onChange={(e) => setRepsDone(parseInt(e.target.value) || 0)}
+            className="w-full p-4 border-2 border-gray-300 rounded-lg mb-6 text-lg font-bold text-center focus:outline-none focus:border-blue-500"
+            placeholder={`Target: ${targetReps} reps`}
+            autoFocus
+          />
+          <button
+            onClick={handleIncompleteSubmit}
+            disabled={repsDone === 0}
+            className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white py-4 rounded-lg font-bold text-lg transition-colors cursor-pointer"
+          >
+            Continua
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'reason') {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
+          <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Perché non hai completato?</h3>
+          <div className="flex flex-col gap-3 mb-6">
+            <button
+              onClick={() => setReason('pain')}
+              className={`p-4 border-2 rounded-lg font-semibold transition-all cursor-pointer ${
+                reason === 'pain'
+                  ? 'bg-red-500 text-white border-red-600'
+                  : 'bg-red-50 text-red-900 border-red-300 hover:bg-red-100'
+              }`}
+            >
+              🩹 Dolore
+            </button>
+            <button
+              onClick={() => setReason('fatigue')}
+              className={`p-4 border-2 rounded-lg font-semibold transition-all cursor-pointer ${
+                reason === 'fatigue'
+                  ? 'bg-orange-500 text-white border-orange-600'
+                  : 'bg-orange-50 text-orange-900 border-orange-300 hover:bg-orange-100'
+              }`}
+            >
+              💪 Fatica
+            </button>
+            <button
+              onClick={() => setReason('other')}
+              className={`p-4 border-2 rounded-lg font-semibold transition-all cursor-pointer ${
+                reason === 'other'
+                  ? 'bg-gray-500 text-white border-gray-600'
+                  : 'bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200'
+              }`}
+            >
+              📝 Altro
+            </button>
+          </div>
+
+          {reason && (
+            <>
+              <textarea
+                value={reasonDetails}
+                onChange={(e) => setReasonDetails(e.target.value)}
+                placeholder="Descrivi (opzionale)"
+                className="w-full p-3 border-2 border-gray-300 rounded-lg mb-6 text-sm focus:outline-none focus:border-blue-500"
+                rows={3}
+              />
+              <button
+                onClick={handleReasonSubmit}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-4 rounded-lg font-bold text-lg transition-colors cursor-pointer"
+              >
+                Invia
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 };
 
-export default RecoveryScreening;
-export type { RecoveryData };
+export default PostSetScreening;
+"""
+
+with open('PostSetScreening_FIXED.tsx', 'w') as f:
+    f.write(postset)
+
+print("✅ PostSetScreening.tsx RISCRITTO")
+print("\n🔧 CAMBIAMENTI PRINCIPALI:")
+print("   ✓ RPE buttons ora hanno colori CHIARI e VISIBILI")
+print("   ✓ Aggiunto 'cursor-pointer' a TUTTI i button")
+print("   ✓ Aggiunto 'transition-all' per smooth animations")
+print("   ✓ Button selezionato scala (scale-105) e ha ombra")
+print("   ✓ Target RPE evidenziato in EMERALD")
+print("   ✓ Button 'Sì/No' ora hanno ':hover'")
+print("   ✓ Input numbers più grandi e al centro")
+print("   ✓ Reason buttons cambiano colore quando selezionati")
