@@ -148,23 +148,42 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
       10: 'Massimale',
     };
 
+    const targetRPE = getTargetRPE();
+
     return (
-      <div className="rpe-scale">
-        <h3 className="text-2xl font-bold text-white mb-2">Quanto faticosa è stata questa serie?</h3>
-        <p className="text-sm text-gray-400 mb-4">Scala Borg RPE</p>
-        <div className="grid grid-cols-5 gap-2">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-            <button
-              key={value}
-              onClick={() => handleRPESelection(value)}
-              className={`p-4 border-2 rounded-lg font-bold text-lg ${
-                value >= 7 ? 'border-orange-400 bg-orange-50' : 'border-gray-300 bg-gray-50'
-              }`}
-            >
-              <div className="text-2xl font-bold text-gray-900">{value}</div>
-              <div className="text-xs text-gray-700 mt-1">{rpeDescriptions[value]}</div>
-            </button>
-          ))}
+      <div className="rpe-scale space-y-4">
+        <div className="text-center mb-6">
+          <h3 className="text-3xl font-bold text-gray-900 mb-2">Scala Borg RPE (1-10)</h3>
+          <p className="text-sm text-gray-600">Quanto era faticosa questa serie?</p>
+          <p className="text-xs text-emerald-600 font-semibold mt-2">
+            Target: {targetRPE.min}-{targetRPE.max}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-5 gap-3">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => {
+            const isTarget = value >= targetRPE.min && value <= targetRPE.max;
+            const isSelected = rpe === value;
+
+            return (
+              <button
+                key={value}
+                onClick={() => handleRPESelection(value)}
+                className={`p-3 border-2 rounded-lg font-bold transition-all duration-200 cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-500 text-white border-emerald-600 scale-105 shadow-lg'
+                    : isTarget
+                    ? 'bg-emerald-100 text-emerald-900 border-emerald-400 hover:bg-emerald-200'
+                    : value >= 7
+                    ? 'bg-orange-100 text-orange-900 border-orange-300 hover:bg-orange-200'
+                    : 'bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200'
+                }`}
+              >
+                <div className="text-2xl font-bold">{value}</div>
+                <div className="text-xs mt-1 font-medium">{rpeDescriptions[value]}</div>
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -172,19 +191,19 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
 
   if (step === 'initial' || completed === null) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Hai completato la serie?</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Hai completato la serie?</h2>
           <div className="flex gap-4">
             <button
               onClick={() => handleInitialResponse(true)}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white py-4 px-6 rounded-lg font-bold text-lg"
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white py-4 px-6 rounded-lg font-bold text-lg transition-colors cursor-pointer"
             >
               ✅ Sì
             </button>
             <button
               onClick={() => handleInitialResponse(false)}
-              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-lg font-bold text-lg"
+              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-lg font-bold text-lg transition-colors cursor-pointer"
             >
               ❌ No
             </button>
@@ -197,7 +216,7 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
   if (step === 'rpe') {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-8">
+        <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-8">
           {renderRPEScale()}
         </div>
       </div>
@@ -206,23 +225,23 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
 
   if (step === 'incomplete') {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Quante ripetizioni hai fatto?</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Quante ripetizioni hai fatto?</h3>
           <input
             type="number"
             min="0"
             max={targetReps}
             value={repsDone}
             onChange={(e) => setRepsDone(parseInt(e.target.value) || 0)}
-            className="w-full p-3 border-2 border-gray-300 rounded-lg mb-4 text-lg font-bold"
+            className="w-full p-4 border-2 border-gray-300 rounded-lg mb-6 text-lg font-bold text-center focus:outline-none focus:border-blue-500"
             placeholder={`Target: ${targetReps} reps`}
             autoFocus
           />
           <button
             onClick={handleIncompleteSubmit}
             disabled={repsDone === 0}
-            className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white py-3 rounded-lg font-bold"
+            className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white py-4 rounded-lg font-bold text-lg transition-colors cursor-pointer"
           >
             Continua
           </button>
@@ -235,28 +254,34 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Perché non hai completato?</h3>
-          <div className="flex flex-col gap-3 mb-4">
+          <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Perché non hai completato?</h3>
+          <div className="flex flex-col gap-3 mb-6">
             <button
               onClick={() => setReason('pain')}
-              className={`p-4 border-2 rounded-lg font-semibold ${
-                reason === 'pain' ? 'bg-red-100 border-red-500' : 'border-gray-300'
+              className={`p-4 border-2 rounded-lg font-semibold transition-all cursor-pointer ${
+                reason === 'pain'
+                  ? 'bg-red-500 text-white border-red-600'
+                  : 'bg-red-50 text-red-900 border-red-300 hover:bg-red-100'
               }`}
             >
               🩹 Dolore
             </button>
             <button
               onClick={() => setReason('fatigue')}
-              className={`p-4 border-2 rounded-lg font-semibold ${
-                reason === 'fatigue' ? 'bg-orange-100 border-orange-500' : 'border-gray-300'
+              className={`p-4 border-2 rounded-lg font-semibold transition-all cursor-pointer ${
+                reason === 'fatigue'
+                  ? 'bg-orange-500 text-white border-orange-600'
+                  : 'bg-orange-50 text-orange-900 border-orange-300 hover:bg-orange-100'
               }`}
             >
               💪 Fatica
             </button>
             <button
               onClick={() => setReason('other')}
-              className={`p-4 border-2 rounded-lg font-semibold ${
-                reason === 'other' ? 'bg-gray-100 border-gray-500' : 'border-gray-300'
+              className={`p-4 border-2 rounded-lg font-semibold transition-all cursor-pointer ${
+                reason === 'other'
+                  ? 'bg-gray-500 text-white border-gray-600'
+                  : 'bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200'
               }`}
             >
               📝 Altro
@@ -269,12 +294,12 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
                 value={reasonDetails}
                 onChange={(e) => setReasonDetails(e.target.value)}
                 placeholder="Descrivi (opzionale)"
-                className="w-full p-3 border-2 border-gray-300 rounded-lg mb-4 text-sm"
+                className="w-full p-3 border-2 border-gray-300 rounded-lg mb-6 text-sm focus:outline-none focus:border-blue-500"
                 rows={3}
               />
               <button
                 onClick={handleReasonSubmit}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-bold"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-4 rounded-lg font-bold text-lg transition-colors cursor-pointer"
               >
                 Invia
               </button>
@@ -287,3 +312,5 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
 
   return null;
 };
+
+export default PostSetScreening;
