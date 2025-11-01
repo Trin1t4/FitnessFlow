@@ -7,9 +7,8 @@ import { RecoveryScreening, RecoveryData } from '../components/RecoveryScreening
 export default function Workout() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [program, setProgram] = useState(null);
+  const [program, setProgram] = useState<any>(null);
   const [currentDay, setCurrentDay] = useState(0);
-
   const [showRecoveryScreening, setShowRecoveryScreening] = useState(false);
   const [recoveryData, setRecoveryData] = useState<RecoveryData | null>(null);
 
@@ -56,13 +55,8 @@ export default function Workout() {
     setShowRecoveryScreening(false);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Calcola adjustment AdaptFlow in base ai dati di recupero
       const adjustment = calculateAdaptiveAdjustment(data);
 
-      // Naviga a sessione allenamento con adjustment
       navigate('/workout-session', {
         state: {
           program,
@@ -83,7 +77,6 @@ export default function Workout() {
     const skipExercises: string[] = [];
     const warnings: string[] = [];
 
-    // Sonno insufficiente
     if (recovery.sleepHours < 6) {
       volumeMultiplier = 0.8;
       warnings.push('Sonno insufficiente: volume ridotto 20%');
@@ -94,7 +87,6 @@ export default function Workout() {
       warnings.push('Sonno molto insufficiente: volume -30%, intensità -10%');
     }
 
-    // Stress elevato
     if (recovery.stressLevel >= 8) {
       intensityMultiplier = 0.8;
       volumeMultiplier = 0.85;
@@ -104,13 +96,11 @@ export default function Workout() {
       warnings.push('Stress moderato: intensità -10%');
     }
 
-    // Dolori/fastidi
     if (recovery.hasInjury && recovery.injuryDetails) {
       volumeMultiplier *= 0.85;
       intensityMultiplier *= 0.85;
       warnings.push(`Dolore rilevato (${recovery.injuryDetails}): riduzione 15%`);
 
-      // Logica per saltare esercizi in base al tipo di dolore
       const injuryLower = recovery.injuryDetails.toLowerCase();
       if (injuryLower.includes('spalla') || injuryLower.includes('shoulder')) {
         skipExercises.push('Military Press', 'Shoulder Press', 'Alzate Laterali', 'Push Press');
@@ -126,16 +116,14 @@ export default function Workout() {
       }
     }
 
-    // Fase ciclo luteale (più fatica, performance ridotta)
     if (recovery.isFemale && recovery.menstrualCycle === 'luteal') {
       volumeMultiplier *= 0.9;
-      warnings.push('Fase luteale: volume -10% (può aumentare percezione di fatica)');
+      warnings.push('Fase luteale: volume -10%');
     }
 
-    // Fase mestruazione (maggior flessibilità)
     if (recovery.isFemale && recovery.menstrualCycle === 'menstruation') {
       volumeMultiplier *= 0.8;
-      warnings.push('Fase mestruazione: volume -20% (adatta agli eventuali sintomi)');
+      warnings.push('Fase mestruazione: volume -20%');
     }
 
     return {
@@ -205,9 +193,8 @@ export default function Workout() {
           <p className="text-gray-400 text-lg">{program.description}</p>
         </div>
 
-        {/* Day Selector */}
         <div className="flex gap-2 mb-8 overflow-x-auto pb-4">
-          {program.weekly_schedule.map((day, index) => (
+          {program.weekly_schedule.map((day: any, index: number) => (
             <button
               key={index}
               onClick={() => setCurrentDay(index)}
@@ -222,13 +209,12 @@ export default function Workout() {
           ))}
         </div>
 
-        {/* Today's Workout */}
         <div className="space-y-4">
           <h2 className="text-3xl font-bold text-white mb-6">
             {todayWorkout.dayName}
           </h2>
 
-          {todayWorkout.exercises.map((exercise, index) => (
+          {todayWorkout.exercises.map((exercise: any, index: number) => (
             <div key={index}>
               {exercise.type === 'giant_set' ? (
                 <div className="bg-gradient-to-r from-orange-900/30 to-red-900/30 border border-orange-500/50 rounded-xl p-6">
@@ -247,7 +233,7 @@ export default function Workout() {
                   </div>
 
                   <div className="space-y-3 mb-4">
-                    {exercise.exercises?.map((subEx, subIdx) => (
+                    {exercise.exercises?.map((subEx: any, subIdx: number) => (
                       <div
                         key={subIdx}
                         className="bg-gray-900/50 rounded-lg p-4 border-l-4 border-emerald-500"
@@ -326,7 +312,6 @@ export default function Workout() {
           ))}
         </div>
 
-        {/* Actions */}
         <div className="mt-8 flex gap-4">
           <button
             onClick={() => navigate('/dashboard')}
@@ -343,13 +328,11 @@ export default function Workout() {
         </div>
       </div>
 
-      {/* Recovery Screening Modal */}
       {showRecoveryScreening && (
         <RecoveryScreening
           onComplete={handleRecoveryComplete}
           onSkip={() => {
             setShowRecoveryScreening(false);
-            // Inizia allenamento senza screening
             handleRecoveryComplete({
               sleepHours: 7,
               stressLevel: 5,
