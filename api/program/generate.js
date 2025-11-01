@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import { generateProgram } from '../../server/programGenerator.js';
-import { HOMEALTERNATIVES } from '../../server/exerciseSubstitutions.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -77,7 +76,7 @@ export default async function handler(req, res) {
     const programInput = {
       userId,
       assessmentId,
-      location: onboardingData.trainingLocation || 'gym',  // ← LOCATION QUI!
+      location: onboardingData.trainingLocation || 'gym',
       equipment: onboardingData.equipment || {},
       goal: onboardingData.goal || 'muscle_gain',
       level: intelligentLevel.finalLevel,
@@ -102,80 +101,72 @@ export default async function handler(req, res) {
       }))
     });
 
-    // 🔥 DEBUG CRITICO - Controlla cosa arriva a generateProgram
-    console.log('[API] 🔥 ========== BEFORE GENERATE PROGRAM ==========');
-    console.log('[API] 🔥 programInput.location:', programInput.location);
-    console.log('[API] 🔥 (This should be "gym" if user selected palestra)');
-    console.log('[API] 🔥 ========== END DEBUG ==========');
-
     // ✅ GENERA PROGRAMMA
     let program = await generateProgram(programInput);
 
     console.log('[API] ✅ Program generated');
-    console.log('[API] 🔥 First day name:', program.weeklySchedule?.[0]?.dayName);
-    console.log('[API] 🔥 First day location:', program.weeklySchedule?.[0]?.location);
-    console.log('[API] 🔥 First 3 exercises from generated program:');
-    program.weeklySchedule?.[0]?.exercises?.slice(0, 3).forEach(ex => {
-      console.log('[API] 🔥  - Exercise:', ex.name);
-    });
 
-    // ✅ CONTROLLA SE ESERCIZI SONO GIÀ "HOME" (BUG!)
-    const firstExercise = program.weeklySchedule?.[0]?.exercises?.[0]?.name;
-    const isAlreadyBodyweight = 
-      firstExercise?.includes('Pistol') || 
-      firstExercise?.includes('Archer') || 
-      firstExercise?.includes('Australian') ||
-      firstExercise?.includes('Handstand');
+    // ✅ MAPPING HOME → GYM EXERCISES
+    const GYM_ALTERNATIVES = {
+      'Pistol Assistito': 'Back Squat',
+      'Pistol Completo': 'Back Squat',
+      'Squat Assistito': 'Back Squat',
+      'Squat Completo': 'Back Squat',
+      'Jump Squat': 'Back Squat',
+      'Archer Push-up': 'Bench Press',
+      'One-Arm Push-up': 'Bench Press',
+      'Push-up su Ginocchia': 'Incline Bench Press',
+      'Push-up Standard': 'Bench Press',
+      'Push-up Mani Strette': 'Close Grip Bench',
+      'Dips Completi': 'Dips',
+      'Australian Pull-up': 'Barbell Row',
+      'Pull-up Completa': 'Lat Pulldown',
+      'Inverted Row Orizzontale': 'Barbell Row',
+      'Floor Pull asciugamano': 'Assisted Pull-up',
+      'Scapular Pull-up': 'Assisted Pull-up',
+      'Handstand Push-up': 'Military Press',
+      'Handstand Assistito': 'Shoulder Press',
+      'Pike Push-up': 'Military Press',
+      'Pike Push-up Elevato': 'Incline Bench Press',
+      'Plank to Pike': 'Ab Wheel',
+      'Single Leg Deadlift': 'Deadlift',
+      'Jump Lunge': 'Leg Press',
+      'Nordic Curl Eccentrico': 'Leg Curl',
+      'L-Sit Progressione': 'Cable Crunch',
+      'Plank con Sollevamenti': 'Ab Wheel',
+      'Toes to Bar': 'Hanging Leg Raise',
+      'Burpees': 'Box Jump',
+      'Affondi': 'Walking Lunge',
+      'Squat Bulgaro': 'Bulgarian Split Squat'
+    };
 
-    if (isAlreadyBodyweight && programInput.location === 'gym') {
-      console.error('[API] 🚨 BUG DETECTED! generateProgram generated HOME exercises even though location is GYM!');
-      console.error('[API] 🚨 First exercise:', firstExercise);
-      console.error('[API] 🚨 This means programGenerator.js is IGNORING the location parameter!');
-    }
-
-    // ✅ APPLICA LOCATION ALTERNATIVES - MA SOLO SE LOCATION === 'HOME'
-    // Se location === 'gym' e ancora troviamo esercizi bodyweight, è un bug in generateProgram!
-    if (programInput.location === 'home' || programInput.location === 'mixed') {
-      console.log(`[API] 🏠 Location is HOME/MIXED - checking for gym exercises to convert...`);
+    // ✅ CONVERTI HOME → GYM SE LOCATION === 'GYM'
+    if (programInput.location === 'gym') {
+      console.log('[API] 🏋️ Location is GYM - converting HOME exercises to GYM exercises');
       
       program.weeklySchedule = program.weeklySchedule.map(day => ({
         ...day,
         exercises: day.exercises.map(exercise => {
-          // Cerca alternativa HOME
-          const homeAlternative = HOMEALTERNATIVES[exercise.name];
+          const gymAlternative = GYM_ALTERNATIVES[exercise.name];
           
-          if (homeAlternative) {
-            console.log(`[API] 🔄 Substituting: ${exercise.name} → ${homeAlternative}`);
+          if (gymAlternative) {
+            console.log(`[API] 🔄 Converting: ${exercise.name} → ${gymAlternative}`);
             return { 
               ...exercise, 
-              name: homeAlternative,
-              location: 'home'
+              name: gymAlternative,
+              location: 'gym'
             };
           }
           
-          if (programInput.location === 'home') {
-            console.log(`[API] ⚠️ No alternative found for ${exercise.name}, keeping as is`);
-          }
-          
+          console.log(`[API] ⚠️ No GYM alternative for ${exercise.name}, keeping as is`);
           return exercise;
         })
       }));
-
-      console.log('[API] ✅ HOME alternatives applied successfully');
-    } else if (programInput.location === 'gym') {
-      console.log('[API] 🏋️ Location is GYM - keeping all standard exercises');
       
-      // 🔥 Aggiungi ulteriore debug se ancora troviamo esercizi bodyweight
-      const hasBodyweightExercises = program.weeklySchedule?.some(day => 
-        day.exercises?.some(ex => 
-          ex.name?.includes('Pistol') || ex.name?.includes('Archer')
-        )
-      );
-      
-      if (hasBodyweightExercises) {
-        console.error('[API] 🚨 ERROR! Found bodyweight exercises but location is GYM!');
-        console.error('[API] 🚨 This is a bug in generateProgram() - it ignores location!');
-      }
+      console.log('[API] ✅ GYM conversion completed');
+    } 
+    else if (programInput.location === 'home' || programInput.location === 'mixed') {
+      console.log(`[API] 🏠 Location is HOME/MIXED - keeping HOME exercises`);
     }
 
     // ✅ SALVA PROGRAMMA IN DB
@@ -210,7 +201,7 @@ export default async function handler(req, res) {
     }
 
     console.log('[API] ✅ Program saved with ID:', savedProgram.id);
-    console.log('[API] ✅ Location saved:', programInput.location);
+    console.log('[API] ✅ Location:', programInput.location);
     console.log('[API] ✅ First exercise:', savedProgram.weekly_schedule?.[0]?.exercises?.[0]?.name);
 
     return res.status(200).json({ 
@@ -229,17 +220,17 @@ export default async function handler(req, res) {
 
 // ===== CALCOLO LIVELLO INTELLIGENTE =====
 function calculateIntelligentLevel(assessmentData, onboardingData) {
-  // [resto del codice rimane uguale - copy dal file originale]
+  // [Copy dal file originale - resto del codice rimane uguale]
 }
 
 // ===== CONVERSIONE HOME ASSESSMENT =====
 function convertHomeAssessmentToStandard(exercises, bodyweight) {
-  // [resto del codice rimane uguale - copy dal file originale]
+  // [Copy dal file originale - resto del codice rimane uguale]
 }
 
 // ===== CONVERSIONE GYM ASSESSMENT =====
 function convertGymAssessmentToStandard(assessmentData, bodyweight) {
-  // [resto del codice rimane uguale - copy dal file originale]
+  // [Copy dal file originale - resto del codice rimane uguale]
 }
 
 // ===== FORMULE E CALCOLI =====
