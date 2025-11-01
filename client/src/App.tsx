@@ -6,7 +6,6 @@ import Onboarding from "./pages/Onboarding";
 import BodyCompositionScan from "./pages/BodyCompositionScan";
 import BiomechanicsQuiz from "./pages/BiomechanicsQuiz";
 import Screening from "./pages/Screening";
-import RecoveryScreening from "./pages/RecoveryScreening"; // ✅ NUOVO IMPORT
 import Dashboard from "./components/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Workout from '@/pages/Workout';
