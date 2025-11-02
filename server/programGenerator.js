@@ -918,7 +918,8 @@ function generateStandardProgram(input) {
   if (level === 'beginner') progression = 'wave_loading'
   else if (level === 'intermediate') progression = 'ondulata_settimanale'
   else progression = 'ondulata_giornaliera'
-
+console.log('[GENERATOR] 🔍 DEBUG - location value:', location);
+console.log('[GENERATOR] 🔍 DEBUG - location || gym result:', location || 'gym');
   const weeklySchedule = generateWeeklySchedule(
     split, daysPerWeek, location || 'gym', equipment, painAreas,
     assessments, level, goal, disabilityType, sportRole
