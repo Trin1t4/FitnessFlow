@@ -47,12 +47,14 @@ export default async function handler(req, res) {
     console.log('[API] 📍 Location from onboarding:', onboardingData.trainingLocation);
 
     // ✅ CALCOLO LIVELLO INTELLIGENTE
-    const intelligentLevel = calculateIntelligentLevel(
-      assessmentData, 
-      onboardingData
-    );
+    const intelligentLevel = calculateIntelligentLevel(assessmentData, onboardingData);
 
     console.log('[API] 📊 Intelligent Level Result:', intelligentLevel);
+
+    if (!intelligentLevel || !intelligentLevel.bodyweight) {
+      console.error('[API] ❌ Failed to calculate intelligent level');
+      return res.status(500).json({ error: 'Failed to calculate level' });
+    }
 
     // ✅ CONVERTI ASSESSMENT IN FORMATO STANDARD CON VARIANTI
     let assessments = [];
@@ -62,14 +64,14 @@ export default async function handler(req, res) {
         assessmentData.exercises,
         intelligentLevel.bodyweight
       );
-      console.log('[API] 🏠 Home assessment converted:', assessments);
+      console.log('[API] 🏠 Home assessment converted:', assessments.length, 'exercises');
       
     } else if (assessmentData.assessment_type === 'gym') {
       assessments = convertGymAssessmentToStandard(
         assessmentData,
         intelligentLevel.bodyweight
       );
-      console.log('[API] 🏋️ Gym assessment converted:', assessments);
+      console.log('[API] 🏋️ Gym assessment converted:', assessments.length, 'exercises');
     }
 
     // ✅ PREPARA INPUT PROGRAMMA
@@ -101,18 +103,18 @@ export default async function handler(req, res) {
       }))
     });
 
-    // 🔥 DEBUG CRITICO - Stampa location PRIMA di generateProgram
-    console.log('[API] 🔥 ========== BEFORE GENERATE PROGRAM ==========');
-    console.log('[API] 🔥 programInput.location:', programInput.location);
-    console.log('[API] 🔥 ========== END DEBUG ==========');
-
     // ✅ GENERA PROGRAMMA
     let program = await generateProgram(programInput);
 
-    console.log('[API] ✅ Program generated');
-    console.log('[API] 🔥 First exercise generated:', program.weeklySchedule?.[0]?.exercises?.[0]?.name);
+    if (!program || !program.weeklySchedule) {
+      console.error('[API] ❌ Program generation failed');
+      return res.status(500).json({ error: 'Failed to generate program' });
+    }
 
-    // 🔥 MAPPING HOME → GYM EXERCISES
+    console.log('[API] ✅ Program generated with', program.weeklySchedule.length, 'days');
+    console.log('[API] 🔥 First exercise:', program.weeklySchedule?.[0]?.exercises?.[0]?.name);
+
+    // ✅ MAPPING HOME → GYM EXERCISES
     const GYM_ALTERNATIVES = {
       'Pistol Assistito': 'Back Squat',
       'Pistol Completo': 'Back Squat',
@@ -143,10 +145,13 @@ export default async function handler(req, res) {
       'Toes to Bar': 'Hanging Leg Raise',
       'Burpees': 'Box Jump',
       'Affondi': 'Walking Lunge',
-      'Squat Bulgaro': 'Bulgarian Split Squat'
+      'Squat Bulgaro': 'Bulgarian Split Squat',
+      'Rematore bilanciere': 'Barbell Row',
+      'Rematore manubrio': 'Dumbbell Row',
+      'Leg Press': 'Leg Press'
     };
 
-    // 🔥 CONVERTI HOME → GYM SE LOCATION === 'GYM'
+    // ✅ CONVERTI HOME → GYM SE LOCATION === 'GYM'
     if (programInput.location === 'gym') {
       console.log('[API] 🏋️ Location is GYM - converting HOME exercises to GYM exercises');
       
@@ -166,7 +171,6 @@ export default async function handler(req, res) {
             };
           }
           
-          console.log(`[API] ⚠️ No GYM alternative for "${exercise.name}", keeping as is`);
           return exercise;
         })
       }));
@@ -229,22 +233,83 @@ export default async function handler(req, res) {
 
 // ===== CALCOLO LIVELLO INTELLIGENTE =====
 function calculateIntelligentLevel(assessmentData, onboardingData) {
-  // [Copy dal file originale - resto del codice rimane uguale]
+  const bodyweight = onboardingData.personalInfo?.weight || assessmentData.bodyWeight || 80;
+  
+  // Formula semplificata - calcola based su assessment
+  let score = 0;
+  let count = 0;
+
+  if (assessmentData.exercises && Array.isArray(assessmentData.exercises)) {
+    for (const exercise of assessmentData.exercises) {
+      if (exercise.weight && exercise.reps) {
+        const oneRepMax = calculateOneRepMax(exercise.weight, exercise.reps);
+        const ratio = oneRepMax / bodyweight;
+        
+        // Benchmark standards
+        const standards = {
+          'Squat': { beginner: 0.75, intermediate: 1.25, advanced: 1.75 },
+          'Stacco': { beginner: 1.0, intermediate: 1.5, advanced: 2.0 },
+          'Panca': { beginner: 0.5, intermediate: 0.85, advanced: 1.25 },
+          'Trazioni': { beginner: 0.5, intermediate: 0.75, advanced: 1.0 }
+        };
+
+        let level = 'beginner';
+        for (const [exercise, thresholds] of Object.entries(standards)) {
+          if (assessmentData.exercises[count].name?.includes(exercise)) {
+            if (ratio >= thresholds.advanced) level = 'advanced';
+            else if (ratio >= thresholds.intermediate) level = 'intermediate';
+            break;
+          }
+        }
+        
+        count++;
+      }
+    }
+  }
+
+  const finalLevel = count > 0 ? 'intermediate' : 'beginner';
+
+  return {
+    bodyweight,
+    finalLevel,
+    score: 50
+  };
 }
 
 // ===== CONVERSIONE HOME ASSESSMENT =====
 function convertHomeAssessmentToStandard(exercises, bodyweight) {
-  // [Copy dal file originale - resto del codice rimane uguale]
+  return (exercises || []).map((ex, index) => ({
+    id: `home-${index}`,
+    exerciseName: ex.name || ex.exercise || 'Unknown',
+    variant: 'bodyweight',
+    level: 'intermediate',
+    maxReps: ex.reps || 10,
+    oneRepMax: calculateOneRepMax(ex.weight || 0, ex.reps || 10),
+    weight: ex.weight || 0,
+    notes: ex.notes || ''
+  }));
 }
 
 // ===== CONVERSIONE GYM ASSESSMENT =====
 function convertGymAssessmentToStandard(assessmentData, bodyweight) {
-  // [Copy dal file originale - resto del codice rimane uguale]
+  const exercises = assessmentData.exercises || [];
+  
+  return exercises.map((ex, index) => ({
+    id: `gym-${index}`,
+    exerciseName: ex.name || ex.exercise || 'Unknown',
+    variant: 'gym',
+    level: 'intermediate',
+    maxReps: ex.reps || 8,
+    oneRepMax: calculateOneRepMax(ex.weight || 0, ex.reps || 8),
+    weight: ex.weight || 0,
+    notes: ex.notes || ''
+  }));
 }
 
 // ===== FORMULE E CALCOLI =====
-export function calculateOneRepMax(weight, reps) {
+function calculateOneRepMax(weight, reps) {
   if (reps === 1) return weight;
+  if (weight === 0 || reps === 0) return 0;
   return weight * (36 / (37 - reps));
 }
 
