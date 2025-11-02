@@ -1230,11 +1230,15 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
   )
 
   if (assessment?.variant && assessment?.level && BODYWEIGHT_PROGRESSIONS[assessment.exerciseName]) {
-    const progressionName = BODYWEIGHT_PROGRESSIONS[assessment.exerciseName][assessment.level]
+    const levelMap = { beginner: 1, intermediate: 2, advanced: 3 };
+    const progressionName = BODYWEIGHT_PROGRESSIONS[assessment.exerciseName][levelMap[assessment.level] || 2]
     const targetReps = assessment.maxReps || 12
     const range = config.repsRange
 
     console.log('[PROGRAM] ✅ Using bodyweight progression from assessment')
+    console.log("[DEBUG] Assessment found:", assessment);
+    console.log("[DEBUG] BODYWEIGHT_PROGRESSIONS[", assessment.exerciseName, "]:", BODYWEIGHT_PROGRESSIONS[assessment.exerciseName]);
+    console.log("[DEBUG] progressionName:", progressionName);
 
     return {
       name: progressionName,
@@ -1279,7 +1283,11 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
         notes: 'Adattato per sicurezza'
       }
     }
-    return exerciseOrGiantSet
+    console.log("[DEBUG] Giant set with name:", { name, type: exerciseOrGiantSet.type });
+    return {
+      name: name,
+      ...exerciseOrGiantSet
+    }
   }
 
   const isBodyweight = isBodyweightExercise(exerciseOrGiantSet)

@@ -95,7 +95,7 @@ export default async function handler(req, res) {
       level: programInput.level,
       location: programInput.location,
       assessments: programInput.assessments.map(a => ({
-        name: a.exerciseName,
+        exerciseName: a.exerciseName,
         variant: a.variant,
         level: a.level,
         maxReps: a.maxReps,
@@ -113,6 +113,7 @@ export default async function handler(req, res) {
 
     console.log('[API] ✅ Program generated with', program.weeklySchedule.length, 'days');
     console.log('[API] 🔥 First exercise:', program.weeklySchedule?.[0]?.exercises?.[0]?.name);
+    console.log("[API] 🔍 DEBUG First exercise FULL:", JSON.stringify(program.weeklySchedule?.[0]?.exercises?.[0], null, 2));
 
     // ✅ MAPPING HOME → GYM EXERCISES
     const GYM_ALTERNATIVES = {
