@@ -1,6 +1,6 @@
 import { 
   getExerciseForLocation 
-} from './exerciseSubstitutions.js'
+} from './exerciseSubstitutions.ts'
 
 // ===== MAPPING PROGRESSIONI BODYWEIGHT =====
 
