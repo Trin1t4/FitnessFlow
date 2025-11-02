@@ -1,4 +1,3 @@
-console.log('[API] 🔥 GENERATE.JS LOADED - Location:', programInput.location);
 import { createClient } from '@supabase/supabase-js';
 import { generateProgram } from '../../server/programGenerator.js';
 
@@ -102,12 +101,18 @@ export default async function handler(req, res) {
       }))
     });
 
+    // 🔥 DEBUG CRITICO - Stampa location PRIMA di generateProgram
+    console.log('[API] 🔥 ========== BEFORE GENERATE PROGRAM ==========');
+    console.log('[API] 🔥 programInput.location:', programInput.location);
+    console.log('[API] 🔥 ========== END DEBUG ==========');
+
     // ✅ GENERA PROGRAMMA
     let program = await generateProgram(programInput);
 
     console.log('[API] ✅ Program generated');
+    console.log('[API] 🔥 First exercise generated:', program.weeklySchedule?.[0]?.exercises?.[0]?.name);
 
-    // ✅ MAPPING HOME → GYM EXERCISES
+    // 🔥 MAPPING HOME → GYM EXERCISES
     const GYM_ALTERNATIVES = {
       'Pistol Assistito': 'Back Squat',
       'Pistol Completo': 'Back Squat',
@@ -141,17 +146,19 @@ export default async function handler(req, res) {
       'Squat Bulgaro': 'Bulgarian Split Squat'
     };
 
-    // ✅ CONVERTI HOME → GYM SE LOCATION === 'GYM'
+    // 🔥 CONVERTI HOME → GYM SE LOCATION === 'GYM'
     if (programInput.location === 'gym') {
       console.log('[API] 🏋️ Location is GYM - converting HOME exercises to GYM exercises');
       
+      let convertedCount = 0;
       program.weeklySchedule = program.weeklySchedule.map(day => ({
         ...day,
         exercises: day.exercises.map(exercise => {
           const gymAlternative = GYM_ALTERNATIVES[exercise.name];
           
           if (gymAlternative) {
-            console.log(`[API] 🔄 Converting: ${exercise.name} → ${gymAlternative}`);
+            console.log(`[API] 🔄 Converting: "${exercise.name}" → "${gymAlternative}"`);
+            convertedCount++;
             return { 
               ...exercise, 
               name: gymAlternative,
@@ -159,12 +166,13 @@ export default async function handler(req, res) {
             };
           }
           
-          console.log(`[API] ⚠️ No GYM alternative for ${exercise.name}, keeping as is`);
+          console.log(`[API] ⚠️ No GYM alternative for "${exercise.name}", keeping as is`);
           return exercise;
         })
       }));
       
-      console.log('[API] ✅ GYM conversion completed');
+      console.log(`[API] ✅ GYM conversion completed - ${convertedCount} exercises converted`);
+      console.log('[API] 🔥 First exercise AFTER conversion:', program.weeklySchedule?.[0]?.exercises?.[0]?.name);
     } 
     else if (programInput.location === 'home' || programInput.location === 'mixed') {
       console.log(`[API] 🏠 Location is HOME/MIXED - keeping HOME exercises`);
@@ -202,8 +210,8 @@ export default async function handler(req, res) {
     }
 
     console.log('[API] ✅ Program saved with ID:', savedProgram.id);
-    console.log('[API] ✅ Location:', programInput.location);
-    console.log('[API] ✅ First exercise:', savedProgram.weekly_schedule?.[0]?.exercises?.[0]?.name);
+    console.log('[API] ✅ Location saved:', programInput.location);
+    console.log('[API] ✅ First exercise in DB:', savedProgram.weekly_schedule?.[0]?.exercises?.[0]?.name);
 
     return res.status(200).json({ 
       success: true, 
