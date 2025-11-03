@@ -31,7 +31,7 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
   const [step, setStep] = useState<'initial' | 'rpe' | 'incomplete' | 'reason'>('initial');
   const [completed, setCompleted] = useState<boolean | null>(null);
   const [rpe, setRpe] = useState<number | null>(null);
-  const [repsDone, setRepsDone] = useState<number>(0);
+  const [repsDone, setRepsDone] = useState<number>(Math.floor(targetReps / 2));
   const [reason, setReason] = useState<'pain' | 'fatigue' | 'other' | null>(null);
   const [reasonDetails, setReasonDetails] = useState<string>('');
 
@@ -169,13 +169,13 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
               <button
                 key={value}
                 onClick={() => handleRPESelection(value)}
-                className={`p-3 border-2 rounded-lg font-bold transition-all duration-200 cursor-pointer ${
+                className={`p-3 border-2 rounded-xl font-bold transition-all duration-200 ${
                   isSelected
                     ? 'bg-emerald-500 text-white border-emerald-600 scale-105 shadow-lg'
                     : isTarget
                     ? 'bg-emerald-100 text-emerald-900 border-emerald-400 hover:bg-emerald-200'
                     : value >= 7
-                    ? 'bg-orange-100 text-orange-900 border-orange-300 hover:bg-orange-200'
+                    ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
                     : 'bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200'
                 }`}
               >
@@ -197,13 +197,13 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
           <div className="flex gap-4">
             <button
               onClick={() => handleInitialResponse(true)}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white py-4 px-6 rounded-lg font-bold text-lg transition-colors cursor-pointer"
+              className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-4 px-6 rounded-xl font-bold text-lg transition-colors shadow-lg"
             >
               ✅ Sì
             </button>
             <button
               onClick={() => handleInitialResponse(false)}
-              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-lg font-bold text-lg transition-colors cursor-pointer"
+              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-xl font-bold text-lg transition-colors shadow-lg"
             >
               ❌ No
             </button>
@@ -228,20 +228,44 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
           <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Quante ripetizioni hai fatto?</h3>
-          <input
-            type="number"
-            min="0"
-            max={targetReps}
-            value={repsDone}
-            onChange={(e) => setRepsDone(parseInt(e.target.value) || 0)}
-            className="w-full p-4 border-2 border-gray-300 rounded-lg mb-6 text-lg font-bold text-center focus:outline-none focus:border-blue-500"
-            placeholder={`Target: ${targetReps} reps`}
-            autoFocus
-          />
+          
+          {/* Slider per le ripetizioni */}
+          <div className="mb-8">
+            <div className="flex items-center justify-center mb-4">
+              <span className="text-6xl font-bold text-emerald-600">{repsDone}</span>
+              <span className="text-2xl text-gray-400 ml-2">/ {targetReps}</span>
+            </div>
+            
+            <input
+              type="range"
+              min="0"
+              max={targetReps}
+              value={repsDone}
+              onChange={(e) => setRepsDone(parseInt(e.target.value))}
+              className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            />
+            
+            {/* Bottoni +/- per aggiustamento fine */}
+            <div className="flex justify-center gap-4 mt-6">
+              <button
+                onClick={() => setRepsDone(Math.max(0, repsDone - 1))}
+                className="w-14 h-14 bg-gray-200 hover:bg-gray-300 rounded-xl font-bold text-2xl transition-colors"
+              >
+                −
+              </button>
+              <button
+                onClick={() => setRepsDone(Math.min(targetReps, repsDone + 1))}
+                className="w-14 h-14 bg-gray-200 hover:bg-gray-300 rounded-xl font-bold text-2xl transition-colors"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
           <button
             onClick={handleIncompleteSubmit}
             disabled={repsDone === 0}
-            className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white py-4 rounded-lg font-bold text-lg transition-colors cursor-pointer"
+            className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-400 text-white py-4 rounded-xl font-bold text-lg transition-colors shadow-lg"
           >
             Continua
           </button>
@@ -258,7 +282,7 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
           <div className="flex flex-col gap-3 mb-6">
             <button
               onClick={() => setReason('pain')}
-              className={`p-4 border-2 rounded-lg font-semibold transition-all cursor-pointer ${
+              className={`p-4 border-2 rounded-xl font-semibold transition-all ${
                 reason === 'pain'
                   ? 'bg-red-500 text-white border-red-600'
                   : 'bg-red-50 text-red-900 border-red-300 hover:bg-red-100'
@@ -268,17 +292,17 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
             </button>
             <button
               onClick={() => setReason('fatigue')}
-              className={`p-4 border-2 rounded-lg font-semibold transition-all cursor-pointer ${
+              className={`p-4 border-2 rounded-xl font-semibold transition-all ${
                 reason === 'fatigue'
-                  ? 'bg-orange-500 text-white border-orange-600'
-                  : 'bg-orange-50 text-orange-900 border-orange-300 hover:bg-orange-100'
+                  ? 'bg-amber-500 text-white border-amber-600'
+                  : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
               }`}
             >
               💪 Fatica
             </button>
             <button
               onClick={() => setReason('other')}
-              className={`p-4 border-2 rounded-lg font-semibold transition-all cursor-pointer ${
+              className={`p-4 border-2 rounded-xl font-semibold transition-all ${
                 reason === 'other'
                   ? 'bg-gray-500 text-white border-gray-600'
                   : 'bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200'
@@ -294,12 +318,12 @@ export const PostSetScreening: React.FC<PostSetScreeningProps> = ({
                 value={reasonDetails}
                 onChange={(e) => setReasonDetails(e.target.value)}
                 placeholder="Descrivi (opzionale)"
-                className="w-full p-3 border-2 border-gray-300 rounded-lg mb-6 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full p-3 border-2 border-gray-300 rounded-xl mb-6 text-sm focus:outline-none focus:border-emerald-500"
                 rows={3}
               />
               <button
                 onClick={handleReasonSubmit}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-4 rounded-lg font-bold text-lg transition-colors cursor-pointer"
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold text-lg transition-colors shadow-lg"
               >
                 Invia
               </button>

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { X, Info, AlertCircle } from 'lucide-react';
-import RecoveryScreening from '../components/RecoveryScreening';
-import type { RecoveryData } from '../components/RecoveryScreening';
+import { RecoveryScreening } from '../pages/RecoveryScreening';
+import type { RecoveryData } from '../pages/RecoveryScreening';
 
 export default function Workout() {
   const navigate = useNavigate();
