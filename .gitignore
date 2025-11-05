@@ -4,3 +4,10 @@ node_modules
 .vercel
 dist
 .DS_Store.env
+
+# Test files
+test-goal.js
+*.patch
+
+# Backup files
+*.BACKUP.js
