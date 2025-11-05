@@ -42,29 +42,321 @@ const BODYWEIGHT_PROGRESSIONS = {
   }
 }
 
-// ===== CONFIGURAZIONE LIVELLI =====
-
 const LEVEL_CONFIG = {
   beginner: {
     RIR: 3,
     repsRange: 2,
-    startPercentage: 0.60,  // OK per principianti
+    startPercentage: 0.60,
     compoundSets: 3,
     accessorySets: 2
   },
   intermediate: {
     RIR: 2,
     repsRange: 1,
-    startPercentage: 0.85,  // ← CAMBIA da 0.75 a 0.85
+    startPercentage: 0.85,
     compoundSets: 4,
     accessorySets: 3
   },
   advanced: {
     RIR: 1,
     repsRange: 0,
-    startPercentage: 0.90,  // ← CAMBIA da 0.85 a 0.90
+    startPercentage: 0.90,
     compoundSets: 5,
     accessorySets: 3
+  }
+}
+// ===== GOAL-BASED TRAINING CONFIGURATION (GYM + HOME) =====
+
+const GOAL_CONFIGS = {
+  strength: {
+    name: 'Forza',
+    repsRange: '3-6',
+    rest: { compound: 240, accessory: 180, isolation: 120 },
+    intensity: 'high',
+    focus: 'compound_heavy',
+    setsMultiplier: 1.0,
+    notes: 'Focus carichi massimali',
+    homeStrategy: 'progressive_overload_advanced_variations'
+  },
+  muscle_gain: {
+    name: 'Ipertrofia',
+    repsRange: '8-12',
+    rest: { compound: 120, accessory: 90, isolation: 60 },
+    intensity: 'medium-high',
+    focus: 'volume',
+    setsMultiplier: 1.0,
+    notes: 'Focus volume e pump',
+    homeStrategy: 'time_under_tension'
+  },
+  fat_loss: {
+    name: 'Dimagrimento',
+    repsRange: '15-20',
+    rest: { compound: 60, accessory: 45, isolation: 30 },
+    intensity: 'low-medium',
+    focus: 'circuits_cardio',
+    setsMultiplier: 0.8,
+    includesCardio: true,
+    cardioFrequency: 2,
+    notes: 'Circuiti e densità alta',
+    homeStrategy: 'high_density_circuits'
+  },
+  performance: {
+    name: 'Performance Sportiva',
+    repsRange: '4-8',
+    rest: { compound: 180, accessory: 120, isolation: 90 },
+    intensity: 'explosive',
+    focus: 'power_speed',
+    setsMultiplier: 1.0,
+    notes: 'Focus esplosività',
+    homeStrategy: 'plyometric_explosive'
+  }
+}
+
+// ===== HOME BODYWEIGHT MAPPING PER GOAL =====
+
+const HOME_BODYWEIGHT_BY_GOAL = {
+  strength: {
+    'Squat': {
+      beginner: 'Squat con Pausa 3s',
+      intermediate: 'Pistol Squat Assistito',
+      advanced: 'Pistol Squat Completo'
+    },
+    'Panca': {
+      beginner: 'Push-up con Pausa 3s',
+      intermediate: 'Archer Push-up',
+      advanced: 'One-Arm Push-up Eccentrico'
+    },
+    'Trazioni': {
+      beginner: 'Negative Pull-ups 5s',
+      intermediate: 'Pull-up con Pausa 3s',
+      advanced: 'Archer Pull-up'
+    },
+    'Stacco': {
+      beginner: 'Nordic Curl Eccentrico',
+      intermediate: 'Single Leg RDL',
+      advanced: 'Nordic Curl Completo'
+    }
+  },
+  
+  muscle_gain: {
+    'Squat': {
+      beginner: 'Squat Tempo 3-1-3',
+      intermediate: 'Squat Bulgaro Tempo',
+      advanced: 'Pistol Squat Tempo'
+    },
+    'Panca': {
+      beginner: 'Push-up Tempo 3-1-3',
+      intermediate: 'Diamond Push-up Tempo',
+      advanced: 'Pseudo Planche Push-up'
+    },
+    'Trazioni': {
+      beginner: 'Inverted Row Tempo',
+      intermediate: 'Pull-up Tempo 3-1-3',
+      advanced: 'L-Sit Pull-up'
+    },
+    'Stacco': {
+      beginner: 'Glute Bridge Tempo',
+      intermediate: 'Single Leg RDL Tempo',
+      advanced: 'Nordic Curl Tempo'
+    }
+  },
+  
+  fat_loss: {
+    'Squat': {
+      beginner: 'Jump Squat',
+      intermediate: 'Jump Squat Alternato',
+      advanced: 'Pistol Squat Jump'
+    },
+    'Panca': {
+      beginner: 'Push-up Veloci',
+      intermediate: 'Clap Push-up',
+      advanced: 'Plyo Push-up'
+    },
+    'Trazioni': {
+      beginner: 'Australian Pull-up Veloci',
+      intermediate: 'Pull-up Esplosive',
+      advanced: 'Muscle-up Progressione'
+    },
+    'Stacco': {
+      beginner: 'Jump Lunge',
+      intermediate: 'Single Leg Hop',
+      advanced: 'Broad Jump'
+    }
+  },
+  
+  performance: {
+    'Squat': {
+      beginner: 'Jump Squat',
+      intermediate: 'Box Jump',
+      advanced: 'Depth Jump'
+    },
+    'Panca': {
+      beginner: 'Clap Push-up',
+      intermediate: 'Plyometric Push-up',
+      advanced: 'Superman Push-up'
+    },
+    'Trazioni': {
+      beginner: 'Pull-up Esplosiva',
+      intermediate: 'Kipping Pull-up',
+      advanced: 'Muscle-up'
+    },
+    'Stacco': {
+      beginner: 'Broad Jump',
+      intermediate: 'Single Leg Bound',
+      advanced: 'Alternate Leg Bound'
+    }
+  }
+}
+
+// ===== RUBINI METHOD: SPORT-SPECIFIC PERFORMANCE =====
+
+const RUBINI_SPORT_CONFIGS = {
+  calcio: {
+    name: 'Calcio',
+    focus: ['accelerazione', 'cambio_direzione', 'salto_verticale', 'endurance_anaerobica'],
+    roles: {
+      portiere: {
+        priority: ['esplosività_laterale', 'salto_verticale', 'core_stability'],
+        exercises: [
+          'Lateral Bound',
+          'Box Jump Lateral',
+          'Single Leg Hop',
+          'Plank Lateral Shift',
+          'Medicine Ball Slam Lateral'
+        ]
+      },
+      difensore: {
+        priority: ['forza_massimale', 'accelerazione', 'duelli_aerei'],
+        exercises: [
+          'Squat Jump',
+          'Broad Jump',
+          'Box Jump',
+          'Nordic Curl',
+          'Push Press'
+        ]
+      },
+      centrocampista: {
+        priority: ['endurance_anaerobica', 'cambio_direzione', 'accelerazione'],
+        exercises: [
+          'Lateral Shuffle',
+          'Cone Drill',
+          'Burpee Broad Jump',
+          'Jump Squat',
+          'HIIT Intervals'
+        ]
+      },
+      attaccante: {
+        priority: ['accelerazione_esplosiva', 'salto_verticale', 'sprint'],
+        exercises: [
+          'Depth Jump',
+          'Sprint Start',
+          'Single Leg Bound',
+          'Box Jump',
+          'Power Clean (se gym)'
+        ]
+      }
+    }
+  },
+  
+  basket: {
+    name: 'Basket',
+    focus: ['salto_verticale', 'forza_esplosiva_gambe', 'core_rotation'],
+    roles: {
+      playmaker: {
+        priority: ['accelerazione', 'cambio_direzione', 'endurance'],
+        exercises: [
+          'Lateral Bound',
+          'Cone Drill',
+          'Jump Squat',
+          'Sprint Intervals',
+          'Box Jump'
+        ]
+      },
+      ala: {
+        priority: ['salto_verticale', 'accelerazione', 'forza_esplosiva'],
+        exercises: [
+          'Depth Jump',
+          'Box Jump',
+          'Broad Jump',
+          'Single Leg Bound',
+          'Clap Push-up'
+        ]
+      },
+      centro: {
+        priority: ['forza_massimale', 'salto_verticale', 'contatto_fisico'],
+        exercises: [
+          'Box Jump',
+          'Nordic Curl',
+          'Push Press',
+          'Squat Jump pesante',
+          'Plank con peso'
+        ]
+      }
+    }
+  },
+  
+  tennis: {
+    name: 'Tennis',
+    focus: ['rotazione_core', 'accelerazione_laterale', 'esplosività_gambe'],
+    roles: {
+      singolo: {
+        priority: ['endurance_anaerobica', 'cambio_direzione', 'rotazione_core'],
+        exercises: [
+          'Lateral Shuffle',
+          'Medicine Ball Rotation',
+          'Jump Squat',
+          'Plank Rotation',
+          'Sprint Intervals'
+        ]
+      },
+      doppio: {
+        priority: ['esplosività', 'forza_core', 'reattività'],
+        exercises: [
+          'Lateral Bound',
+          'Medicine Ball Slam',
+          'Box Jump',
+          'Plank Shoulder Taps',
+          'Burpees'
+        ]
+      }
+    }
+  },
+  
+  pallavolo: {
+    name: 'Pallavolo',
+    focus: ['salto_verticale', 'esplosività_spalle', 'core_stability'],
+    roles: {
+      schiacciatore: {
+        priority: ['salto_verticale_massimo', 'esplosività_spalle', 'atterraggio'],
+        exercises: [
+          'Depth Jump',
+          'Box Jump Alto',
+          'Plyometric Push-up',
+          'Nordic Curl Atterraggio',
+          'Medicine Ball Overhead Slam'
+        ]
+      },
+      centrale: {
+        priority: ['salto_verticale', 'forza_massimale_gambe', 'muro'],
+        exercises: [
+          'Box Jump',
+          'Squat Jump',
+          'Broad Jump',
+          'Single Leg Hop',
+          'Plank Hold'
+        ]
+      },
+      libero: {
+        priority: ['reattività', 'accelerazione_laterale', 'endurance'],
+        exercises: [
+          'Lateral Shuffle',
+          'Cone Drill',
+          'Burpees',
+          'Jump Squat Veloce',
+          'Plank Dinamico'
+        ]
+      }
+    }
   }
 }
 
@@ -187,6 +479,31 @@ function hasWeightedEquipment(equipment) {
     (equipment.kettlebellKg && equipment.kettlebellKg.length > 0)
   )
 }
+
+function convertToBodyweightByGoal(exerciseName, level, goal) {
+  const name = exerciseName.toLowerCase()
+  const goalMapping = HOME_BODYWEIGHT_BY_GOAL[goal] || HOME_BODYWEIGHT_BY_GOAL.muscle_gain
+  
+  console.log(`[CONVERT] 🏠 Converting "${exerciseName}" for HOME + ${goal}`)
+  
+  // Trova categoria esercizio
+  let category = null
+  if (name.includes('squat') || name.includes('leg press')) category = 'Squat'
+  else if (name.includes('panca') || name.includes('bench') || (name.includes('press') && !name.includes('leg'))) category = 'Panca'
+  else if (name.includes('trazioni') || name.includes('pull') || name.includes('lat')) category = 'Trazioni'
+  else if (name.includes('stacco') || name.includes('deadlift') || name.includes('rdl')) category = 'Stacco'
+  
+  if (category && goalMapping[category]) {
+    const variant = goalMapping[category][level] || goalMapping[category]['intermediate']
+    console.log(`[CONVERT] ✅ ${exerciseName} → ${variant} (${goal}, ${level})`)
+    return variant
+  }
+  
+  // Fallback: usa vecchia funzione generica
+  console.warn(`[CONVERT] ⚠️ No goal-specific mapping, using generic conversion`)
+  return convertToBodyweight(exerciseName, level)
+}
+
 
 function convertToBodyweight(exerciseName, level) {
   const name = exerciseName.toLowerCase()
@@ -748,30 +1065,42 @@ function applyScreeningReductions(plannedSession, screeningResults) {
 export function generateProgram(input) {
   const { level, frequency, location, equipment, painAreas = [], assessments = [], goal, disabilityType, sportRole } = input
 
-  console.log('[PROGRAM] 🎯 ENTRY POINT - generateProgram with:', {
-    level,
-    frequency,
-    location,
-    goal,
-    painAreasCount: painAreas?.length
-  })
+  console.log('[PROGRAM] 🎯 ENTRY POINT:', { level, frequency, location, goal, sportRole })
 
-  // ===== RAMO 1: MOTOR RECOVERY / REHABILITATION =====
-  if (goal === 'motor_recovery' || goal === 'rehabilitation' || (painAreas?.length > 0 && goal !== 'standard')) {
-    console.log('[PROGRAM] 🏥 BRANCHING → MOTOR RECOVERY PROGRAM')
+  // ===== RAMO 1: MOTOR RECOVERY (invariato) =====
+  if (goal === 'motor_recovery' || goal === 'rehabilitation') {
+    console.log('[PROGRAM] 🏥 BRANCHING → MOTOR RECOVERY')
     return generateMotorRecoveryProgram({ level, painAreas, location, goal })
   }
 
-  // ===== RAMO 2: PERFORMANCE SPORT HOME =====
-  if (goal === 'performance' && (location === 'home' || !hasWeightedEquipment(equipment))) {
-    console.log('[PROGRAM] 🏃 BRANCHING → PERFORMANCE HOME PROGRAM')
-    return generatePerformanceHomeProgram({ level, frequency, assessments, sportRole })
+  // ===== RAMO 2: PERFORMANCE RUBINI (GYM O HOME) =====
+  if (goal === 'performance') {
+    console.log('[PROGRAM] 🏃 BRANCHING → PERFORMANCE RUBINI')
+    return generatePerformanceProgram({ 
+      level, 
+      frequency, 
+      assessments, 
+      sportRole, 
+      location,
+      equipment
+    })
   }
 
-  // ===== RAMO 3: STANDARD TRAINING (GYM O HOME CON ATTREZZI) =====
-  console.log('[PROGRAM] 💪 BRANCHING → STANDARD TRAINING PROGRAM')
-  return generateStandardProgram({ level, frequency, location, equipment, painAreas, assessments, goal, disabilityType, sportRole })
+  // ===== RAMO 3: STANDARD TRAINING (GYM O HOME CON GOAL) =====
+  console.log('[PROGRAM] 💪 BRANCHING → STANDARD TRAINING (GOAL-based)')
+  return generateStandardProgram({ 
+    level, 
+    frequency, 
+    location, 
+    equipment, 
+    painAreas, 
+    assessments, 
+    goal, 
+    disabilityType, 
+    sportRole 
+  })
 }
+
 
 // ===== RAMO 1: MOTOR RECOVERY PROGRAM =====
 
@@ -831,62 +1160,193 @@ function generateMotorRecoveryProgram(input) {
 
 // ===== RAMO 2: PERFORMANCE HOME PROGRAM =====
 
-function generatePerformanceHomeProgram(input) {
-  const { level, frequency, assessments, sportRole } = input
-
-  console.log('[PROGRAM] 🏃 generatePerformanceHomeProgram for:', sportRole)
-
+function generatePerformanceProgram(input) {
+  const { level, frequency, assessments, sportRole, location, equipment } = input
+  
+  console.log('[PROGRAM] 🏃 RUBINI Performance for:', sportRole, location)
+  
+  if (!sportRole || !sportRole.sport) {
+    console.warn('[PROGRAM] ⚠️ No sport specified, using generic performance')
+    return generateGenericPerformanceProgram(input)
+  }
+  
+  const sport = sportRole.sport.toLowerCase()
+  const role = sportRole.role?.toLowerCase() || 'singolo'
+  
+  const sportConfig = RUBINI_SPORT_CONFIGS[sport]
+  if (!sportConfig) {
+    console.warn(`[PROGRAM] ⚠️ Sport "${sport}" not in Rubini configs`)
+    return generateGenericPerformanceProgram(input)
+  }
+  
+  const roleConfig = sportConfig.roles[role]
+  if (!roleConfig) {
+    console.warn(`[PROGRAM] ⚠️ Role "${role}" not found for ${sport}`)
+    const firstRole = Object.keys(sportConfig.roles)[0]
+    roleConfig = sportConfig.roles[firstRole]
+  }
+  
+  console.log(`[RUBINI] ✅ ${sportConfig.name} - ${role} - Priority:`, roleConfig.priority)
+  
   const weeklySchedule = []
-
+  
   weeklySchedule.push({
-    dayName: 'Esplosività Gambe',
-    exercises: [
-      { name: 'Jump Squat', sets: 4, reps: '6-8', rest: 180, weight: null, notes: 'Focus esplosività' },
-      { name: 'Broad Jump', sets: 3, reps: '5', rest: 120, weight: null, notes: 'Salto in lungo' },
-      { name: 'Single Leg Hop', sets: 3, reps: '8 per gamba', rest: 90, weight: null, notes: 'Unilaterale' },
-      { name: 'Squat Isometrico', sets: 3, reps: '30-45s', rest: 90, weight: null, notes: 'Tenuta 90°' },
-      { name: 'Nordic Curl Eccentrico', sets: 3, reps: '5-6', rest: 120, weight: null, notes: 'Fase negativa lenta' },
-      { name: 'Plank Dinamico', sets: 3, reps: '45-60s', rest: 60, weight: null, notes: 'Con spostamenti braccia' }
-    ]
+    dayName: `${sportConfig.name} - Esplosività Gambe`,
+    location,
+    exercises: generateRubiniLowerBody(roleConfig, location, equipment, level)
   })
-
+  
   weeklySchedule.push({
-    dayName: 'Esplosività Busto',
-    exercises: [
-      { name: 'Clap Push-up', sets: 4, reps: '6-8', rest: 180, weight: null, notes: 'Piegamenti esplosivi' },
-      { name: 'Medicine Ball Slam', sets: 3, reps: '10', rest: 90, weight: null, notes: 'Usa oggetto pesante' },
-      { name: 'Pull-up Esplosiva', sets: 3, reps: '5-6', rest: 120, weight: null, notes: 'Fase concentrica veloce' },
-      { name: 'Plank to Push-up', sets: 3, reps: '12-15', rest: 60, weight: null, notes: 'Coordinazione core' },
-      { name: 'Dead Hang Isometrico', sets: 3, reps: '30-45s', rest: 90, weight: null, notes: 'Tenuta sbarra' },
-      { name: 'Bear Crawl', sets: 3, reps: '30s', rest: 60, weight: null, notes: 'Coordinazione full body' }
-    ]
+    dayName: `${sportConfig.name} - Potenza Busto`,
+    location,
+    exercises: generateRubiniUpperBody(roleConfig, location, equipment, level)
   })
-
-  weeklySchedule.push({
-    dayName: 'Conditioning Sport',
-    exercises: [
-      { name: 'Burpees', sets: 4, reps: '10-12', rest: 60, weight: null, notes: 'Conditioning generale' },
-      { name: 'Lateral Bound', sets: 3, reps: '8 per lato', rest: 90, weight: null, notes: 'Agilità laterale' },
-      { name: 'Mountain Climbers', sets: 3, reps: '20-30', rest: 45, weight: null, notes: 'Velocità' },
-      { name: 'Pistol Squat Assistito', sets: 3, reps: '6-8 per gamba', rest: 120, weight: null, notes: 'Stabilità unilaterale' },
-      { name: 'Hollow Body Hold', sets: 3, reps: '30-45s', rest: 60, weight: null, notes: 'Core isometrico' },
-      { name: 'Sprint sul posto', sets: 4, reps: '20s', rest: 90, weight: null, notes: 'Conditioning anaerobico' }
-    ]
-  })
-
+  
+  if (frequency >= 3) {
+    weeklySchedule.push({
+      dayName: `${sportConfig.name} - Conditioning Specifico`,
+      location,
+      exercises: generateRubiniConditioning(roleConfig, location, equipment, level)
+    })
+  }
+  
   return {
-    name: `Performance Sport HOME - ${level}`,
-    description: `${frequency}x/settimana, focus pliometria ed esplosività`,
-    split: 'performance_home',
+    name: `Performance ${sportConfig.name} (Rubini) - ${role}`,
+    description: `Focus: ${roleConfig.priority.join(', ')}`,
+    split: 'performance_rubini',
     daysPerWeek: frequency,
+    location,
     weeklySchedule: weeklySchedule.slice(0, frequency),
-    progression: 'progressive_overload_volume',
-    includesDeload: level === 'intermediate' || level === 'advanced',
-    deloadFrequency: 4,
+    progression: 'progressive_explosive',
+    includesDeload: true,
+    deloadFrequency: 3,
     totalWeeks: 8,
-    requiresEndCycleTest: true
+    requiresEndCycleTest: true,
+    sportSpecific: true,
+    rubiniMethod: true
   }
 }
+
+function generateRubiniLowerBody(roleConfig, location, equipment, level) {
+  const exercises = []
+  const isGym = location === 'gym'
+  
+  roleConfig.exercises.filter(ex => 
+    ex.includes('Jump') || ex.includes('Squat') || ex.includes('Nordic') || ex.includes('Bound')
+  ).forEach(exerciseName => {
+    exercises.push({
+      name: exerciseName,
+      sets: level === 'advanced' ? 5 : 4,
+      reps: exerciseName.includes('Jump') || exerciseName.includes('Bound') ? '5-8' : '4-6',
+      rest: 180,
+      weight: null,
+      notes: 'Rubini - Max esplosività'
+    })
+  })
+  
+  if (isGym) {
+    exercises.unshift({
+      name: 'Squat Pesante',
+      sets: 3,
+      reps: '3-5',
+      rest: 240,
+      weight: 'assessment-based',
+      notes: 'Rubini - Base forza'
+    })
+  }
+  
+  return exercises
+}
+
+function generateRubiniUpperBody(roleConfig, location, equipment, level) {
+  const exercises = []
+  
+  roleConfig.exercises.filter(ex =>
+    ex.includes('Push') || ex.includes('Medicine Ball') || ex.includes('Slam') || ex.includes('Press')
+  ).forEach(exerciseName => {
+    exercises.push({
+      name: exerciseName,
+      sets: 4,
+      reps: '6-8',
+      rest: 120,
+      weight: null,
+      notes: 'Rubini - Potenza'
+    })
+  })
+  
+  exercises.push({
+    name: 'Plank Rotation',
+    sets: 3,
+    reps: '30-45s',
+    rest: 60,
+    weight: null,
+    notes: 'Rubini - Core stability'
+  })
+  
+  return exercises
+}
+
+function generateRubiniConditioning(roleConfig, location, equipment, level) {
+  const exercises = []
+  
+  roleConfig.exercises.filter(ex =>
+    ex.includes('Interval') || ex.includes('Shuffle') || ex.includes('Drill') || ex.includes('Sprint')
+  ).forEach(exerciseName => {
+    exercises.push({
+      name: exerciseName,
+      sets: exerciseName.includes('Interval') ? 8 : 5,
+      reps: exerciseName.includes('Interval') ? '30s on / 30s off' : '10-15',
+      rest: 60,
+      weight: null,
+      notes: 'Rubini - Conditioning specifico'
+    })
+  })
+  
+  if (exercises.length === 0) {
+    exercises.push(
+      { name: 'Burpees', sets: 5, reps: '10', rest: 45, weight: null, notes: 'Conditioning' },
+      { name: 'Sprint Intervals', sets: 8, reps: '20s on / 40s off', rest: 60, weight: null, notes: 'Anaerobico' }
+    )
+  }
+  
+  return exercises
+}
+
+function generateGenericPerformanceProgram(input) {
+  // Fallback: programma performance generico
+  const { level, frequency, location } = input
+  
+  return {
+    name: `Performance Generica - ${level}`,
+    description: `${frequency}x/settimana, focus esplosività generale`,
+    split: 'performance_generic',
+    daysPerWeek: frequency,
+    location,
+    weeklySchedule: [
+      {
+        dayName: 'Esplosività Gambe',
+        location,
+        exercises: [
+          { name: 'Jump Squat', sets: 4, reps: '6-8', rest: 180, weight: null, notes: 'Esplosività' },
+          { name: 'Broad Jump', sets: 3, reps: '5', rest: 120, weight: null },
+          { name: 'Single Leg Hop', sets: 3, reps: '8/lato', rest: 90, weight: null }
+        ]
+      },
+      {
+        dayName: 'Potenza Busto',
+        location,
+        exercises: [
+          { name: 'Clap Push-up', sets: 4, reps: '6-8', rest: 180, weight: null },
+          { name: 'Medicine Ball Slam', sets: 3, reps: '10', rest: 90, weight: null },
+          { name: 'Plank Dinamico', sets: 3, reps: '45s', rest: 60, weight: null }
+        ]
+      }
+    ].slice(0, frequency),
+    progression: 'progressive_explosive',
+    totalWeeks: 8
+  }
+}
+
 
 // ===== RAMO 3: STANDARD TRAINING PROGRAM =====
 
@@ -952,7 +1412,7 @@ console.log('[GENERATOR] 🔍 DEBUG - location || gym result:', location || 'gym
 // ===== WEEKLY SCHEDULE GENERATOR =====
 
 function generateWeeklySchedule(split, daysPerWeek, location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) {
-  const schedule = []
+  let schedule = []
 
   console.log('[PROGRAM] 📅 generateWeeklySchedule:', { split, daysPerWeek, location, level })
 
@@ -1000,6 +1460,27 @@ function generateWeeklySchedule(split, daysPerWeek, location, equipment, painAre
       { dayName: 'Legs B', location, exercises: generateLegsDay('B', location, equipment, painAreas, assessments, level, goal, disabilityType, sportRole) }
     )
   }
+// 🎯 Aggiungi cardio per goal fat_loss
+  if (goal === 'fat_loss' && schedule.length > 0) {
+    const goalConfig = GOAL_CONFIGS.fat_loss
+    
+    schedule.forEach(day => {
+      day.exercises = convertToCircuit(day.exercises, goalConfig)
+      day.notes = day.notes ? `${day.notes} - Formato circuito` : 'Formato circuito'
+    })
+    
+    if (daysPerWeek >= 4 && goalConfig.includesCardio) {
+      const cardioSessions = Math.min(goalConfig.cardioFrequency, Math.floor(daysPerWeek / 3))
+      
+      for (let i = 0; i < cardioSessions; i++) {
+        schedule = addFatLossCardioDay(schedule, level)
+      }
+    }
+    
+    console.log('[PROGRAM] 🔥 Fat loss: circuiti + cardio applicati')
+  }
+
+  return schedule
 
   return schedule
 }
@@ -1214,52 +1695,66 @@ function generateLegsDay(variant, location, equipment, painAreas, assessments, l
 
   return exercises
 }
+function addFatLossCardioDay(weeklySchedule, level) {
+  const cardioExercises = [
+    { name: 'HIIT Intervals', sets: 8, reps: '30s on / 30s off', rest: 30, weight: null, notes: 'Sprint intervals' },
+    { name: 'Jump Rope', sets: 5, reps: '60s', rest: 45, weight: null, notes: 'Cardio continuo' },
+    { name: 'Burpees', sets: 4, reps: '15', rest: 30, weight: null, notes: 'Full body' },
+    { name: 'Mountain Climbers', sets: 4, reps: '30s', rest: 30, weight: null, notes: 'Cardio + core' }
+  ]
+  
+  weeklySchedule.push({
+    dayName: 'Cardio HIIT',
+    location: 'home',
+    exercises: cardioExercises
+  })
+  
+  return weeklySchedule
+}
+
+function convertToCircuit(exercises, goalConfig) {
+  if (goalConfig.focus !== 'circuits_cardio') return exercises
+  
+  return exercises.map(ex => ({
+    ...ex,
+    rest: 30,
+    notes: `${ex.notes} - CIRCUITO`
+  }))
+}
 
 // ===== CREATE EXERCISE =====
 
 
 function createExercise(name, location, equipment, baseWeight, level, goal, type, assessments) {
   const config = LEVEL_CONFIG[level] || LEVEL_CONFIG.intermediate
+  const goalConfig = GOAL_CONFIGS[goal] || GOAL_CONFIGS.muscle_gain
   
-  // ✅ FIX TRAZIONI INTELLIGENTE basato su livello
+  console.log('[PROGRAM] 🎯 createExercise:', { name, level, goal, type, location })
+  
+  // ✅ FIX TRAZIONI (invariato)
   if ((name.toLowerCase().includes('trazioni') || name.toLowerCase().includes('pull-up')) && 
       location === 'gym' && 
       baseWeight > 0) {
-    
-    // Trova bodyweight dagli assessments
     const bodyweight = assessments?.find(a => a.bodyweight)?.bodyweight || 80;
     const ratio = baseWeight / bodyweight;
     
-    if (ratio < 0.9) { // Lat machine weight < 90% del peso corporeo
-      
+    if (ratio < 0.9) {
       if (level === 'beginner') {
-        // Principianti: lat machine sicura
         name = 'Lat Machine';
-        console.log(`[PROGRAM] 🔄 Beginner: Trazioni → Lat Machine (${baseWeight}kg < ${bodyweight}kg)`);
-        
       } else {
-        // Intermedi/Avanzati: progressioni tecniche
-        if (ratio < 0.6) {
-          name = 'Negative Pull-ups';
-          console.log(`[PROGRAM] 🔄 ${level}: Trazioni → Negative Pull-ups (ratio: ${ratio.toFixed(2)})`);
-        } else if (ratio < 0.75) {
-          name = 'Banded Pull-ups';
-          console.log(`[PROGRAM] 🔄 ${level}: Trazioni → Banded Pull-ups (ratio: ${ratio.toFixed(2)})`);
-        } else {
-          name = 'Pull-ups con Pausa';
-          console.log(`[PROGRAM] 🔄 ${level}: Trazioni → Pull-ups con Pausa (ratio: ${ratio.toFixed(2)})`);
-        }
+        if (ratio < 0.6) name = 'Negative Pull-ups';
+        else if (ratio < 0.75) name = 'Banded Pull-ups';
+        else name = 'Pull-ups con Pausa';
       }
     }
-    // Se ratio >= 0.9 → trazioni complete
   }
   
+  // 🎯 Sets e Rest basati su GOAL
   let sets = type === 'compound' ? config.compoundSets : config.accessorySets
-  // ... resto codice
-  let rest = type === 'compound' ? 180 : type === 'accessory' ? 120 : 60
+  sets = Math.round(sets * goalConfig.setsMultiplier)
+  let rest = goalConfig.rest[type] || (type === 'compound' ? 180 : 120)
 
-  console.log('[PROGRAM] 🎯 createExercise:', { name, level, type, location })
-
+  // ✅ MANTIENI: Assessment bodyweight progressions
   const assessment = assessments?.find(a =>
     a.exerciseName && name.toLowerCase().includes(a.exerciseName.toLowerCase())
   )
@@ -1269,11 +1764,6 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
     const progressionName = BODYWEIGHT_PROGRESSIONS[assessment.exerciseName][levelMap[assessment.level] || 2]
     const targetReps = assessment.maxReps || 12
     const range = config.repsRange
-
-    console.log('[PROGRAM] ✅ Using bodyweight progression from assessment')
-    console.log("[DEBUG] Assessment found:", assessment);
-    console.log("[DEBUG] BODYWEIGHT_PROGRESSIONS[", assessment.exerciseName, "]:", BODYWEIGHT_PROGRESSIONS[assessment.exerciseName]);
-    console.log("[DEBUG] progressionName:", progressionName);
 
     return {
       name: progressionName,
@@ -1287,25 +1777,49 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
 
   const hasEquipment = hasWeightedEquipment(equipment)
 
+  // 🏠 NUOVO: HOME BODYWEIGHT GOAL-SPECIFIC
   if (location === 'home' && !hasEquipment) {
-    console.log('[PROGRAM] 🏠 HOME without equipment - converting to bodyweight')
+    console.log('[PROGRAM] 🏠 HOME without equipment - GOAL-SPECIFIC conversion')
 
-    const bodyweightName = convertToBodyweight(name, level)
-    const targetReps = type === 'compound' ? 12 : type === 'accessory' ? 15 : 20
-    const range = config.repsRange
+    const bodyweightName = convertToBodyweightByGoal(name, level, goal)
+    const [minReps, maxReps] = goalConfig.repsRange.split('-').map(Number)
+    
+    let targetReps
+    if (goal === 'strength') {
+      targetReps = minReps  // Forza: basse reps anche bodyweight
+    } else if (goal === 'fat_loss') {
+      targetReps = maxReps  // Fat loss: reps alte
+    } else {
+      targetReps = Math.round((minReps + maxReps) / 2)
+    }
 
     return {
       name: bodyweightName,
       sets,
-      reps: type === 'core' ? '30-60s' : (range > 0 ? `${targetReps - range}-${targetReps + range}` : `${targetReps}`),
+      reps: type === 'core' ? '30-60s' : `${targetReps}-${targetReps + 2}`,
       rest,
       weight: null,
-      notes: `Corpo libero - ${level}`
+      notes: `${goalConfig.name} - ${goalConfig.homeStrategy}`
     }
+  }
+
+  // 🏠 NUOVO: HOME CON ATTREZZI (stessa intensità GYM)
+  if (location === 'home' && hasEquipment) {
+    console.log('[PROGRAM] 🏠 HOME with equipment - same intensity as gym')
+    
+    let adaptedName = name
+    
+    if (!equipment.barbell && name.toLowerCase().includes('bilanciere')) {
+      adaptedName = name.replace(/Bilanciere/gi, 'Manubri')
+      console.log(`[ADAPT] Bilanciere → Manubri: ${name} → ${adaptedName}`)
+    }
+    
+    name = adaptedName
   }
 
   const exerciseOrGiantSet = getExerciseForLocation(name, location, equipment, goal || 'muscle_gain', level)
 
+  // ✅ MANTIENI: Safety checks
   if (typeof exerciseOrGiantSet !== 'string') {
     if (goal === 'pregnancy' || goal === 'disability') {
       const safeAlternative = goal === 'pregnancy' ? getPregnancySafeAlternative(name) : getDisabilitySafeAlternative(name)
@@ -1318,49 +1832,45 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
         notes: 'Adattato per sicurezza'
       }
     }
-    console.log("[DEBUG] Giant set with name:", { name, type: exerciseOrGiantSet.type });
-    return {
-      name: name,
-      ...exerciseOrGiantSet
-    }
+    return { name: name, ...exerciseOrGiantSet }
   }
 
   const isBodyweight = isBodyweightExercise(exerciseOrGiantSet)
 
-  let targetReps = 10
-  let reps
-
+  // 🎯 REPS BASATE SU GOAL
+  const [minReps, maxReps] = goalConfig.repsRange.split('-').map(Number)
+  let targetReps
+  
   if (isBodyweight) {
-    targetReps = type === 'compound' ? 12 : type === 'accessory' ? 15 : 20
+    targetReps = maxReps
   } else {
-    targetReps = type === 'compound' ? 5 : type === 'accessory' ? 10 : 12
+    targetReps = type === 'compound' ? minReps : Math.round((minReps + maxReps) / 2)
   }
 
+  let reps
   if (type === 'core') {
-    reps = '30-60s'
+    reps = goal === 'fat_loss' ? '20-45s' : '30-60s'
   } else {
     const range = config.repsRange
     reps = range > 0 ? `${targetReps - range}-${targetReps + range}` : `${targetReps}`
   }
 
+  // ✅ CALCOLO PESO
   let trainingWeight = null
 
   if (isBodyweight) {
     trainingWeight = null
-    console.log('[PROGRAM] ⭕ No weight (bodyweight exercise)')
   } else if (location === 'gym' || hasEquipment) {
     if (baseWeight > 0) {
-// const startWeight = baseWeight * config.startPercentage  // ← COMMENTA QUESTA
       const finalReps = typeof reps === 'string' && reps.includes('-')
         ? parseInt(reps.split('-')[1])
         : targetReps
-trainingWeight = calculateTrainingWeight(baseWeight, finalReps, config.RIR)
+      
+      trainingWeight = calculateTrainingWeight(baseWeight, finalReps, config.RIR)
       
       if (hasEquipment && equipment.dumbbellMaxKg && trainingWeight > equipment.dumbbellMaxKg) {
         trainingWeight = equipment.dumbbellMaxKg
       }
-
-      console.log('[PROGRAM] ✅ Weight:', trainingWeight, 'kg da 1RM', baseWeight, 'kg, RIR', config.RIR)
     }
   }
 
@@ -1370,7 +1880,7 @@ trainingWeight = calculateTrainingWeight(baseWeight, finalReps, config.RIR)
     reps,
     rest,
     weight: trainingWeight,
-    notes: type === 'compound' ? `RIR ${config.RIR}` : 'Complementare'
+    notes: `${goalConfig.name} - ${type === 'compound' ? `RIR ${config.RIR}` : 'Complementare'}`
   }
 }
 
