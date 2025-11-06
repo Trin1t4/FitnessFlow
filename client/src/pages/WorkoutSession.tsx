@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Check, X, Timer } from 'lucide-react';
 import { PostSetScreening, SetFeedback } from '../components/PostSetScreening';
+import TUTTimer from '../components/TUTTimer';
 
 interface Exercise {
   name: string;
@@ -10,6 +11,11 @@ interface Exercise {
   reps: string;
   rest: number;
   weight?: number;
+    tempo?: {
+    eccentric: number;
+    pause: number;
+    concentric: number;
+  };
   notes?: string;
   type?: string;
   exercises?: any[];
@@ -39,6 +45,7 @@ export default function WorkoutSession() {
   const [restTimeLeft, setRestTimeLeft] = useState(0);
   const [completedSets, setCompletedSets] = useState<number[]>([]);
   const [sessionStartTime] = useState(new Date());
+    const [currentRep, setCurrentRep] = useState(1);
   const [showPostSetScreening, setShowPostSetScreening] = useState(false);
   const [setFeedbackHistory, setSetFeedbackHistory] = useState<SetFeedback[]>([]);
 
@@ -245,21 +252,40 @@ console.log("🏋️ PESO DEBUG:", {
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-gray-900/50 rounded-lg p-4 text-center">
-                <p className="text-gray-400 text-sm mb-1">Serie</p>
-                <p className="text-white font-bold text-2xl">
-                  {currentSet}/{adjustedSets}
-                </p>
+{/* Timer TUT o Rep Counter normale */}
+            {currentExercise.tempo ? (
+              <TUTTimer 
+                tempo={currentExercise.tempo}
+                currentRep={currentRep}
+                totalReps={(() => {
+                  const repsStr = currentExercise.reps;
+                  if (typeof repsStr === 'string' && repsStr.includes('-')) {
+                    return parseInt(repsStr.split('-')[1]) || 10;
+                  }
+                  return parseInt(repsStr) || 10;
+                })()}
+                onRepComplete={() => {
+                  setCurrentRep(prev => prev + 1);
+                }}
+              />
+            ) : (
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-gray-900/50 rounded-lg p-4 text-center">
+                  <p className="text-gray-400 text-sm mb-1">Serie</p>
+                  <p className="text-white font-bold text-2xl">
+                    {currentSet}/{adjustedSets}
+                  </p>
+                </div>
+                <div className="bg-gray-900/50 rounded-lg p-4 text-center">
+                  <p className="text-gray-400 text-sm mb-1">Ripetizioni</p>
+                  <p className="text-white font-bold text-2xl">{currentExercise.reps}</p>
+                </div>
+                <div className="bg-gray-900/50 rounded-lg p-4 text-center">
+                  <p className="text-gray-400 text-sm mb-1">Recupero</p>
+                  <p className="text-white font-bold text-2xl">{currentExercise.rest}s</p>
+                </div>
               </div>
-              <div className="bg-gray-900/50 rounded-lg p-4 text-center">
-                <p className="text-gray-400 text-sm mb-1">Ripetizioni</p>
-                <p className="text-white font-bold text-2xl">{currentExercise.reps}</p>
-              </div>
-              <div className="bg-gray-900/50 rounded-lg p-4 text-center">
-                <p className="text-gray-400 text-sm mb-1">Recupero</p>
-                <p className="text-white font-bold text-2xl">{currentExercise.rest}s</p>
-              </div>
+            )}
             </div>
 
             <button
