@@ -932,7 +932,7 @@ function convertGymExerciseToHome(exercise, assessments) {
 
     return {
       ...exercise,
-      name: realExerciseName,
+      name: bodyweightName,
       weight: null,
       notes: `🔄 ${exercise.name} (${exercise.weight}kg) → ${bodyweightName}`
     }
@@ -1847,7 +1847,7 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
     }
 
     return {
-      name: realExerciseName,
+      name: bodyweightName,
       sets,
       reps: type === 'core' ? '30-60s' : `${targetReps}-${targetReps + 2}`,
       rest,
@@ -1893,16 +1893,16 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
 
   // 🎯 REPS BASATE SU GOAL
   const [minReps, maxReps] = goalConfig.repsRange.split('-').map(Number)
-  let realExerciseName = bodyweightName;
-if (!realExerciseName || realExerciseName.toLowerCase() === "bodyweight") {
+  let bodyweightName = bodyweightName;
+if (!bodyweightName || bodyweightName.toLowerCase() === "bodyweight") {
   if (name.toLowerCase().includes("panca") || name.toLowerCase().includes("push")) {
-    realExerciseName = "Push-up";
+    bodyweightName = "Push-up";
   } else if (name.toLowerCase().includes("trazioni") || name.toLowerCase().includes("pull")) {
-    realExerciseName = "Australian Pull-up";
+    bodyweightName = "Australian Pull-up";
   } else if (name.toLowerCase().includes("plank")) {
-    realExerciseName = "Plank";
+    bodyweightName = "Plank";
   } else {
-    realExerciseName = "Squat a corpo libero";
+    bodyweightName = "Squat a corpo libero";
   }
 }
 
