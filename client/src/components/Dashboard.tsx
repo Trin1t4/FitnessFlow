@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { mapGoal, mapSportRole } from '../lib/goalMappings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Activity, Calendar, TrendingUp, Dumbbell, Clock, CheckCircle, AlertCircle, Zap, Target, Award } from 'lucide-react';
 
@@ -156,12 +157,12 @@ export default function Dashboard() {
           location: onboardingData.trainingLocation,
           hasGym: onboardingData.trainingLocation === 'gym',
           equipment: onboardingData.equipment || {},
-          goal: onboardingData.goal || 'muscle_gain',
+          goal: mapGoal(onboardingData.goal || 'muscle_gain'),
           level: quizData.level || screeningData.level || 'intermediate',
           frequency: onboardingData.activityLevel?.weeklyFrequency || 3,
           painAreas: onboardingData.painAreas || screeningData.painAreas || [],
           disabilityType: onboardingData.disabilityType || null,
-          sportRole: onboardingData.sportRole || null,
+          sportRole: mapSportRole(onboardingData.sport, onboardingData.sportRole),
           specificBodyParts: onboardingData.specificBodyParts || []
         };
       }
