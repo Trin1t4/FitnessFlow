@@ -1893,7 +1893,6 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
 
   // 🎯 REPS BASATE SU GOAL
   const [minReps, maxReps] = goalConfig.repsRange.split('-').map(Number)
-  let bodyweightName = bodyweightName;
 if (!bodyweightName || bodyweightName.toLowerCase() === "bodyweight") {
   if (name.toLowerCase().includes("panca") || name.toLowerCase().includes("push")) {
     bodyweightName = "Push-up";
