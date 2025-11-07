@@ -1813,6 +1813,23 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
     console.log('[PROGRAM] 🏠 HOME without equipment - GOAL-SPECIFIC conversion')
 
     const bodyweightName = convertToBodyweightByGoal(name, level, goal)
+        
+    // 🔧 FIX: se bodyweightName è letteralmente "bodyweight", applica fallback specifico
+    if (bodyweightName && bodyweightName.toLowerCase() === 'bodyweight') {
+      const originalName = name.toLowerCase();
+      if (originalName.includes('squat') || originalName.includes('leg')) {
+        bodyweightName = 'Squat Completo';
+      } else if (originalName.includes('panca') || originalName.includes('bench') || originalName.includes('push')) {
+        bodyweightName = 'Push-up Standard';
+      } else if (originalName.includes('trazioni') || originalName.includes('pull') || originalName.includes('lat')) {
+        bodyweightName = 'Australian Pull-up';
+      } else if (originalName.includes('stacco') || originalName.includes('deadlift') || originalName.includes('rdl')) {
+        bodyweightName = 'Single Leg Deadlift';
+      } else {
+        bodyweightName = 'Plank';
+      }
+      console.log(`[FIX] Converted generic "bodyweight" to specific: ${bodyweightName}`);
+    }
     const [minReps, maxReps] = goalConfig.repsRange.split('-').map(Number)
     
     let targetReps
