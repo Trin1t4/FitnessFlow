@@ -1818,15 +1818,25 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
     if (bodyweightName && bodyweightName.toLowerCase() === 'bodyweight') {
       const originalName = name.toLowerCase();
       if (originalName.includes('squat') || originalName.includes('leg')) {
-        bodyweightName = 'Squat Completo';
+        // 🔧 USA IL LIVELLO!
+        if (level === 'beginner') bodyweightName = 'Squat Assistito';
+        else if (level === 'intermediate') bodyweightName = 'Squat Completo';
+        else bodyweightName = 'Pistol Assistito';
       } else if (originalName.includes('panca') || originalName.includes('bench') || originalName.includes('push')) {
-        bodyweightName = 'Push-up Standard';
+        if (level === 'beginner') bodyweightName = 'Push-up su Ginocchia';
+        else if (level === 'intermediate') bodyweightName = 'Push-up Standard';
+        else bodyweightName = 'Push-up Mani Strette';
       } else if (originalName.includes('trazioni') || originalName.includes('pull') || originalName.includes('lat')) {
-        bodyweightName = 'Australian Pull-up';
+        if (level === 'beginner') bodyweightName = 'Floor Pull (asciugamano)';
+        else if (level === 'intermediate') bodyweightName = 'Australian Pull-up';
+        else bodyweightName = 'Pull-up Completa';
       } else if (originalName.includes('stacco') || originalName.includes('deadlift') || originalName.includes('rdl')) {
-        bodyweightName = 'Single Leg Deadlift';
+        if (level === 'beginner') bodyweightName = 'Glute Bridge';
+        else if (level === 'intermediate') bodyweightName = 'Single Leg Deadlift';
+        else bodyweightName = 'Nordic Curl';
       } else {
         bodyweightName = 'Plank';
+      }
       }
       console.log(`[FIX] Converted generic "bodyweight" to specific: ${bodyweightName}`);
     }
