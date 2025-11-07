@@ -1837,9 +1837,9 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
       } else {
         bodyweightName = 'Plank';
       }
+            console.log(`[FIX] Converted generic "bodyweight" to specific: ${bodyweightName}`);
       }
-      console.log(`[FIX] Converted generic "bodyweight" to specific: ${bodyweightName}`);
-    }
+
     const [minReps, maxReps] = goalConfig.repsRange.split('-').map(Number)
     
     let targetReps
