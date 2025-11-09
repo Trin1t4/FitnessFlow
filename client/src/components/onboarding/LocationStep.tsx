@@ -32,7 +32,7 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
     onNext({
       trainingLocation: selectedLocation,
       homeType: selectedLocation === 'home' || selectedLocation === 'mixed' ? homeType : undefined,
-      equipment: (selectedLocation === 'home' || selectedLocation === 'mixed') && homeType === 'withequipment,
+      equipment: (selectedLocation === 'home' || selectedLocation === 'mixed') && homeType ===  'withequipment' ? equipment : undefined,
     });
   };
 
