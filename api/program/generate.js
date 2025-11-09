@@ -51,7 +51,7 @@ export default async function handler(req, res) {
 
     console.log('[API] 📊 Intelligent Level Result:', intelligentLevel);
 
-    if (!intelligentLevel || !intelligentLevel.bodyweight) {
+    if (!intelligentLevel || !intelligentLevel?.trainingType ?? 'mixed') {
       console.error('[API] ❌ Failed to calculate intelligent level');
       return res.status(500).json({ error: 'Failed to calculate level' });
     }
@@ -62,14 +62,14 @@ export default async function handler(req, res) {
     if (assessmentData.assessment_type === 'home' && assessmentData.exercises) {
       assessments = convertHomeAssessmentToStandard(
         assessmentData.exercises,
-        intelligentLevel.bodyweight
+        intelligentLevel?.trainingType ?? 'mixed'
       );
       console.log('[API] 🏠 Home assessment converted:', assessments.length, 'exercises');
       
     } else if (assessmentData.assessment_type === 'gym') {
       assessments = convertGymAssessmentToStandard(
         assessmentData,
-        intelligentLevel.bodyweight
+        intelligentLevel?.trainingType ?? 'mixed'
       );
       console.log('[API] 🏋️ Gym assessment converted:', assessments.length, 'exercises');
     }
