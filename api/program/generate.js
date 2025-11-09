@@ -268,8 +268,7 @@ function calculateIntelligentLevel(assessmentData, onboardingData) {
     }
   }
 
-  const finalLevel = count > 0 ? 'intermediate' : 'beginner';
-
+  const finalLevel = level || 'beginner';
   return {
     bodyweight,
     finalLevel,
