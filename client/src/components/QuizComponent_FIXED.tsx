@@ -179,9 +179,18 @@ export default function QuizComponent() {
     let message: string;
 
     if (technicalPercentage < 50) {
-      level = "beginner";
-      levelLabel = "Principiante";
-      message = "La tecnica è fondamentale per la sicurezza. Anche se i tuoi carichi sono buoni, è necessario un reset sulla tecnica prima di progredire. Inizierai con un programma focalizzato sulla forma corretta.";
+      // Tecnica insufficiente
+      if (performancePercentage >= 70) {
+        // ✅ CASO SPECIALE: Carichi OTTIMI ma tecnica scarsa → INTERMEDIATE
+        level = "intermediate";
+        levelLabel = "Intermedio";
+        message = "Hai una base di forza solida (carichi ottimi!), ma la tecnica necessita miglioramenti. Programma Intermedio con enfasi sulla forma corretta per evitare infortuni e massimizzare i risultati. Partirai all'85% dei carichi calcolati.";
+      } else {
+        // Carichi normali/bassi + tecnica scarsa → BEGINNER
+        level = "beginner";
+        levelLabel = "Principiante";
+        message = "La tecnica è fondamentale per la sicurezza. Inizierai con un programma che enfatizza la tecnica corretta e costruisce la base di forza. Carichi al 70% per perfezionare i movimenti prima di progredire.";
+      }
     } else if (performancePercentage < 40) {
       level = "intermediate";
       levelLabel = "Intermedio";

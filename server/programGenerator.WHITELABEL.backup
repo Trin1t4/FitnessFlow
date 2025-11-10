@@ -1,4 +1,3 @@
-
 import { 
   getExerciseForLocation 
 } from './exerciseSubstitutions.js'
@@ -209,9 +208,9 @@ const HOME_BODYWEIGHT_BY_GOAL = {
   }
 }
 
-// ===== PERFORMANCE METHOD: SPORT-SPECIFIC PERFORMANCE =====
+// ===== RUBINI METHOD: SPORT-SPECIFIC PERFORMANCE =====
 
-const PERFORMANCE_SPORT_CONFIGS = {
+const RUBINI_SPORT_CONFIGS = {
   calcio: {
     name: 'Calcio',
     focus: ['accelerazione', 'cambio_direzione', 'salto_verticale', 'endurance_anaerobica'],
@@ -1074,9 +1073,9 @@ export function generateProgram(input) {
     return generateMotorRecoveryProgram({ level, painAreas, location, goal })
   }
 
-  // ===== RAMO 2: PERFORMANCE (GYM O HOME) =====
+  // ===== RAMO 2: PERFORMANCE RUBINI (GYM O HOME) =====
   if (goal === 'performance') {
-    console.log('[PROGRAM] 🏃 BRANCHING → PERFORMANCE')
+    console.log('[PROGRAM] 🏃 BRANCHING → PERFORMANCE RUBINI')
     return generatePerformanceProgram({ 
       level, 
       frequency, 
@@ -1164,7 +1163,7 @@ function generateMotorRecoveryProgram(input) {
 function generatePerformanceProgram(input) {
   const { level, frequency, assessments, sportRole, location, equipment } = input
   
-  console.log('[PROGRAM] 🏃 Performance for:', sportRole, location)
+  console.log('[PROGRAM] 🏃 RUBINI Performance for:', sportRole, location)
   
   if (!sportRole || !sportRole.sport) {
     console.warn('[PROGRAM] ⚠️ No sport specified, using generic performance')
@@ -1174,9 +1173,9 @@ function generatePerformanceProgram(input) {
   const sport = sportRole.sport.toLowerCase()
   const role = sportRole.role?.toLowerCase() || 'singolo'
   
-  const sportConfig = PERFORMANCE_SPORT_CONFIGS[sport]
+  const sportConfig = RUBINI_SPORT_CONFIGS[sport]
   if (!sportConfig) {
-    console.warn(`[PROGRAM] ⚠️ Sport "${sport}" not in Performance configs`)
+    console.warn(`[PROGRAM] ⚠️ Sport "${sport}" not in Rubini configs`)
     return generateGenericPerformanceProgram(input)
   }
   
@@ -1187,34 +1186,34 @@ function generatePerformanceProgram(input) {
     roleConfig = sportConfig.roles[firstRole]
   }
   
-  console.log(`[PERFORMANCE] ✅ ${sportConfig.name} - ${role} - Priority:`, roleConfig.priority)
+  console.log(`[RUBINI] ✅ ${sportConfig.name} - ${role} - Priority:`, roleConfig.priority)
   
   const weeklySchedule = []
   
   weeklySchedule.push({
     dayName: `${sportConfig.name} - Esplosività Gambe`,
     location,
-    exercises: generatePerformanceLowerBody(roleConfig, location, equipment, level)
+    exercises: generateRubiniLowerBody(roleConfig, location, equipment, level)
   })
   
   weeklySchedule.push({
     dayName: `${sportConfig.name} - Potenza Busto`,
     location,
-    exercises: generatePerformanceUpperBody(roleConfig, location, equipment, level)
+    exercises: generateRubiniUpperBody(roleConfig, location, equipment, level)
   })
   
   if (frequency >= 3) {
     weeklySchedule.push({
       dayName: `${sportConfig.name} - Conditioning Specifico`,
       location,
-      exercises: generatePerformanceConditioning(roleConfig, location, equipment, level)
+      exercises: generateRubiniConditioning(roleConfig, location, equipment, level)
     })
   }
   
   return {
-    name: `Performance ${sportConfig.name} - ${role}`,
+    name: `Performance ${sportConfig.name} (Rubini) - ${role}`,
     description: `Focus: ${roleConfig.priority.join(', ')}`,
-    split: 'performance_sport_specific',
+    split: 'performance_rubini',
     daysPerWeek: frequency,
     location,
     weeklySchedule: weeklySchedule.slice(0, frequency),
@@ -1224,11 +1223,11 @@ function generatePerformanceProgram(input) {
     totalWeeks: 8,
     requiresEndCycleTest: true,
     sportSpecific: true,
-    sportSpecific: true
+    rubiniMethod: true
   }
 }
 
-function generatePerformanceLowerBody(roleConfig, location, equipment, level) {
+function generateRubiniLowerBody(roleConfig, location, equipment, level) {
   const exercises = []
   const isGym = location === 'gym'
   
@@ -1241,7 +1240,7 @@ function generatePerformanceLowerBody(roleConfig, location, equipment, level) {
       reps: exerciseName.includes('Jump') || exerciseName.includes('Bound') ? '5-8' : '4-6',
       rest: 180,
       weight: null,
-      notes: 'Max esplosività'
+      notes: 'Rubini - Max esplosività'
     })
   })
   
@@ -1252,14 +1251,14 @@ function generatePerformanceLowerBody(roleConfig, location, equipment, level) {
       reps: '3-5',
       rest: 240,
       weight: 'assessment-based',
-      notes: 'Base forza'
+      notes: 'Rubini - Base forza'
     })
   }
   
   return exercises
 }
 
-function generatePerformanceUpperBody(roleConfig, location, equipment, level) {
+function generateRubiniUpperBody(roleConfig, location, equipment, level) {
   const exercises = []
   
   roleConfig.exercises.filter(ex =>
@@ -1271,7 +1270,7 @@ function generatePerformanceUpperBody(roleConfig, location, equipment, level) {
       reps: '6-8',
       rest: 120,
       weight: null,
-      notes: 'Potenza'
+      notes: 'Rubini - Potenza'
     })
   })
   
@@ -1281,13 +1280,13 @@ function generatePerformanceUpperBody(roleConfig, location, equipment, level) {
     reps: '30-45s',
     rest: 60,
     weight: null,
-    notes: 'Core stability'
+    notes: 'Rubini - Core stability'
   })
   
   return exercises
 }
 
-function generatePerformanceConditioning(roleConfig, location, equipment, level) {
+function generateRubiniConditioning(roleConfig, location, equipment, level) {
   const exercises = []
   
   roleConfig.exercises.filter(ex =>
@@ -1299,7 +1298,7 @@ function generatePerformanceConditioning(roleConfig, location, equipment, level)
       reps: exerciseName.includes('Interval') ? '30s on / 30s off' : '10-15',
       rest: 60,
       weight: null,
-      notes: 'Conditioning specifico'
+      notes: 'Rubini - Conditioning specifico'
     })
   })
   
@@ -1756,41 +1755,11 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
   let rest = goalConfig.rest[type] || (type === 'compound' ? 180 : 120)
 
   // ✅ MANTIENI: Assessment bodyweight progressions
-  // ✅ ASSESSMENT BODYWEIGHT: usa variant se disponibile
   const assessment = assessments?.find(a =>
     a.exerciseName && name.toLowerCase().includes(a.exerciseName.toLowerCase())
   )
 
-  // 🆕 DEBUG: log assessment trovato
-  if (assessment) {
-    console.log('[ASSESSMENT] Found for "' + name + '":', {
-      exerciseName: assessment.exerciseName,
-      variant: assessment.variant,
-      level: assessment.level,
-      maxReps: assessment.maxReps
-    })
-  }
-
-  // 🆕 FIX: Usa variant direttamente se esiste (priorità massima)
-  if (assessment?.variant && location === 'home') {
-    console.log('[ASSESSMENT] ✅ Using variant directly: ' + assessment.variant)
-    
-    const targetReps = assessment.maxReps || 12
-    const range = config.repsRange
-    
-    return {
-      name: assessment.variant,
-      sets,
-      reps: range > 0 ? `${targetReps - range}-${targetReps + range}` : `${targetReps}`,
-      rest,
-      weight: null,
-      notes: `Da assessment: ${assessment.maxReps || '?'} reps max (${assessment.level || 'N/A'})`
-    }
-  }
-
-  // Fallback: usa BODYWEIGHT_PROGRESSIONS se variant non c'è
-  if (assessment?.level && location === 'home' && BODYWEIGHT_PROGRESSIONS[assessment.exerciseName]) {
-    console.log('[ASSESSMENT] Using BODYWEIGHT_PROGRESSIONS fallback')
+  if (assessment?.variant && assessment?.level && location === 'home' && BODYWEIGHT_PROGRESSIONS[assessment.exerciseName]) {
     const levelMap = { beginner: 1, intermediate: 2, advanced: 3 };
     const progressionName = BODYWEIGHT_PROGRESSIONS[assessment.exerciseName][levelMap[assessment.level] || 2]
     const targetReps = assessment.maxReps || 12
@@ -1813,33 +1782,6 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
     console.log('[PROGRAM] 🏠 HOME without equipment - GOAL-SPECIFIC conversion')
 
     const bodyweightName = convertToBodyweightByGoal(name, level, goal)
-        
-    // 🔧 FIX: se bodyweightName è letteralmente "bodyweight", applica fallback specifico
-    if (bodyweightName && bodyweightName.toLowerCase() === 'bodyweight') {
-      const originalName = name.toLowerCase();
-      if (originalName.includes('squat') || originalName.includes('leg')) {
-        // 🔧 USA IL LIVELLO!
-        if (level === 'beginner') bodyweightName = 'Squat Assistito';
-        else if (level === 'intermediate') bodyweightName = 'Squat Completo';
-        else bodyweightName = 'Pistol Assistito';
-      } else if (originalName.includes('panca') || originalName.includes('bench') || originalName.includes('push')) {
-        if (level === 'beginner') bodyweightName = 'Push-up su Ginocchia';
-        else if (level === 'intermediate') bodyweightName = 'Push-up Standard';
-        else bodyweightName = 'Push-up Mani Strette';
-      } else if (originalName.includes('trazioni') || originalName.includes('pull') || originalName.includes('lat')) {
-        if (level === 'beginner') bodyweightName = 'Floor Pull (asciugamano)';
-        else if (level === 'intermediate') bodyweightName = 'Australian Pull-up';
-        else bodyweightName = 'Pull-up Completa';
-      } else if (originalName.includes('stacco') || originalName.includes('deadlift') || originalName.includes('rdl')) {
-        if (level === 'beginner') bodyweightName = 'Glute Bridge';
-        else if (level === 'intermediate') bodyweightName = 'Single Leg Deadlift';
-        else bodyweightName = 'Nordic Curl';
-      } else {
-        bodyweightName = 'Plank';
-      }
-            console.log(`[FIX] Converted generic "bodyweight" to specific: ${bodyweightName}`);
-      }
-
     const [minReps, maxReps] = goalConfig.repsRange.split('-').map(Number)
     
     let targetReps
@@ -1851,36 +1793,13 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
       targetReps = Math.round((minReps + maxReps) / 2)
     }
 
-    // 🆕 TEMPO: Estrai valori se presente nel nome bodyweight
-    let tempoData = null
-    if (bodyweightName.toLowerCase().includes('tempo')) {
-      const tempoMatch = bodyweightName.match(/tempo\s*(\d+)-(\d+)-(\d+)/i)
-      if (tempoMatch) {
-        tempoData = {
-          eccentric: parseInt(tempoMatch[1]),
-          pause: parseInt(tempoMatch[2]),
-          concentric: parseInt(tempoMatch[3])
-        }
-        console.log('[TEMPO] Detected in bodyweight:', bodyweightName, '→', tempoData)
-      } else {
-        // Fallback: se c'è "Tempo" ma senza numeri, usa default 3-1-3
-        tempoData = {
-          eccentric: 3,
-          pause: 1,
-          concentric: 3
-        }
-        console.log('[TEMPO] Detected (no numbers, using default 3-1-3):', bodyweightName)
-      }
-    }
-
     return {
       name: bodyweightName,
       sets,
       reps: type === 'core' ? '30-60s' : `${targetReps}-${targetReps + 2}`,
       rest,
       weight: null,
-      notes: `${goalConfig.name} - ${goalConfig.homeStrategy}`,
-      ...(tempoData && { tempo: tempoData })
+      notes: `${goalConfig.name} - ${goalConfig.homeStrategy}`
     }
   }
 
@@ -1920,7 +1839,6 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
 
   // 🎯 REPS BASATE SU GOAL
   const [minReps, maxReps] = goalConfig.repsRange.split('-').map(Number)
-
   let targetReps
   
   if (isBodyweight) {
@@ -1956,36 +1874,13 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
     }
   }
 
-  // 🆕 TEMPO: Estrai valori tempo se presente nel nome
-  let tempoData = null
-  if (exerciseOrGiantSet.toLowerCase().includes('tempo')) {
-    const tempoMatch = exerciseOrGiantSet.match(/tempo\s*(\d+)-(\d+)-(\d+)/i)
-    if (tempoMatch) {
-      tempoData = {
-        eccentric: parseInt(tempoMatch[1]),
-        pause: parseInt(tempoMatch[2]),
-        concentric: parseInt(tempoMatch[3])
-      }
-      console.log('[TEMPO] Detected:', exerciseOrGiantSet, '→', tempoData)
-    } else {
-      // Fallback: se c'è "Tempo" ma senza numeri, usa default 3-1-3
-      tempoData = {
-        eccentric: 3,
-        pause: 1,
-        concentric: 3
-      }
-      console.log('[TEMPO] Detected (no numbers, using default 3-1-3):', exerciseOrGiantSet)
-    }
-  }
-
   return {
     name: exerciseOrGiantSet,
     sets,
     reps,
     rest,
     weight: trainingWeight,
-    notes: `${goalConfig.name} - ${type === 'compound' ? `RIR ${config.RIR}` : 'Complementare'}`,
-    ...(tempoData && { tempo: tempoData })
+    notes: `${goalConfig.name} - ${type === 'compound' ? `RIR ${config.RIR}` : 'Complementare'}`
   }
 }
 
@@ -2041,3 +1936,6 @@ export function recalibrateProgram(assessments, detrainingFactor) {
   })) || []
 }
 
+export function generatePerformanceProgramRubini(input) {
+  return generateProgram({ ...input, goal: 'strength' })
+}

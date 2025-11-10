@@ -115,73 +115,10 @@ export default async function handler(req, res) {
     console.log('[API] 🔥 First exercise:', program.weeklySchedule?.[0]?.exercises?.[0]?.name);
     console.log("[API] 🔍 DEBUG First exercise FULL:", JSON.stringify(program.weeklySchedule?.[0]?.exercises?.[0], null, 2));
 
-    // ✅ MAPPING HOME → GYM EXERCISES
-    const GYM_ALTERNATIVES = {
-      'Pistol Assistito': 'Back Squat',
-      'Pistol Completo': 'Back Squat',
-      'Squat Assistito': 'Back Squat',
-      'Squat Completo': 'Back Squat',
-      'Jump Squat': 'Back Squat',
-      'Archer Push-up': 'Bench Press',
-      'One-Arm Push-up': 'Bench Press',
-      'Push-up su Ginocchia': 'Incline Bench Press',
-      'Push-up Standard': 'Bench Press',
-      'Push-up Mani Strette': 'Close Grip Bench',
-      'Dips Completi': 'Dips',
-      'Australian Pull-up': 'Barbell Row',
-      'Pull-up Completa': 'Lat Pulldown',
-      'Inverted Row Orizzontale': 'Barbell Row',
-      'Floor Pull asciugamano': 'Assisted Pull-up',
-      'Scapular Pull-up': 'Assisted Pull-up',
-      'Handstand Push-up': 'Military Press',
-      'Handstand Assistito': 'Shoulder Press',
-      'Pike Push-up': 'Military Press',
-      'Pike Push-up Elevato': 'Incline Bench Press',
-      'Plank to Pike': 'Ab Wheel',
-      'Single Leg Deadlift': 'Deadlift',
-      'Jump Lunge': 'Leg Press',
-      'Nordic Curl Eccentrico': 'Leg Curl',
-      'L-Sit Progressione': 'Cable Crunch',
-      'Plank con Sollevamenti': 'Ab Wheel',
-      'Toes to Bar': 'Hanging Leg Raise',
-      'Burpees': 'Box Jump',
-      'Affondi': 'Walking Lunge',
-      'Squat Bulgaro': 'Bulgarian Split Squat',
-      'Rematore bilanciere': 'Barbell Row',
-      'Rematore manubrio': 'Dumbbell Row',
-      'Leg Press': 'Leg Press'
-    };
-
-    // ✅ CONVERTI HOME → GYM SE LOCATION === 'GYM'
-    if (programInput.location === 'gym') {
-      console.log('[API] 🏋️ Location is GYM - converting HOME exercises to GYM exercises');
-      
-      let convertedCount = 0;
-      program.weeklySchedule = program.weeklySchedule.map(day => ({
-        ...day,
-        exercises: day.exercises.map(exercise => {
-          const gymAlternative = GYM_ALTERNATIVES[exercise.name];
-          
-          if (gymAlternative) {
-            console.log(`[API] 🔄 Converting: "${exercise.name}" → "${gymAlternative}"`);
-            convertedCount++;
-            return { 
-              ...exercise, 
-              name: gymAlternative,
-              location: 'gym'
-            };
-          }
-          
-          return exercise;
-        })
-      }));
-      
-      console.log(`[API] ✅ GYM conversion completed - ${convertedCount} exercises converted`);
-      console.log('[API] 🔥 First exercise AFTER conversion:', program.weeklySchedule?.[0]?.exercises?.[0]?.name);
-    } 
-    else if (programInput.location === 'home' || programInput.location === 'mixed') {
-      console.log(`[API] 🏠 Location is HOME/MIXED - keeping HOME exercises`);
-    }
+    // ✅ Il programGenerator GIÀ genera esercizi corretti per location+goal
+    // Non serve conversione post-generazione
+    console.log('[API] ✅ Program generated with goal-aware exercises');
+    console.log('[API] 🎯 Location:', programInput.location, '| Goal:', programInput.goal);
 
     // ✅ SALVA PROGRAMMA IN DB
     const { data: savedProgram, error: saveError } = await supabase

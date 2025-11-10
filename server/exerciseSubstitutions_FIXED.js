@@ -160,25 +160,37 @@ export function selectExerciseVariant(exerciseName, location, equipment, goal, a
     // CASO 2: CASA - verifica equipment disponibile
     const homeWithEq = variants.homeWithEquipment;
     const homeBodyweight = variants.homeBodyweight;
+    
     // ✅ CORREZIONE: Se equipment.none === true, SALTA direttamente a bodyweight
     if (equipment.none === true) {
-        // Esercizio bodyweight puro
-        if (homeBodyweight.isGiantSet) {
-            if (homeBodyweight.name === 'GIANT_SET_DEADLIFT') {
-                return createDeadliftGiantSet(goal, 'intermediate');
-            }
-            if (homeBodyweight.name === 'GIANT_SET_PULLUP') {
-                return createPullupGiantSet(goal, 'intermediate');
-            }
+        // ✅ NEW: Supporta homeBodyweight goal-aware
+        let bodyweightVariantName;
+        
+        // Se homeBodyweight è un oggetto (goal-aware), seleziona per goal
+        if (typeof homeBodyweight === 'object' && !homeBodyweight.name && !homeBodyweight.isGiantSet) {
+            bodyweightVariantName = homeBodyweight[goalType] || homeBodyweight['general_fitness'];
+            console.log(`[VARIANT] Goal-aware bodyweight: ${goalType} → ${bodyweightVariantName}`);
+        } else {
+            // Fallback: vecchia struttura (retrocompatibilità)
+            bodyweightVariantName = homeBodyweight.name || homeBodyweight;
         }
+        
+        // Gestione Giant Sets
+        if (bodyweightVariantName === 'GIANT_SET_DEADLIFT') {
+            return createDeadliftGiantSet(goal, 'intermediate');
+        }
+        if (bodyweightVariantName === 'GIANT_SET_PULLUP') {
+            return createPullupGiantSet(goal, 'intermediate');
+        }
+        
         return {
             id: exerciseName.toLowerCase().replace(/\s/g, '_'),
-            name: homeBodyweight.name,
+            name: bodyweightVariantName,
             sets: getDefaultSets(goalType, true),
             reps: getDefaultReps(goalType, true),
             rest: getDefaultRest(goalType) - 20,
             category: 'compound',
-            notes: 'Esercizio a corpo libero - compensato con volume aumentato'
+            notes: `${goalType.charAt(0).toUpperCase() + goalType.slice(1).replace('_', ' ')} - Variante bodyweight ottimizzata`
         };
     }
     // Controlla se ha equipment necessario (AND+OR logic)
