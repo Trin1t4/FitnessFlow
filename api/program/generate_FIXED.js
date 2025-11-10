@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
+    
     const { userId, assessmentId } = req.body;
 
     if (!userId || !assessmentId) {
@@ -42,30 +42,26 @@ export default async function handler(req, res) {
     }
 
     const onboardingData = userData.onboarding_data || {};
-
     console.log('[API] 🎯 Starting intelligent level calculation...');
     console.log('[API] 📍 Location from onboarding:', onboardingData.trainingLocation);
 
     // ✅ CALCOLO LIVELLO INTELLIGENTE
     const intelligentLevel = calculateIntelligentLevel(assessmentData, onboardingData);
-
     console.log('[API] 📊 Intelligent Level Result:', intelligentLevel);
 
-    if (!intelligentLevel || !intelligentLevel?.trainingType ?? 'mixed') {
+    if (!intelligentLevel || !intelligentLevel.trainingType) {
       console.error('[API] ❌ Failed to calculate intelligent level');
       return res.status(500).json({ error: 'Failed to calculate level' });
     }
 
     // ✅ CONVERTI ASSESSMENT IN FORMATO STANDARD CON VARIANTI
     let assessments = [];
-    
     if (assessmentData.assessment_type === 'home' && assessmentData.exercises) {
       assessments = convertHomeAssessmentToStandard(
         assessmentData.exercises,
         intelligentLevel?.trainingType ?? 'mixed'
       );
       console.log('[API] 🏠 Home assessment converted:', assessments.length, 'exercises');
-      
     } else if (assessmentData.assessment_type === 'gym') {
       assessments = convertGymAssessmentToStandard(
         assessmentData,
@@ -114,9 +110,6 @@ export default async function handler(req, res) {
     console.log('[API] ✅ Program generated with', program.weeklySchedule.length, 'days');
     console.log('[API] 🔥 First exercise:', program.weeklySchedule?.[0]?.exercises?.[0]?.name);
     console.log("[API] 🔍 DEBUG First exercise FULL:", JSON.stringify(program.weeklySchedule?.[0]?.exercises?.[0], null, 2));
-
-    // ✅ Il programGenerator GIÀ genera esercizi corretti per location+goal
-    // Non serve conversione post-generazione
     console.log('[API] ✅ Program generated with goal-aware exercises');
     console.log('[API] 🎯 Location:', programInput.location, '| Goal:', programInput.goal);
 
@@ -155,8 +148,8 @@ export default async function handler(req, res) {
     console.log('[API] ✅ Location saved:', programInput.location);
     console.log('[API] ✅ First exercise in DB:', savedProgram.weekly_schedule?.[0]?.exercises?.[0]?.name);
 
-    return res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       programId: savedProgram.id,
       program: savedProgram,
       levelAnalysis: intelligentLevel,
@@ -173,16 +166,16 @@ export default async function handler(req, res) {
 function calculateIntelligentLevel(assessmentData, onboardingData) {
   const bodyweight = onboardingData.personalInfo?.weight || assessmentData.bodyWeight || 80;
   
-  // Formula semplificata - calcola based su assessment
   let score = 0;
   let count = 0;
+  let level = 'beginner';
 
   if (assessmentData.exercises && Array.isArray(assessmentData.exercises)) {
     for (const exercise of assessmentData.exercises) {
       if (exercise.weight && exercise.reps) {
         const oneRepMax = calculateOneRepMax(exercise.weight, exercise.reps);
         const ratio = oneRepMax / bodyweight;
-        
+
         // Benchmark standards
         const standards = {
           'Squat': { beginner: 0.75, intermediate: 1.25, advanced: 1.75 },
@@ -191,30 +184,30 @@ function calculateIntelligentLevel(assessmentData, onboardingData) {
           'Trazioni': { beginner: 0.5, intermediate: 0.75, advanced: 1.0 }
         };
 
-         let level = 'beginner';
-        for (const [exercise, thresholds] of Object.entries(standards)) {
-          if (assessmentData.exercises[count].name?.includes(exercise)) {
+        for (const [exerciseName, thresholds] of Object.entries(standards)) {
+          if (exercise.name?.includes(exerciseName)) {
             if (ratio >= thresholds.advanced) level = 'advanced';
             else if (ratio >= thresholds.intermediate) level = 'intermediate';
             break;
           }
         }
-        
         count++;
       }
     }
   }
 
   const finalLevel = level || 'beginner';
+  
   return {
     bodyweight,
     finalLevel,
+    trainingType: 'mixed',
     score: 50
   };
 }
 
 // ===== CONVERSIONE HOME ASSESSMENT =====
-function convertHomeAssessmentToStandard(exercises, bodyweight) {
+function convertHomeAssessmentToStandard(exercises, trainingType) {
   return (exercises || []).map((ex, index) => ({
     id: `home-${index}`,
     exerciseName: ex.name || ex.exercise || 'Unknown',
@@ -228,9 +221,8 @@ function convertHomeAssessmentToStandard(exercises, bodyweight) {
 }
 
 // ===== CONVERSIONE GYM ASSESSMENT =====
-function convertGymAssessmentToStandard(assessmentData, bodyweight) {
+function convertGymAssessmentToStandard(assessmentData, trainingType) {
   const exercises = assessmentData.exercises || [];
-  
   return exercises.map((ex, index) => ({
     id: `gym-${index}`,
     exerciseName: ex.name || ex.exercise || 'Unknown',
@@ -256,9 +248,7 @@ export function calculateTargetWeight(oneRepMax, percentage) {
 
 export function calculateTrainingWeight(oneRM, targetReps, RIR = 2) {
   if (!oneRM || oneRM === 0) return null;
-  
   const maxReps = targetReps + RIR;
   const weight = oneRM * (37 - maxReps) / 36;
-  
   return Math.round(weight / 2.5) * 2.5;
 }
