@@ -1,6 +1,7 @@
 
 import { 
-  getExerciseForLocation 
+  getExerciseForLocation,
+  selectExerciseVariant  // ✅ AGGIUNGI QUESTO
 } from './exerciseSubstitutions.js'
 
 // ===== MAPPING PROGRESSIONI BODYWEIGHT =====
@@ -923,21 +924,37 @@ function adaptLocationChange(plannedSession, newLocation, assessments) {
   }
 }
 
-function convertGymExerciseToHome(exercise, assessments) {
+function convertGymExerciseToHome(exercise, assessments, goal = 'muscle_gain', equipment = {}) {
   console.log(`[ADAPT] Gym→Home: ${exercise.name}`)
 
-  if (exercise.weight && exercise.weight > 0) {
-    const estimatedLevel = exercise.weight > 80 ? 'advanced' : exercise.weight > 50 ? 'intermediate' : 'beginner'
-    const bodyweightName = convertToBodyweight(exercise.name, estimatedLevel)
-
+  // ✅ USA selectExerciseVariant invece di convertToBodyweight
+  const variant = selectExerciseVariant(
+    exercise.name, 
+    'home', 
+    equipment, 
+    goal, 
+    exercise.weight || 0
+  )
+  
+  // Se è un Giant Set, ritorna quello
+  if (variant.type === 'giant_set' || variant.rounds) {
     return {
-      ...exercise,
-      name: bodyweightName,
-      weight: null,
-      notes: `🔄 ${exercise.name} (${exercise.weight}kg) → ${bodyweightName}`
+      ...variant,
+      notes: `🔄 ${exercise.name} (${exercise.weight}kg) → Giant Set`
     }
   }
-  return exercise
+  
+  // Altrimenti ritorna esercizio adattato
+  return {
+    ...exercise,
+    name: variant.name,
+    sets: variant.sets || exercise.sets,
+    reps: variant.reps || exercise.reps,
+    rest: variant.rest || exercise.rest,
+    weight: null,
+    notes: `🔄 ${exercise.name} (${exercise.weight}kg) → ${variant.name}`,
+    ...(variant.tempo && { tempo: variant.tempo })
+  }
 }
 
 function convertHomeExerciseToGym(exercise, assessments) {
@@ -1808,79 +1825,28 @@ function createExercise(name, location, equipment, baseWeight, level, goal, type
 
   const hasEquipment = hasWeightedEquipment(equipment)
 
-  // 🏠 NUOVO: HOME BODYWEIGHT GOAL-SPECIFIC
+  // 🏠 NUOVO: HOME BODYWEIGHT GOAL-SPECIFIC - USA selectExerciseVariant!
   if (location === 'home' && !hasEquipment) {
-    console.log('[PROGRAM] 🏠 HOME without equipment - GOAL-SPECIFIC conversion')
+    console.log('[PROGRAM] 🏠 HOME without equipment - using selectExerciseVariant with goal:', goal)
 
-    const bodyweightName = convertToBodyweightByGoal(name, level, goal)
-        
-    // 🔧 FIX: se bodyweightName è letteralmente "bodyweight", applica fallback specifico
-    if (bodyweightName && bodyweightName.toLowerCase() === 'bodyweight') {
-      const originalName = name.toLowerCase();
-      if (originalName.includes('squat') || originalName.includes('leg')) {
-        // 🔧 USA IL LIVELLO!
-        if (level === 'beginner') bodyweightName = 'Squat Assistito';
-        else if (level === 'intermediate') bodyweightName = 'Squat Completo';
-        else bodyweightName = 'Pistol Assistito';
-      } else if (originalName.includes('panca') || originalName.includes('bench') || originalName.includes('push')) {
-        if (level === 'beginner') bodyweightName = 'Push-up su Ginocchia';
-        else if (level === 'intermediate') bodyweightName = 'Push-up Standard';
-        else bodyweightName = 'Push-up Mani Strette';
-      } else if (originalName.includes('trazioni') || originalName.includes('pull') || originalName.includes('lat')) {
-        if (level === 'beginner') bodyweightName = 'Floor Pull (asciugamano)';
-        else if (level === 'intermediate') bodyweightName = 'Australian Pull-up';
-        else bodyweightName = 'Pull-up Completa';
-      } else if (originalName.includes('stacco') || originalName.includes('deadlift') || originalName.includes('rdl')) {
-        if (level === 'beginner') bodyweightName = 'Glute Bridge';
-        else if (level === 'intermediate') bodyweightName = 'Single Leg Deadlift';
-        else bodyweightName = 'Nordic Curl';
-      } else {
-        bodyweightName = 'Plank';
-      }
-            console.log(`[FIX] Converted generic "bodyweight" to specific: ${bodyweightName}`);
-      }
-
-    const [minReps, maxReps] = goalConfig.repsRange.split('-').map(Number)
+    // ✅ USA LA NUOVA FUNZIONE CHE FA TUTTO AUTOMATICAMENTE
+    const variant = selectExerciseVariant(name, 'home', {}, goal, 0)
     
-    let targetReps
-    if (goal === 'strength') {
-      targetReps = minReps  // Forza: basse reps anche bodyweight
-    } else if (goal === 'fat_loss') {
-      targetReps = maxReps  // Fat loss: reps alte
-    } else {
-      targetReps = Math.round((minReps + maxReps) / 2)
+    // Se è un Giant Set, ritorna così com'è
+    if (variant.type === 'giant_set' || variant.rounds) {
+      return variant
     }
-
-    // 🆕 TEMPO: Estrai valori se presente nel nome bodyweight
-    let tempoData = null
-    if (bodyweightName.toLowerCase().includes('tempo')) {
-      const tempoMatch = bodyweightName.match(/tempo\s*(\d+)-(\d+)-(\d+)/i)
-      if (tempoMatch) {
-        tempoData = {
-          eccentric: parseInt(tempoMatch[1]),
-          pause: parseInt(tempoMatch[2]),
-          concentric: parseInt(tempoMatch[3])
-        }
-        console.log('[TEMPO] Detected in bodyweight:', bodyweightName, '→', tempoData)
-      } else {
-        // Fallback: se c'è "Tempo" ma senza numeri, usa default 3-1-3
-        tempoData = {
-          eccentric: 3,
-          pause: 1,
-          concentric: 3
-        }
-        console.log('[TEMPO] Detected (no numbers, using default 3-1-3):', bodyweightName)
-      }
-    }
-
+    
+    // Altrimenti ritorna esercizio singolo
     return {
-      name: bodyweightName,
-      sets,
-      reps: type === 'core' ? '30-60s' : `${targetReps}-${targetReps + 2}`,
-      rest,
+      name: variant.name,
+      sets: variant.sets || sets,
+      reps: variant.reps || goalConfig.repsRange,
+      rest: variant.rest || rest,
       weight: null,
-      notes: `${goalConfig.name} - ${goalConfig.homeStrategy}`,
-      ...(tempoData && { tempo: tempoData })
+      category: variant.category || 'compound',
+      notes: variant.notes || `${goalConfig.name} - ${goalConfig.homeStrategy}`,
+      ...(variant.tempo && { tempo: variant.tempo })
     }
   }
 
