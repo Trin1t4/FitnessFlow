@@ -257,23 +257,35 @@ export function selectExerciseVariant(exerciseName, location, equipment, goal, a
         };
     }
     // CASO 2B: NO attrezzatura - bodyweight o giant set
-    if (homeBodyweight.isGiantSet) {
-        if (homeBodyweight.name === 'GIANT_SET_DEADLIFT') {
-            return createDeadliftGiantSet(goal, 'intermediate');
-        }
-        if (homeBodyweight.name === 'GIANT_SET_PULLUP') {
-            return createPullupGiantSet(goal, 'intermediate');
-        }
+    // ✅ NEW: Supporta homeBodyweight goal-aware (come nel CASO equipment.none)
+    let bodyweightVariantName;
+    
+    // Se homeBodyweight è un oggetto (goal-aware), seleziona per goal
+    if (typeof homeBodyweight === 'object' && !homeBodyweight.name && !homeBodyweight.isGiantSet) {
+        bodyweightVariantName = homeBodyweight[goalType] || homeBodyweight['general_fitness'];
+        console.log(`[VARIANT CASE 2B] Goal-aware bodyweight: ${goalType} → ${bodyweightVariantName}`);
+    } else {
+        // Fallback: vecchia struttura (retrocompatibilità)
+        bodyweightVariantName = homeBodyweight.name || homeBodyweight;
     }
+    
+    // Gestione Giant Sets
+    if (bodyweightVariantName === 'GIANT_SET_DEADLIFT') {
+        return createDeadliftGiantSet(goal, 'intermediate');
+    }
+    if (bodyweightVariantName === 'GIANT_SET_PULLUP') {
+        return createPullupGiantSet(goal, 'intermediate');
+    }
+    
     // Esercizio bodyweight normale
     return {
         id: exerciseName.toLowerCase().replace(/\s/g, '_'),
-        name: homeBodyweight.name,
+        name: bodyweightVariantName,
         sets: getDefaultSets(goalType, true),
         reps: getDefaultReps(goalType, true),
         rest: getDefaultRest(goalType) - 20,
         category: 'compound',
-        notes: 'Esercizio a corpo libero - compensato con volume aumentato'
+        notes: `${goalType.charAt(0).toUpperCase() + goalType.slice(1).replace('_', ' ')} - Variante bodyweight ottimizzata`
     };
 }
 // ===== COMPATIBILITÀ PROGRAMGENERATOR =====
