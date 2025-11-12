@@ -1,8 +1,5 @@
 
-import { 
-  getExerciseForLocation,
-  selectExerciseVariant
-} from './exerciseSubstitutions.js'
+// import { getExerciseForLocation, selectExerciseVariant } from './exerciseSubstitutions.js'
 ### NUOVO (CommonJS):
 ```javascript
 
