@@ -171,11 +171,13 @@ function testNextLevel(exerciseBaseName, currentLevel, goal) {
   return nextExercise || null;
 }
 
-// ===== EXPORT COMMONJS =====
-module.exports = {
+
+// ===== EXPORT ES MODULES =====
+export {
   selectExerciseByGoal,
   canUnlockNextLevel,
   testNextLevel
 };
 
-console.log('✅ Exercise selection logic loaded (CommonJS)');
+console.log('✅ Exercise selection logic loaded (ES modules)');
+
