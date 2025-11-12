@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { userId, assessmentId } = req.body;
+    const { userId, assessmentId, level: userLevel } = req.body;
 
     if (!userId || !assessmentId) {
       return res.status(400).json({ error: 'Missing required fields' });
