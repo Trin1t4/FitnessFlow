@@ -1,12 +1,7 @@
-
-// import { getExerciseForLocation, selectExerciseVariant } from './exerciseSubstitutions.js'
-### NUOVO (CommonJS):
 ```javascript
-
-// ✅ NUOVO: Import sistema multigoal (CommonJS)
-import { selectExerciseByGoal } from './exerciseSelectionLogic.js'
+// ===== IMPORTS =====
+import { selectExerciseByGoal } from './exerciseSelectionLogic_CJS.js'
 import { GOAL_CONFIGS as GOAL_CONFIGS_NEW } from './GOAL_CONFIGS_COMPLETE_CJS.js'
-
 
 // ===== MAPPING PROGRESSIONI BODYWEIGHT =====
 
