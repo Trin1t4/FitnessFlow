@@ -1,4 +1,4 @@
-const { GOAL_CONFIGS, EXERCISE_PROGRESSIONS } = require('./GOAL_CONFIGS_COMPLETE.js');
+import { GOAL_CONFIGS, EXERCISE_PROGRESSIONS } from './GOAL_CONFIGS_COMPLETE_CJS.js';
 
 /**
  * Seleziona l'esercizio corretto basato su assessment, goal e livello

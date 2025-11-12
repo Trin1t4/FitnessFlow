@@ -172,7 +172,7 @@ function testNextLevel(exerciseBaseName, currentLevel, goal) {
 }
 
 // ===== EXPORT COMMONJS =====
-module.exports = {
+exports = {
   selectExerciseByGoal,
   canUnlockNextLevel,
   testNextLevel
