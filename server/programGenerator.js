@@ -7,8 +7,9 @@ import {
 ```javascript
 
 // ✅ NUOVO: Import sistema multigoal (CommonJS)
-const { selectExerciseByGoal } = require('./exerciseSelectionLogic.js')
-const { GOAL_CONFIGS: GOAL_CONFIGS_NEW } = require('./GOAL_CONFIGS_COMPLETE.js')
+import { selectExerciseByGoal } from './exerciseSelectionLogic.js'
+import { GOAL_CONFIGS as GOAL_CONFIGS_NEW } from './GOAL_CONFIGS_COMPLETE_CJS.js'
+
 
 // ===== MAPPING PROGRESSIONI BODYWEIGHT =====
 
