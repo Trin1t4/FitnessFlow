@@ -79,7 +79,7 @@ export default function Dashboard() {
     try {
       setGeneratingProgram(true);
 
-      const response = await fetch('/api/program/generate', {
+      const response = await fetch('/api/program-generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -169,7 +169,7 @@ export default function Dashboard() {
 
       console.log('📤 Sending program input:', programInput);
 
-      const response = await fetch('/api/program/generate', {
+      const response = await fetch('/api/program-generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

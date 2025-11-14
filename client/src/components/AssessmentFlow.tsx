@@ -182,7 +182,7 @@ export default function AssessmentFlow({ onComplete }: { onComplete?: () => void
   const generateProgram = async () => {
   try {
     // Genera programma personalizzato
-    const res = await fetch("/api/program/generate", {
+    const res = await fetch("/api/program-generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
