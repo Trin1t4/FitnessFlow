@@ -158,7 +158,7 @@ export default function Dashboard() {
           hasGym: onboardingData.trainingLocation === 'gym',
           equipment: onboardingData.equipment || {},
           goal: mapGoal(onboardingData.goal || 'muscle_gain'),
-          level: quizData.level || screeningData.level || 'intermediate',
+          level: quizData?.level || screeningData?.level || 'intermediate',
           frequency: onboardingData.activityLevel?.weeklyFrequency || 3,
           painAreas: onboardingData.painAreas || screeningData.painAreas || [],
           disabilityType: onboardingData.disabilityType || null,
@@ -170,12 +170,10 @@ export default function Dashboard() {
       console.log('📤 Sending program input:', programInput);
 
       const response = await fetch('/api/program/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(programInput),
-      });
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(programInput)  // ← USA programInput INTERO!
+});
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

@@ -1,36 +1,61 @@
+import { selectExerciseByGoal } from './exerciseSelectionLogic_CJS.js';
+import { selectExerciseVariant, getExerciseForLocation } from './exerciseSubstitutions.js';
+import { GOAL_CONFIGS as GOAL_CONFIGS_NEW } from './GOAL_CONFIGS_COMPLETE_CJS.js';
 import { generateStandardProgram } from './standardProgram.js';
 import { generateMotorRecoveryProgram } from './motorRecovery.js';
-import { generatePerformanceProgram } from './performance.js';
-import { conductPreWorkoutScreening, adaptSessionToRuntimeContext } from './screening.js';
+import { generatePerformanceProgramWithSportRole } from './performanceProgramGenerator.js';
 
-/**
- * Funzione principale pubblica per generare un programma
- */
 export function generateProgram(input) {
-  const { goal } = input;
+  try {
+    switch (input.goal) {
+      case 'motor_recovery':
+        return generateMotorRecoveryProgram(input);
 
-  switch (goal) {
-    case 'motor_recovery':
-    case 'rehabilitation':
-      return generateMotorRecoveryProgram(input);
+      case 'performance':
+        return generatePerformanceProgramWithSportRole({
+          sport: input.sport,
+          role: input.sportRole,
+          location: input.location,
+          level: input.level,
+          equipment: input.equipment,
+          frequency: input.frequency,
+        });
 
-    case 'performance':
-      return generatePerformanceProgram(input);
-
-    case 'strength':
-    case 'muscle_gain':
-    case 'toning':
-    case 'fat_loss':
-      return generateStandardProgram(input);
-
-    default:
-      return generateStandardProgram(input);
+      default:
+        return generateStandardProgram(input);
+    }
+  } catch (error) {
+    console.error('Errore nella generazione del programma:', error);
+    throw error;
   }
 }
 
-export {
-  conductPreWorkoutScreening,
-  adaptSessionToRuntimeContext,
-};
+// Gestione globale di errori non catturati e promesse non gestite
 
-console.log('✅ programGenerator/index.js module loaded');
+process.on('uncaughtException', (error) => {
+  console.error('Errore non catturato:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Promise non gestita:', promise, 'causa:', reason);
+});
+
+// Esempio gestione taskkill robusta
+
+const { exec } = require('child_process');
+
+function killProcess(pid) {
+  exec(`taskkill /pid ${pid} /T /F`, (error, stdout, stderr) => {
+    if (error) {
+      if (error.message.includes('processo non trovato')) {
+        console.warn(`Processo ${pid} già terminato o non trovato.`);
+      } else {
+        console.error('Errore durante taskkill:', error);
+      }
+    } else {
+      console.log(`Processo ${pid} terminato con successo.`);
+    }
+  });
+}
+
+export { killProcess };
