@@ -204,15 +204,33 @@ export default function QuizComponent() {
     // Salva quiz e vai all'assessment
     const handleContinue = () => {
       try {
+        // Calcola il finalScore totale
+        const finalScore = technicalPercentage + performancePercentage;
+        
+        // 🧠 CALCOLO INTELLIGENTE DEL LEVEL
+        // Usa il level già calcolato dalla logica sopra (che considera tecnica e prestazioni)
+        // Non sovrascriverlo con una semplice somma!
+        
         // Salva risultato quiz in localStorage
         const quizData = {
-          level,
+          score: finalScore,  // Score totale per compatibilità
+          level: level,  // USA IL LEVEL CALCOLATO SOPRA (beginner/intermediate/advanced)
           technicalScore,
           performanceScore,
+          technicalPercentage,
+          performancePercentage,
           answers,
           completedAt: new Date().toISOString()
         };
+        
         localStorage.setItem('quiz_data', JSON.stringify(quizData));
+        
+        console.log('📊 QUIZ COMPLETED:', {
+          totalScore: finalScore,
+          calculatedLevel: level,
+          technical: `${technicalScore}/${TECHNICAL_QUESTIONS.length} (${technicalPercentage}%)`,
+          performance: `${performanceScore}/${maxPerformanceScore} (${performancePercentage}%)`
+        });
         
         // Vai all'assessment
         navigate('/assessment');

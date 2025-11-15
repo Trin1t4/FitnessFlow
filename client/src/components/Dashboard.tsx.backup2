@@ -167,79 +167,14 @@ export default function Dashboard() {
         
         const screeningData = JSON.parse(screeningDataRaw);
         
-        // 🧠 SISTEMA INTELLIGENTE - CALCOLA IL LEVEL CORRETTAMENTE
-        let userLevel = 'beginner';
-        
-        // Prima prova dallo screening (più affidabile)
-        if (screeningData.level) {
-          userLevel = screeningData.level;
-          console.log('📊 Level from screening:', userLevel);
-        } 
-        // Altrimenti calcola dal quiz score
-        else if (quizData && quizData.score !== undefined) {
-          // CALCOLO INTELLIGENTE DEL LEVEL
-          if (quizData.score >= 100) {
-            userLevel = 'advanced';
-          } else if (quizData.score >= 60) {
-            userLevel = 'intermediate';
-          } else {
-            userLevel = 'beginner';
-          }
-          console.log(`📊 Calculated level from quiz score ${quizData.score}: ${userLevel}`);
-        }
-        // Se c'è già un level nel quiz, usalo
-        else if (quizData && quizData.level) {
-          userLevel = quizData.level;
-          console.log('📊 Level from quiz data:', userLevel);
-        }
-        
-        // 🎯 MAPPING INTELLIGENTE DEI GOAL ITALIANI
-        const intelligentGoalMap = {
-          'forza': 'strength',
-          'massa': 'muscle_gain',
-          'massa muscolare': 'muscle_gain',
-          'definizione': 'fat_loss',
-          'dimagrimento': 'fat_loss',
-          'resistenza': 'endurance',
-          'strength': 'strength',
-          'muscle_gain': 'muscle_gain',
-          'fat_loss': 'fat_loss',
-          'endurance': 'endurance'
-        };
-        
-        const originalGoal = onboardingData.goal || 'muscle_gain';
-        const mappedGoal = intelligentGoalMap[originalGoal.toLowerCase()] || originalGoal;
-        
-        // 📊 LOGGING DETTAGLIATO PER DEBUG
-        console.group('🧠 INTELLIGENT SYSTEM ANALYSIS');
-        console.log('Quiz Data:', { 
-          score: quizData?.score, 
-          level: quizData?.level 
-        });
-        console.log('Screening Data:', { 
-          level: screeningData?.level,
-          finalScore: screeningData?.finalScore 
-        });
-        console.log('Onboarding Data:', {
-          goal: originalGoal,
-          location: onboardingData.trainingLocation,
-          frequency: onboardingData.activityLevel?.weeklyFrequency
-        });
-        console.log('CALCULATED VALUES:', {
-          calculatedLevel: userLevel,
-          originalGoal: originalGoal,
-          mappedGoal: mappedGoal
-        });
-        console.groupEnd();
-        
         programInput = {
           userId,
           assessmentId: screeningId,
           location: onboardingData.trainingLocation,
           hasGym: onboardingData.trainingLocation === 'gym',
           equipment: onboardingData.equipment || {},
-          goal: mappedGoal,  // USA IL GOAL MAPPATO INTELLIGENTEMENTE
-          level: userLevel,  // USA IL LEVEL CALCOLATO INTELLIGENTEMENTE
+          goal: mapGoal(onboardingData.goal || 'muscle_gain'),
+          level: quizData.level || screeningData.level || 'intermediate',
           frequency: onboardingData.activityLevel?.weeklyFrequency || 3,
           painAreas: onboardingData.painAreas || screeningData.painAreas || [],
           disabilityType: onboardingData.disabilityType || null,
@@ -249,12 +184,6 @@ export default function Dashboard() {
       }
 
       console.log('📤 Sending program input:', programInput);
-      console.log('🎯 FINAL DATA FOR GENERATION:', {
-        level: programInput.level,
-        goal: programInput.goal,
-        location: programInput.location,
-        frequency: programInput.frequency
-      });
 
       const response = await fetch('/api/program-generate', {
         method: 'POST',

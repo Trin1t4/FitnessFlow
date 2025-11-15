@@ -7,85 +7,103 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('[API] 📥 RECEIVED REQUEST:', req.body);
+    
     const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey || 'dummy-key');
     
-    const { userId, assessmentId } = req.body;
+    // 🧠 ESTRAI TUTTI I DATI DAL CLIENT
+    const { 
+      userId, 
+      assessmentId, 
+      level,
+      goal,
+      location,
+      frequency,
+      equipment,
+      painAreas,
+      disabilityType,
+      sportRole,
+      specificBodyParts,
+      hasGym
+    } = req.body;
 
-    if (!userId || !assessmentId) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing userId' });
     }
 
-    // Fetch user data
-    const { data: userData, error: userError } = await supabase
-      .from('user_profiles')
-      .select('onboarding_data')
-      .eq('user_id', userId)
-      .single();
-
-    if (userError || !userData) {
-      console.error('[API] User fetch error:', userError);
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Fetch assessment data  
-    const { data: assessmentData, error: assessmentError } = await supabase
-      .from('assessments')
-      .select('*')
-      .eq('id', assessmentId)
-      .single();
-
-    if (assessmentError || !assessmentData) {
-      console.error('[API] Assessment fetch error:', assessmentError);
-      return res.status(404).json({ error: 'Assessment not found' });
-    }
-
-    // Prepara input per il generatore
+    // 🧠 USA I DATI REALI RICEVUTI DAL CLIENT!
     const programInput = {
       userId,
       assessmentId,
-      location: userData.onboarding_data?.trainingLocation || 'gym',
-      equipment: userData.onboarding_data?.equipment || {},
-      goal: userData.onboarding_data?.goal || 'muscle_gain',
-      level: userData.onboarding_data?.level || 'beginner',
-      frequency: userData.onboarding_data?.weeklyFrequency || 3,
-      painAreas: userData.onboarding_data?.painAreas || [],
-      disabilityType: userData.onboarding_data?.disabilityType || null,
-      sportRole: userData.onboarding_data?.sportRole || null,
-      specificBodyParts: userData.onboarding_data?.specificBodyParts || [],
-      assessments: assessmentData.exercises || []
+      // USA I DATI RICEVUTI, NON DEFAULT STUPIDI!
+      level: level || 'beginner',  // USA IL LEVEL PASSATO
+      goal: goal || 'muscle_gain',  // USA IL GOAL PASSATO
+      location: location || 'home', // USA LA LOCATION PASSATA
+      frequency: frequency || 3,    // USA LA FREQUENZA PASSATA
+      equipment: equipment || {},   // USA L'EQUIPMENT PASSATO
+      hasGym: hasGym || false,
+      painAreas: painAreas || [],
+      disabilityType: disabilityType || null,
+      sportRole: sportRole || null,
+      specificBodyParts: specificBodyParts || [],
+      assessments: []
     };
 
-    // Genera il programma
+    // 📊 LOG DETTAGLIATO PER DEBUG
+    console.group('[API] 🧠 INTELLIGENT PROGRAM GENERATION');
+    console.log('User Level:', programInput.level);
+    console.log('User Goal:', programInput.goal);
+    console.log('Location:', programInput.location);
+    console.log('Frequency:', programInput.frequency);
+    console.log('Equipment:', programInput.equipment);
+    console.log('Has Gym:', programInput.hasGym);
+    console.log('Full Input:', programInput);
+    console.groupEnd();
+
+    // 🎯 VALIDAZIONE INTELLIGENTE
+    if (programInput.level === 'advanced' && programInput.goal === 'strength') {
+      console.log('[API] 💪 ADVANCED STRENGTH PROGRAM REQUESTED');
+    }
+
+    // Genera il programma con i DATI REALI
     const program = await generateProgram(programInput);
 
     if (!program) {
-      return res.status(500).json({ error: 'Failed to generate program' });
+      console.error('[API] ❌ Program generation failed');
+      return res.status(500).json({ 
+        error: 'Failed to generate program',
+        input: programInput 
+      });
     }
 
-    // Salva nel database
-    const { data: savedProgram, error: saveError } = await supabase
-      .from('training_programs')
-      .insert({
-        user_id: userId,
-        assessment_id: assessmentId,
-        ...program,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+    console.log('[API] ✅ Program generated successfully for:', {
+      level: programInput.level,
+      goal: programInput.goal,
+      name: program.name
+    });
 
-    if (saveError) {
-      console.error('[API] Save error:', saveError);
-      return res.status(500).json({ error: 'Failed to save program' });
-    }
-
-    return res.status(200).json(savedProgram);
+    // Ritorna il programma con metadata per debug
+    return res.status(200).json({
+      success: true,
+      program: program,
+      metadata: {
+        generatedFor: {
+          level: programInput.level,
+          goal: programInput.goal,
+          location: programInput.location,
+          frequency: programInput.frequency
+        },
+        timestamp: new Date().toISOString()
+      }
+    });
+    
   } catch (error) {
-    console.error('[API] Error:', error);
+    console.error('[API] ❌ Error:', error);
     return res.status(500).json({ 
-      error: error.message || 'Internal server error' 
+      error: error.message || 'Internal error',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }

@@ -191,8 +191,13 @@ export default function AssessmentFlow({ onComplete }: { onComplete?: () => void
     });
 
       if (res.ok) {
-        // Programma generato con successo - naviga alla home
-        window.location.href = "/";
+  const data = await res.json();
+  // Salva il programma in localStorage
+  localStorage.setItem('generatedProgram', JSON.stringify(data.program || data));
+  console.log('✅ Programma salvato in localStorage');
+  // Poi naviga alla home
+  window.location.href = "/";
+}
         if (onComplete) onComplete(assessments);
       } else {
         const error = await res.json();

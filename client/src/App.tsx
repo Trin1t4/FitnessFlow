@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Workout from '@/pages/Workout';
 import WorkoutSession from '@/pages/WorkoutSession';
 import RecoveryScreening from './components/RecoveryScreening';
+import DashboardSimple from './components/DashboardSimple';
 
 function App() {
   return (
@@ -69,7 +70,7 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <DashboardSimple  />
             </ProtectedRoute>
           }
         />
