@@ -106,8 +106,8 @@ export default function Onboarding() {
           console.log('[ONBOARDING] 🏥 Motor recovery goal detected → navigating to /recovery-screening');
           navigate('/recovery-screening');
         } else {
-          console.log('[ONBOARDING] 💪 Standard goal → navigating to /body-scan');
-          navigate('/body-scan');
+          console.log('[ONBOARDING] 💪 Standard goal → navigating to /quiz');
+          navigate('/quiz');
         }
       } catch (error) {
         console.error('[ONBOARDING] ❌ Error saving onboarding:', error);
