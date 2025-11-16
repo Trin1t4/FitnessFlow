@@ -1,6 +1,40 @@
 45
   import { createClient } from '@supabase/supabase-js';
 
+
+// Helper function to determine split based on frequency
+function determineSplit(freq) {
+  if (freq <= 2) return 'FULL_BODY';
+  if (freq === 3) return 'FULL_BODY';
+  if (freq === 4) return 'UPPER_LOWER';
+  if (freq === 5) return 'PPL_PLUS';
+  return 'PPL';
+}
+
+// Helper function to create program name
+function createProgramName(level, goal) {
+  const goalNames = {
+    'muscle_gain': 'Ipertrofia',
+    'strength': 'Forza',
+    'fat_loss': 'Dimagrimento',
+    'toning': 'Tonificazione',
+    'performance': 'Performance',
+    'endurance': 'Resistenza',
+    'general_fitness': 'Fitness Generale',
+    'motor_recovery': 'Recupero Motorio'
+  };
+  
+  const levelNames = {
+    'beginner': 'Principiante',
+    'intermediate': 'Intermedio',
+    'advanced': 'Avanzato'
+  };
+  
+  const goalName = goalNames[goal] || 'Personalizzato';
+  const levelName = levelNames[level] || 'Intermedio';
+  return `Programma ${levelName} - ${goalName}`;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -30,6 +64,9 @@ export default async function handler(req, res) {
     console.log('Level calculated from score:', calculatedLevel);
 
     const program = {
+          name: createProgramName(calculatedLevel, goal || 'general_fitness'),
+    description: `Programma ${calculatedLevel} per ${goal || 'fitness generale'}`,
+
       level: calculatedLevel,
       goal: goal,
       location: location,
@@ -38,6 +75,18 @@ export default async function handler(req, res) {
       assessmentData: assessmentData || null,
       assessmentId: assessmentId,
       userId: userId,
+          split: determineSplit(frequency || 3),
+    days_per_week: frequency || 3,
+    total_weeks: 4,
+    weekly_schedule: [],
+    progression: [],
+    includes_deload: false,
+    deload_frequency: 4,
+    metadata: {},
+    status: 'active',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+
     };
 
     console.log('[API] Generated:', program);
