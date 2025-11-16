@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+      import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -102,6 +102,24 @@ export default function Dashboard() {
         timestamp: new Date().toISOString(),
         program: data.program || data
       }));
+      
+      // INSERT TO SUPABASE
+      try {
+        const program = data.program || data;
+        await supabase
+          .from('training_programs')
+          .insert([
+            {
+              user_id: userId,
+              ...program,
+              status: 'active'
+            }
+          ]);
+        console.log('[API] Program inserted to Supabase');
+      } catch (dbError) {
+        console.error('[API] Error inserting to Supabase:', dbError);
+      }
+      
 
       setHasProgram(true);
       alert('✅ Programma generato con successo!');
