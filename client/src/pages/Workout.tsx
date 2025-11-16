@@ -19,9 +19,29 @@ export default function Workout() {
 
   async function loadProgram() {
     try {
+      // Prima prova a caricare da localStorage (modalità senza auth)
+      const localProgram = localStorage.getItem('currentProgram');
+      if (localProgram) {
+        console.log('[WORKOUT] Loading program from localStorage');
+        const parsedProgram = JSON.parse(localProgram);
+
+        // Converti formato Dashboard -> formato Workout
+        const formattedProgram = {
+          name: parsedProgram.name || 'Il Tuo Programma',
+          description: parsedProgram.notes || '',
+          weekly_schedule: generateWeeklySchedule(parsedProgram)
+        };
+
+        setProgram(formattedProgram);
+        setLoading(false);
+        return;
+      }
+
+      // Fallback: prova Supabase
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate('/login');
+        console.log('[WORKOUT] No program in localStorage and no user authenticated');
+        setLoading(false);
         return;
       }
 
@@ -35,16 +55,55 @@ export default function Workout() {
         .single();
 
       if (error) {
-        console.error('Error loading program:', error);
+        console.error('[WORKOUT] Error loading from Supabase:', error);
+        setLoading(false);
         return;
       }
 
       setProgram(data);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('[WORKOUT] Error:', error);
     } finally {
       setLoading(false);
     }
+  }
+
+  function generateWeeklySchedule(dashboardProgram: any) {
+    // Genera una schedule settimanale basata sui dati del Dashboard
+    const daysPerWeek = dashboardProgram.frequency || 3;
+    const exercises = dashboardProgram.exercises || [];
+
+    const schedule = [];
+
+    for (let i = 0; i < daysPerWeek; i++) {
+      const dayName = dashboardProgram.split === 'FULL BODY'
+        ? `Full Body ${i + 1}`
+        : dashboardProgram.split === 'UPPER/LOWER'
+        ? (i % 2 === 0 ? 'Upper Body' : 'Lower Body')
+        : `Day ${i + 1}`;
+
+      schedule.push({
+        dayName: dayName,
+        exercises: exercises.map((ex: string) => {
+          // Parse "Exercise: 3x12-15" format
+          const parts = ex.split(':');
+          const name = parts[0].trim();
+          const setsReps = parts[1]?.trim() || '3x10';
+          const [sets, reps] = setsReps.split('x');
+
+          return {
+            name: name,
+            sets: parseInt(sets) || 3,
+            reps: reps || '10',
+            rest: 90,
+            notes: '',
+            type: 'standard'
+          };
+        })
+      });
+    }
+
+    return schedule;
   }
 
   function handleStartWorkout() {

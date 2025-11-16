@@ -33,12 +33,12 @@ export default function Screening() {
   };
 
   const handleComplete = async (screeningData) => {
-    localStorage.setItem('screeningData', JSON.stringify(screeningData));
-    if (userData?.trainingLocation === 'gym') {
-      navigate('/assessment-gym');
-    } else {
-      navigate('/assessment-home');
-    }
+    console.log('[SCREENING] ✅ Assessment completed, navigating to dashboard');
+    console.log('[SCREENING] Data:', screeningData);
+
+    // I dati sono già salvati da ScreeningFlow in 'screening_data'
+    // Naviga direttamente alla dashboard
+    navigate('/dashboard');
   };
 
   if (loading) return <div>Caricamento...</div>;

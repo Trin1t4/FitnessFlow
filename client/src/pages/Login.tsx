@@ -21,7 +21,7 @@ export default function Login() {
   const handleLogin = async () => {
     setLoading(true);
     setError(""); // Reset errore
-    
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -31,8 +31,16 @@ export default function Login() {
       setError(error.message);
       setLoading(false);
     } else if (data?.session) {
-      // successful login with session
-      window.location.href = "/dashboard";
+      // Check se l'utente ha completato l'onboarding
+      const hasOnboarding = localStorage.getItem('onboarding_data');
+
+      if (hasOnboarding) {
+        // Utente esistente con onboarding completato
+        window.location.href = "/dashboard";
+      } else {
+        // Primo login, porta all'onboarding
+        window.location.href = "/onboarding";
+      }
     } else {
       // fallback: redirect
       window.location.href = "/";
