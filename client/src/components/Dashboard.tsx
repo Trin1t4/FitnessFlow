@@ -281,91 +281,388 @@ export default function Dashboard() {
     }
   }
 
+  // ===== SISTEMA GESTIONE DOLORI/INFORTUNI =====
+
+  /**
+   * Mappa zone doloranti → gerarchie di sostituzione progressive
+   * Le alternative sono ordinate dalla PIÙ SIMILE alla PIÙ CONSERVATIVA
+   */
+  const PAIN_EXERCISE_MAP = {
+    knee: {
+      avoid: ['pistol', 'jump', 'bulgarian'],
+      // GERARCHIA: mantieni pattern unilaterale → bilaterale → catena posteriore
+      substitutions: {
+        // Pistol Squat patterns
+        'pistol': ['Affondi', 'Squat Completo', 'Glute Bridge'],
+        'pistol assistito': ['Affondi', 'Squat Completo', 'Glute Bridge'],
+        'pistol squat': ['Affondi', 'Squat Completo', 'Glute Bridge'],
+
+        // Jump patterns
+        'jump': ['Step Up', 'Squat Completo', 'Glute Bridge'],
+        'jump squat': ['Step Up', 'Squat Completo', 'Glute Bridge'],
+
+        // Squat patterns (solo se dolore moderato/severo)
+        'squat': ['Goblet Squat', 'Box Squat', 'Glute Bridge'],
+        'bulgarian': ['Affondi', 'Step Up', 'Glute Bridge'],
+        'lunge': ['Step Up', 'Squat Completo', 'Glute Bridge']
+      },
+      correctives: ['Knee Mobility Circles', 'VMO Activation', 'Wall Sit Isometric', 'Quad Stretch']
+    },
+
+    lower_back: {
+      avoid: ['deadlift', 'good_morning'],
+      substitutions: {
+        'stacco': ['RDL Leggero', 'Hip Hinge Corpo Libero', 'Glute Bridge'],
+        'deadlift': ['RDL Leggero', 'Hip Hinge Corpo Libero', 'Glute Bridge'],
+        'good morning': ['Hip Hinge Corpo Libero', 'Bird Dog', 'Glute Bridge'],
+        'rdl': ['Single Leg RDL Leggero', 'Glute Bridge', 'Bird Dog'],
+
+        // Squat (solo se schiena in compromesso)
+        'squat': ['Goblet Squat', 'Box Squat', 'Leg Press se gym']
+      },
+      correctives: ['Cat-Cow', 'Bird Dog', 'Dead Bug', 'Pelvic Tilt', 'McGill Big 3']
+    },
+
+    shoulder: {
+      avoid: ['hspu', 'handstand', 'overhead'],
+      substitutions: {
+        // Vertical push progressions
+        'hspu': ['Pike Push-up', 'Incline Push-up', 'Push-up Standard'],
+        'handstand': ['Pike Push-up', 'Incline Push-up', 'Push-up Standard'],
+        'pike push': ['Incline Pike Push-up', 'Incline Push-up', 'Push-up Standard'],
+
+        // Overhead patterns
+        'overhead': ['Landmine Press', 'Floor Press', 'Push-up Standard'],
+        'military press': ['Landmine Press', 'Floor Press', 'Push-up'],
+        'press': ['Landmine Press', 'Floor Press', 'Push-up'],
+
+        // Horizontal push (se dolore moderato)
+        'push-up': ['Incline Push-up', 'Wall Push-up', 'Isometric Hold']
+      },
+      correctives: ['Shoulder Dislocations', 'Band Pull-Aparts', 'Face Pulls', 'YTW', 'Wall Slides']
+    },
+
+    wrist: {
+      avoid: ['hspu', 'planche', 'push_up_standard'],
+      substitutions: {
+        'hspu': ['Pike su Pugni', 'Parallettes Pike', 'Dips'],
+        'handstand': ['Handstand su Pugni', 'Parallettes', 'Dips'],
+        'planche': ['Parallettes Lean', 'Dips', 'Ring Push-up'],
+        'push-up': ['Knuckle Push-up', 'Parallettes Push-up', 'Dips'],
+        'push up': ['Knuckle Push-up', 'Parallettes Push-up', 'Dips']
+      },
+      correctives: ['Wrist Circles', 'Wrist Flexion/Extension', 'Finger Flexion', 'Forearm Stretch']
+    },
+
+    ankle: {
+      avoid: ['jump', 'sprint', 'pistol'],
+      substitutions: {
+        'jump': ['Step Up', 'Box Step', 'Squat'],
+        'sprint': ['Walking Lunges', 'Step Up', 'Squat'],
+        'calf raise': ['Seated Calf Raise', 'Isometric Calf Hold'],
+        'pistol': ['Squat Completo', 'Goblet Squat', 'Leg Press']
+      },
+      correctives: ['Ankle Circles', 'Dorsiflexion Stretch', 'Calf Stretch', 'Ankle Mobility Drills']
+    }
+  };
+
+  /**
+   * Applica deload basato su intensità dolore
+   * @param severity - 'mild' | 'moderate' | 'severe'
+   * @param sets - sets originali
+   * @param reps - reps originali
+   * @param location - 'gym' | 'home'
+   * @returns - sets/reps/load modificati
+   */
+  function applyPainDeload(severity: string, sets: number, reps: number, location: string) {
+    if (severity === 'mild') {
+      // LIEVE: riduzione 10-15%
+      return {
+        sets: sets,
+        reps: Math.max(3, Math.floor(reps * 0.9)), // -10% reps
+        loadReduction: location === 'gym' ? 0.90 : 1.0, // -10% kg se gym
+        note: 'Deload leggero (dolore lieve)'
+      };
+    } else if (severity === 'moderate') {
+      // MODERATO: riduzione 25-30%
+      return {
+        sets: Math.max(2, sets - 1), // -1 set
+        reps: Math.max(3, Math.floor(reps * 0.7)), // -30% reps
+        loadReduction: location === 'gym' ? 0.75 : 1.0, // -25% kg se gym
+        needsEasierVariant: location === 'home', // Se home, serve variante più facile
+        note: 'Deload moderato (dolore moderato) - Monitorare'
+      };
+    } else if (severity === 'severe') {
+      // SEVERO: riduzione drastica + sostituzione
+      return {
+        sets: Math.max(2, Math.floor(sets * 0.5)), // -50% sets
+        reps: Math.max(3, Math.floor(reps * 0.5)), // -50% reps
+        loadReduction: location === 'gym' ? 0.5 : 1.0, // -50% kg se gym
+        needsReplacement: true, // Sostituisci esercizio!
+        needsEasierVariant: location === 'home',
+        note: 'ATTENZIONE: Dolore severo - Esercizio sostituito + correttivi'
+      };
+    }
+
+    return { sets, reps, loadReduction: 1.0, note: '' };
+  }
+
+  /**
+   * Controlla se esercizio carica zona dolorante
+   */
+  function isExerciseConflicting(exerciseName: string, painArea: string): boolean {
+    const avoidKeywords = PAIN_EXERCISE_MAP[painArea]?.avoid || [];
+    const nameLower = exerciseName.toLowerCase();
+    return avoidKeywords.some(keyword => nameLower.includes(keyword));
+  }
+
+  /**
+   * Trova alternativa sicura per esercizio usando GERARCHIA PROGRESSIVA
+   * @param originalExercise - Nome esercizio originale
+   * @param painArea - Zona dolente
+   * @param severity - Severità dolore (mild/moderate/severe)
+   * @returns - Nome alternativa appropriata
+   */
+  function findSafeAlternative(originalExercise: string, painArea: string, severity: string): string {
+    const substitutions = PAIN_EXERCISE_MAP[painArea]?.substitutions || {};
+    const exerciseLower = originalExercise.toLowerCase();
+
+    // Trova la chiave che matcha l'esercizio
+    let matchedKey = null;
+    for (const key of Object.keys(substitutions)) {
+      if (exerciseLower.includes(key.toLowerCase())) {
+        matchedKey = key;
+        break;
+      }
+    }
+
+    if (!matchedKey) {
+      console.warn(`⚠️ Nessuna sostituzione trovata per: ${originalExercise}`);
+      return originalExercise;
+    }
+
+    const alternatives = substitutions[matchedKey];
+
+    // GERARCHIA BASATA SU SEVERITÀ:
+    // - mild: prova PRIMA alternativa (più simile)
+    // - moderate: prova SECONDA alternativa (intermedia)
+    // - severe: vai ULTIMA alternativa (più conservativa)
+
+    let index = 0;
+    if (severity === 'moderate') {
+      index = Math.min(1, alternatives.length - 1);
+    } else if (severity === 'severe') {
+      index = alternatives.length - 1; // Ultima (più conservativa)
+    }
+
+    const alternative = alternatives[index];
+    console.log(`🔄 Sostituzione (${severity}): ${originalExercise} → ${alternative}`);
+
+    return alternative;
+  }
+
+  /**
+   * Ottieni esercizi correttivi per zona dolente
+   */
+  function getCorrectiveExercises(painArea: string): string[] {
+    return PAIN_EXERCISE_MAP[painArea]?.correctives || [];
+  }
+
   function generateLocalProgram(level: string, goal: string, onboarding: any) {
     const location = onboarding?.trainingLocation || 'home';
     const frequency = onboarding?.activityLevel?.weeklyFrequency || 3;
 
-    const programs = {
-      beginner: {
-        name: `Programma Base ${goal}`,
-        split: 'FULL BODY',
-        exercises: location === 'gym' ? [
-          'Leg Press: 3x12-15',
-          'Lat Machine: 3x12-15',
-          'Chest Press: 3x12-15',
-          'Shoulder Press Machine: 3x12-15',
-          'Cable Curl: 3x12-15',
-          'Tricep Pushdown: 3x12-15'
-        ] : [
-          'Squat a corpo libero: 3x10-15',
-          'Push-up ginocchia: 3x8-12',
-          'Superman: 3x10-15',
-          'Plank: 3x20-30s',
-          'Glute Bridge: 3x12-15',
-          'Mountain Climbers: 3x20'
-        ]
-      },
-      intermediate: {
-        name: `Programma Intermedio ${goal}`,
-        split: frequency >= 4 ? 'UPPER/LOWER' : 'FULL BODY A/B',
-        exercises: location === 'gym' ? [
-          'Squat: 4x8-10',
-          'Romanian Deadlift: 4x8-10',
-          'Panca Piana: 4x8-10',
-          'Rematore: 4x8-10',
-          'Military Press: 3x8-12',
-          'Pull-up assistite: 3x6-10'
-        ] : [
-          'Pistol Squat assistito: 4x5-8',
-          'Nordic Curl eccentrico: 3x5-8',
-          'Diamond Push-up: 4x8-12',
-          'Pike Push-up: 3x8-10',
-          'Archer Row: 4x8-10 per lato',
-          'L-Sit progression: 3x10-20s'
-        ]
-      },
-      advanced: {
-        name: `Programma Avanzato ${goal}`,
-        split: frequency >= 5 ? 'PUSH/PULL/LEGS' : 'UPPER/LOWER',
-        exercises: goal === 'strength' ?
-          location === 'gym' ? [
-            'Squat: 5x3-5 @85%',
-            'Stacco: 5x3-5 @85%',
-            'Panca Piana: 5x3-5 @85%',
-            'Military Press: 4x5 @80%',
-            'Weighted Pull-up: 4x5',
-            'Barbell Row: 4x5'
-          ] : [
-            'Pistol Squat: 5x3-5 per gamba',
-            'Archer Push-up: 5x5-6 per lato',
-            'One Arm Pull-up progression: 5x3-5',
-            'Handstand Push-up: 4x3-5',
-            'Front Lever progression: 5x5-10s',
-            'Planche progression: 5x5-10s'
-          ]
-        : [
-          'Squat: 4x6-8',
-          'Romanian Deadlift: 4x8-10',
-          'Panca Inclinata: 4x6-8',
-          'Pull-up weighted: 4x6-8',
-          'Dips: 4x8-10',
-          'Face Pulls: 3x12-15'
-        ]
-      }
+    // ✅ LEGGI BASELINE DALLO SCREENING
+    const baselines = dataStatus.screening?.patternBaselines || {};
+
+    // ✅ LEGGI DOLORI DALL'ONBOARDING
+    const painAreas = onboarding?.painAreas || [];
+
+    console.log('🎯 GENERAZIONE PROGRAMMA BASELINE-AWARE + PAIN-AWARE');
+    console.log('📊 Baselines dallo screening:', baselines);
+    console.log('🩹 Dolori rilevati:', painAreas);
+
+    // ✅ COSTRUISCI ESERCIZI BASATI SU BASELINE
+    const exercises = [];
+
+    // Pattern mapping: pattern_id → exercise name
+    const patternMap = {
+      lower_push: baselines.lower_push,
+      horizontal_push: baselines.horizontal_push,
+      vertical_push: baselines.vertical_push,
+      vertical_pull: baselines.vertical_pull,
+      lower_pull: baselines.lower_pull,
+      core: baselines.core
     };
 
-    const programTemplate = programs[level as keyof typeof programs] || programs.beginner;
+    // Per ogni pattern, crea esercizio basato su baseline + gestione dolori
+    Object.entries(patternMap).forEach(([patternId, baseline]: [string, any]) => {
+      if (!baseline) return;
+
+      // Calcola sets/reps basati su baseline E goal
+      const baselineReps = baseline.reps;
+      const volumeCalc = calculateVolume(baselineReps, goal, level);
+
+      // Usa la STESSA variante dello screening (non più difficile!)
+      let exerciseName = baseline.variantName;
+      let finalSets = volumeCalc.sets;
+      let finalReps = volumeCalc.reps;
+      let painNotes = '';
+      let wasReplaced = false;
+
+      // ✅ GESTIONE DOLORI: Controlla conflitti con zone doloranti
+      for (const painEntry of painAreas) {
+        const painArea = painEntry.area || painEntry; // Supporta sia oggetto che stringa
+        const severity = painEntry.severity || 'mild'; // Default mild se non specificato
+
+        if (isExerciseConflicting(exerciseName, painArea)) {
+          console.log(`⚠️ Conflitto: ${exerciseName} carica zona dolente: ${painArea} (${severity})`);
+
+          // Applica deload basato su severità
+          const deload = applyPainDeload(severity, finalSets, finalReps, location);
+
+          finalSets = deload.sets;
+          finalReps = deload.reps;
+          painNotes = deload.note;
+
+          // Se dolore severo o moderato casa → sostituisci esercizio
+          if (deload.needsReplacement || (deload.needsEasierVariant && location === 'home')) {
+            const alternative = findSafeAlternative(exerciseName, painArea, severity);
+            exerciseName = alternative;
+            wasReplaced = true;
+            painNotes = `${painNotes} | Sostituito da ${baseline.variantName}`;
+          }
+
+          break; // Un solo dolore per volta (il primo trovato)
+        }
+      }
+
+      exercises.push({
+        pattern: patternId,
+        name: exerciseName,
+        sets: finalSets,
+        reps: finalReps,
+        rest: volumeCalc.rest,
+        intensity: volumeCalc.intensity,
+        baseline: {
+          variantId: baseline.variantId,
+          difficulty: baseline.difficulty,
+          maxReps: baselineReps
+        },
+        wasReplaced: wasReplaced,
+        notes: [
+          volumeCalc.notes,
+          `Baseline: ${baselineReps} reps @ diff. ${baseline.difficulty}/10`,
+          painNotes
+        ].filter(Boolean).join(' | ')
+      });
+
+      console.log(`✅ ${exerciseName}: ${finalSets}x${finalReps} @ ${volumeCalc.intensity} ${painNotes ? '(⚠️ ' + painNotes + ')' : ''}`);
+    });
+
+    // ✅ AGGIUNGI ESERCIZI CORRETTIVI per zone doloranti
+    const correctiveExercises = [];
+    for (const painEntry of painAreas) {
+      const painArea = painEntry.area || painEntry;
+      const correctives = getCorrectiveExercises(painArea);
+
+      for (const corrective of correctives) {
+        correctiveExercises.push({
+          pattern: 'corrective',
+          name: corrective,
+          sets: 2,
+          reps: '10-15',
+          rest: '30s',
+          intensity: 'Low',
+          notes: `Correttivo per ${painArea} - Eseguire con focus sulla qualità`
+        });
+      }
+    }
+
+    // Aggiungi correttivi alla fine del programma
+    exercises.push(...correctiveExercises);
+
+    // Determina split basato su frequenza
+    let split = 'FULL BODY';
+    if (frequency >= 5) split = 'PUSH/PULL/LEGS';
+    else if (frequency >= 4) split = 'UPPER/LOWER';
+    else if (frequency >= 3) split = 'FULL BODY A/B';
 
     return {
-      ...programTemplate,
+      name: `Programma ${level.toUpperCase()} - ${goal}`,
+      split: split,
+      exercises: exercises,
       level,
       goal,
       location,
       frequency,
       totalWeeks: 8,
       createdAt: new Date().toISOString(),
-      notes: `Programma personalizzato basato su: Quiz ${dataStatus.quiz?.score}%, Test pratici ${dataStatus.screening?.practicalScore}%, Parametri fisici ${dataStatus.screening?.physicalScore}%`
+      notes: `Programma personalizzato basato sulle TUE baseline. Parti da dove sei realmente, non da template generici.`
     };
+  }
+
+  /**
+   * Calcola volume (sets/reps/rest) basato su baseline e goal
+   */
+  function calculateVolume(baselineMaxReps: number, goal: string, level: string) {
+    // ✅ BEGINNER: Scheda di ADATTAMENTO ANATOMICO fissa
+    // 3x10 @ 65% del massimale, rest 90s
+    // Focus: imparare tecnica, costruire base, prevenire infortuni
+    if (level === 'beginner') {
+      const workingReps = Math.max(8, Math.min(Math.floor(baselineMaxReps * 0.65), 10));
+
+      return {
+        sets: 3,
+        reps: workingReps, // Target 10 reps, ma max 65% della baseline
+        rest: '90s',
+        intensity: '65%', // Percentuale del massimale
+        notes: 'Adattamento Anatomico - Focus sulla tecnica'
+      };
+    }
+
+    // ✅ INTERMEDIATE/ADVANCED: Sistema adattivo basato su goal
+    // REGOLA CALISTHENICS: VOLUME è il re, non intensità!
+    // Forza = alto volume con progressioni di difficoltà
+    // Ipertrofia = volume moderato con TUT (tempo sotto tensione)
+    // Endurance = volume alto con reps alte
+
+    const workingReps = Math.max(4, Math.floor(baselineMaxReps * 0.75));
+
+    // ✅ FORZA (Calisthenics): ALTO VOLUME, reps moderate (5-8)
+    // La progressione viene da varianti più difficili, non da reps bassissime
+    let sets = 4; // Default
+    let reps = workingReps;
+    let rest = '90s';
+    let intensity = '75%';
+
+    if (goal === 'strength') {
+      // CALISTHENICS STRENGTH: Volume alto per skill acquisition + forza
+      sets = level === 'advanced' ? 6 : 5; // Più sets per pratica
+      reps = Math.max(5, Math.min(workingReps, 8)); // 5-8 reps (sweet spot calisthenics)
+      rest = '2-3min'; // Recupero completo ma non eccessivo
+      intensity = '75%'; // Volume > Intensità nel bodyweight
+    } else if (goal === 'muscle_gain') {
+      // IPERTROFIA: Volume moderato-alto, TUT
+      sets = level === 'advanced' ? 5 : 4;
+      reps = Math.max(6, Math.min(workingReps, 12)); // 6-12 reps
+      rest = '60-90s';
+      intensity = '70-80%'; // TUT importante
+    } else if (goal === 'endurance') {
+      // ENDURANCE: Volume alto, reps alte, rest brevi
+      sets = 4;
+      reps = Math.max(12, Math.min(workingReps, 20)); // 12-20 reps
+      rest = '30-45s';
+      intensity = '60-70%';
+    } else {
+      // GENERAL FITNESS: bilanciato
+      sets = 4;
+      reps = Math.max(8, Math.min(workingReps, 12)); // 8-12 reps
+      rest = '60-90s';
+      intensity = '70%';
+    }
+
+    return { sets, reps, rest, intensity };
   }
 
   return (
@@ -487,14 +784,52 @@ export default function Dashboard() {
                   </div>
 
                   <div>
-                    <h4 className="font-semibold mb-3">Esercizi Principali:</h4>
-                    <ul className="space-y-2">
-                      {program.exercises?.map((ex: string, i: number) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="text-green-400">▸</span>
-                          <span className="text-gray-300">{ex}</span>
-                        </li>
-                      ))}
+                    <h4 className="font-semibold mb-3">Esercizi (basati sulle tue baseline):</h4>
+                    <ul className="space-y-3">
+                      {program.exercises?.map((ex: any, i: number) => {
+                        const isCorrective = ex.pattern === 'corrective';
+                        const wasReplaced = ex.wasReplaced;
+
+                        return (
+                          <li
+                            key={i}
+                            className={`rounded-lg p-3 border ${
+                              isCorrective
+                                ? 'bg-blue-900/20 border-blue-600'
+                                : wasReplaced
+                                ? 'bg-orange-900/20 border-orange-600'
+                                : 'bg-gray-800/50 border-gray-600'
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <span className={`font-bold ${
+                                isCorrective ? 'text-blue-400' : wasReplaced ? 'text-orange-400' : 'text-green-400'
+                              }`}>
+                                {isCorrective ? '🔧' : wasReplaced ? '⚠️' : `${i + 1}.`}
+                              </span>
+                              <div className="flex-1">
+                                <p className={`font-medium ${
+                                  isCorrective ? 'text-blue-300' : wasReplaced ? 'text-orange-300' : 'text-white'
+                                }`}>
+                                  {ex.name || ex}
+                                  {isCorrective && <span className="text-xs ml-2 text-blue-400">(Correttivo)</span>}
+                                  {wasReplaced && <span className="text-xs ml-2 text-orange-400">(Sostituito)</span>}
+                                </p>
+                                {ex.sets && ex.reps && (
+                                  <p className="text-sm text-gray-400 mt-1">
+                                    {ex.sets} sets × {ex.reps} reps
+                                    {ex.intensity && <span className="text-blue-400"> @ {ex.intensity}</span>}
+                                    {' • '}Rest: {ex.rest}
+                                  </p>
+                                )}
+                                {ex.notes && (
+                                  <p className="text-xs text-gray-500 mt-1">{ex.notes}</p>
+                                )}
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
 
