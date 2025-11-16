@@ -9,15 +9,31 @@ export default async function handler(req, res) {
   const { level, goal, location, frequency, assessmentData, userId, assessmentId } = req.body;    
     // GENERA UN PROGRAMMA DI TEST
     
-  // Calculate level from assessmentData if provided
-  let calculatedLevel = level || 'beginner';
-  if (assessmentData && Object.keys(assessmentData).length > 0) {
-    const oneRepMaxes = Object.values(assessmentData).map(e => e.oneRepMax);
-    const avgStrength = oneRepMaxes.reduce((a, b) => a + b, 0) / oneRepMaxes.length;
-    if (avgStrength > 100) calculatedLevel = 'advanced';
-    else if (avgStrength > 60) calculatedLevel = 'intermediate';
+// DEBUG: Log ricevuti
+  console.log('[API] Received:', { level, goal, location, frequency, hasAssessmentData: !!assessmentData, userId: userId ? 'present' : 'missing' });
+
+  // CALCOLO LEVEL SICURO
+  let calculatedLevel = level || 'intermediate';
+  if (assessmentData && typeof assessmentData === 'object' && Object.keys(assessmentData).length > 0) {
+    try {
+      const exercises = Object.values(assessmentData);
+      const validOneRepMaxes = exercises.map(e => e?.oneRepMax).filter(rm => rm && !isNaN(rm) && rm > 0);
+      
+      if (validOneRepMaxes.length > 0) {
+        const avgStrength = validOneRepMaxes.reduce((a, b) => a + b, 0) / validOneRepMaxes.length;
+        console.log('[LEVEL CALC] avgStrength:', avgStrength);
+        if (avgStrength > 100) calculatedLevel = 'advanced';
+        else if (avgStrength > 60) calculatedLevel = 'intermediate';
+        else calculatedLevel = 'beginner';
+      } else {
+        console.log('[LEVEL CALC] No valid 1RMs');
+      }
+    } catch (error) {
+      console.error('[LEVEL CALC] Error:', error);
+    }
+  } else {
+    console.log('[LEVEL CALC] No assessmentData');
   }
-    const program = {
     name: `Programma ${calculatedLevel.toUpperCase()} - ${goal}`,
           level: calculatedLevel,
       goal: goal,
