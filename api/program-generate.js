@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+45
+  import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -43,7 +44,7 @@ export default async function handler(req, res) {
 
     // SAVE TO SUPABASE WITH SERVICE ROLE
     const adminSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
