@@ -12,6 +12,7 @@ import {
 } from './painManagement';
 import { convertToMachineVariant } from './exerciseMapping';
 import { NormalizedPainArea } from './validators';
+import { generateWeeklySplit } from './weeklySplitGenerator';
 
 export interface VolumeResult {
   sets: number;
@@ -260,8 +261,7 @@ export function generateProgram(options: ProgramGeneratorOptions): Omit<Program,
  * @returns - Programma completo con split settimanale
  */
 export function generateProgramWithSplit(options: ProgramGeneratorOptions): any {
-  // Import dinamico per evitare circular dependencies
-  const { generateWeeklySplit } = require('./weeklySplitGenerator');
+  // generateWeeklySplit is now imported at the top of the file
 
   console.log('🎯 GENERAZIONE PROGRAMMA CON SPLIT INTELLIGENTE');
   console.log('📍 Location:', options.location);
