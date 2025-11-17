@@ -27,7 +27,7 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
   const [selectedLocation, setSelectedLocation] = useState<'gym' | 'home'>(
     data.trainingLocation || 'home'
   );
-  const [trainingType, setTrainingType] = useState<'bodyweight' | 'equipment'>(
+  const [trainingType, setTrainingType] = useState<'bodyweight' | 'equipment' | 'machines'>(
     data.trainingType || 'bodyweight'
   );
   const [equipment, setEquipment] = useState({

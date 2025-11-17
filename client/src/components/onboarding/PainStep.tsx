@@ -1,54 +1,79 @@
 import { useState } from 'react';
-import { OnboardingData } from '../../types/onboarding.types';
+import { OnboardingData, PainArea, PainSeverity, PainEntry } from '../../types/onboarding.types';
 
 interface PainStepProps {
   data: Partial<OnboardingData>;
   onNext: (data: Partial<OnboardingData>) => void;
 }
 
-const PAIN_AREAS = [
-  { value: 'cervicale', label: 'Cervicale/Collo', icon: '🦴' },
-  { value: 'spalle', label: 'Spalle', icon: '💪' },
-  { value: 'dorsale', label: 'Zona Dorsale', icon: '🔙' },
-  { value: 'lombare', label: 'Zona Lombare', icon: '⬇️' },
-  { value: 'anche', label: 'Anche/Bacino', icon: '🦴' },
-  { value: 'ginocchia', label: 'Ginocchia', icon: '🦵' },
-  { value: 'caviglie', label: 'Caviglie/Piedi', icon: '👣' },
-  { value: 'polsi', label: 'Polsi/Mani', icon: '🤚' },
-  { value: 'gomiti', label: 'Gomiti', icon: '💪' }
+/**
+ * Mapping zone dolore italiano → PainArea types
+ * Alcune zone sono mappate come best-match (es. cervicale/dorsale → shoulder)
+ */
+const PAIN_AREAS: Array<{ value: PainArea; label: string; icon: string }> = [
+  { value: 'shoulder', label: 'Cervicale/Collo', icon: '🦴' },
+  { value: 'shoulder', label: 'Spalle', icon: '💪' },
+  { value: 'lower_back', label: 'Zona Lombare', icon: '⬇️' },
+  { value: 'hip', label: 'Anche/Bacino', icon: '🦴' },
+  { value: 'knee', label: 'Ginocchia', icon: '🦵' },
+  { value: 'ankle', label: 'Caviglie/Piedi', icon: '👣' },
+  { value: 'wrist', label: 'Polsi/Mani', icon: '🤚' },
+  { value: 'elbow', label: 'Gomiti', icon: '💪' }
 ];
 
+/**
+ * Converti intensità dolore (1-10) → severity type
+ */
+function intensityToSeverity(intensity: number): PainSeverity {
+  if (intensity >= 8) return 'severe';
+  if (intensity >= 4) return 'moderate';
+  return 'mild';
+}
+
 export default function PainStep({ data, onNext }: PainStepProps) {
-  const [hasPain, setHasPain] = useState<boolean | null>(data.painScreening?.hasPain ?? null);
-  const [painAreas, setPainAreas] = useState<string[]>(data.painScreening?.painAreas || []);
-  const [painIntensity, setPainIntensity] = useState<{ [key: string]: number }>(
-    data.painScreening?.painIntensity || {}
+  const [hasPain, setHasPain] = useState<boolean | null>(
+    data.painAreas ? data.painAreas.length > 0 : null
   );
 
-  const togglePainArea = (area: string) => {
-    if (painAreas.includes(area)) {
-      setPainAreas(painAreas.filter((a) => a !== area));
-      const newIntensity = { ...painIntensity };
-      delete newIntensity[area];
-      setPainIntensity(newIntensity);
+  // Inizializza da painAreas esistenti (se presenti)
+  const initialPainMap: Map<PainArea, number> = new Map();
+  if (data.painAreas) {
+    data.painAreas.forEach((entry) => {
+      const intensity = entry.severity === 'severe' ? 9 : entry.severity === 'moderate' ? 5 : 2;
+      initialPainMap.set(entry.area, intensity);
+    });
+  }
+
+  const [painIntensity, setPainIntensity] = useState<Map<PainArea, number>>(initialPainMap);
+
+  const togglePainArea = (area: PainArea) => {
+    const newMap = new Map(painIntensity);
+    if (newMap.has(area)) {
+      newMap.delete(area);
     } else {
-      setPainAreas([...painAreas, area]);
-      setPainIntensity({ ...painIntensity, [area]: 5 });
+      newMap.set(area, 5); // Default: moderate
     }
+    setPainIntensity(newMap);
   };
 
   const handleSubmit = () => {
-    onNext({
-      painScreening: {
-        hasPain: hasPain || false,
-        painAreas,
-        painIntensity,
-        screenedAt: new Date().toISOString()
-      }
-    });
+    if (hasPain === false) {
+      // Nessun dolore → painAreas vuoto
+      onNext({ painAreas: [] });
+      return;
+    }
+
+    // Converti Map<PainArea, intensity> → PainEntry[]
+    const painAreas: PainEntry[] = Array.from(painIntensity.entries()).map(([area, intensity]) => ({
+      area,
+      severity: intensityToSeverity(intensity)
+    }));
+
+    onNext({ painAreas });
   };
 
-  const isValid = hasPain !== null && (hasPain === false || painAreas.length > 0);
+  const selectedAreas = Array.from(painIntensity.keys());
+  const isValid = hasPain !== null && (hasPain === false || selectedAreas.length > 0);
 
   return (
     <div className="space-y-6">
@@ -61,8 +86,7 @@ export default function PainStep({ data, onNext }: PainStepProps) {
         <button
           onClick={() => {
             setHasPain(false);
-            setPainAreas([]);
-            setPainIntensity({});
+            setPainIntensity(new Map());
           }}
           className={`p-6 rounded-lg border-2 transition-all ${
             hasPain === false
@@ -94,12 +118,12 @@ export default function PainStep({ data, onNext }: PainStepProps) {
           <div>
             <h3 className="font-semibold text-white mb-3">Seleziona le zone con dolore/fastidio:</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {PAIN_AREAS.map((area) => (
+              {PAIN_AREAS.map((area, index) => (
                 <button
-                  key={area.value}
+                  key={`${area.value}-${index}`}
                   onClick={() => togglePainArea(area.value)}
                   className={`p-3 rounded-lg border-2 text-left transition-all ${
-                    painAreas.includes(area.value)
+                    painIntensity.has(area.value)
                       ? 'border-amber-500 bg-amber-500/20 text-white'
                       : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
                   }`}
@@ -113,34 +137,48 @@ export default function PainStep({ data, onNext }: PainStepProps) {
             </div>
           </div>
 
-          {painAreas.length > 0 && (
+          {selectedAreas.length > 0 && (
             <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
               <h3 className="font-semibold text-white mb-4">Intensità del dolore (1-10):</h3>
               <div className="space-y-3">
-                {painAreas.map((area) => {
+                {selectedAreas.map((area) => {
                   const areaInfo = PAIN_AREAS.find((a) => a.value === area);
+                  const intensity = painIntensity.get(area) || 5;
+                  const severity = intensityToSeverity(intensity);
+
                   return (
                     <div key={area}>
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-slate-300 text-sm">
                           {areaInfo?.icon} {areaInfo?.label}
                         </span>
-                        <span className="text-white font-bold text-lg">{painIntensity[area] || 5}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-bold text-lg">{intensity}</span>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            severity === 'severe' ? 'bg-red-500/20 text-red-400' :
+                            severity === 'moderate' ? 'bg-amber-500/20 text-amber-400' :
+                            'bg-green-500/20 text-green-400'
+                          }`}>
+                            {severity === 'severe' ? 'Severo' : severity === 'moderate' ? 'Moderato' : 'Lieve'}
+                          </span>
+                        </div>
                       </div>
                       <input
                         type="range"
                         min="1"
                         max="10"
-                        value={painIntensity[area] || 5}
-                        onChange={(e) =>
-                          setPainIntensity({ ...painIntensity, [area]: Number(e.target.value) })
-                        }
+                        value={intensity}
+                        onChange={(e) => {
+                          const newMap = new Map(painIntensity);
+                          newMap.set(area, Number(e.target.value));
+                          setPainIntensity(newMap);
+                        }}
                         className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
                       />
                       <div className="flex justify-between text-xs text-slate-500 mt-1">
-                        <span>Lieve</span>
-                        <span>Moderato</span>
-                        <span>Severo</span>
+                        <span>1-3: Lieve</span>
+                        <span>4-7: Moderato</span>
+                        <span>8-10: Severo</span>
                       </div>
                     </div>
                   );
