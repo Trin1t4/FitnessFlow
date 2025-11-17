@@ -19,10 +19,65 @@ export default function Workout() {
 
   async function loadProgram() {
     try {
-      // Prima prova a caricare da localStorage (modalità senza auth)
+      // ✅ PRIORITIZE SUPABASE: Try cloud data first if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        console.log('[WORKOUT] User authenticated, loading from Supabase...');
+        const { data, error } = await supabase
+          .from('training_programs')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_active', true)  // ✅ FIX: is_active (boolean), not 'status'
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (!error && data) {
+          console.log('[WORKOUT] ✅ Loaded from Supabase:', data.id);
+
+          // ✅ FIX: Convert Supabase format (weekly_split) → Workout format (weekly_schedule)
+          if (data.weekly_split?.days?.length > 0) {
+            const formattedProgram = {
+              name: data.name || 'Il Tuo Programma',
+              description: data.notes || '',
+              weekly_schedule: data.weekly_split.days.map((day: any) => ({
+                dayName: day.dayName || day.name || 'Workout',
+                exercises: (day.exercises || [])
+                  .filter((ex: any) => ex && ex.name && ex.pattern) // ✅ Filter undefined
+                  .map((ex: any) => ({
+                    name: ex.name,
+                    sets: ex.sets || 3,
+                    reps: ex.reps?.toString() || '10',
+                    rest: parseRestToSeconds(ex.rest) || 90,
+                    notes: ex.notes || '',
+                    type: 'standard',
+                    intensity: ex.intensity,
+                    baseline: ex.baseline
+                  }))
+              }))
+            };
+            setProgram(formattedProgram);
+          } else {
+            // Fallback: Old format without weekly_split
+            setProgram({
+              name: data.name || 'Il Tuo Programma',
+              description: data.notes || '',
+              weekly_schedule: generateWeeklySchedule(data)
+            });
+          }
+
+          setLoading(false);
+          return;
+        } else {
+          console.warn('[WORKOUT] Supabase load failed:', error?.message);
+        }
+      }
+
+      // Fallback: Try localStorage (for offline mode or no user)
       const localProgram = localStorage.getItem('currentProgram');
       if (localProgram) {
-        console.log('[WORKOUT] Loading program from localStorage');
+        console.log('[WORKOUT] ⚠️ Loading from localStorage (fallback)');
         const parsedProgram = JSON.parse(localProgram);
 
         // Converti formato Dashboard -> formato Workout
@@ -37,33 +92,10 @@ export default function Workout() {
         return;
       }
 
-      // Fallback: prova Supabase
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.log('[WORKOUT] No program in localStorage and no user authenticated');
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('training_programs')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error) {
-        console.error('[WORKOUT] Error loading from Supabase:', error);
-        setLoading(false);
-        return;
-      }
-
-      setProgram(data);
+      console.log('[WORKOUT] No program found in Supabase or localStorage');
+      setLoading(false);
     } catch (error) {
       console.error('[WORKOUT] Error:', error);
-    } finally {
       setLoading(false);
     }
   }
@@ -82,9 +114,10 @@ export default function Workout() {
         ? (i % 2 === 0 ? 'Upper Body' : 'Lower Body')
         : `Day ${i + 1}`;
 
-      schedule.push({
-        dayName: dayName,
-        exercises: exercises.map((ex: any) => {
+      // ✅ FIX CRITICO: Filter out null/undefined BEFORE mapping
+      const validExercises = exercises
+        .filter((ex: any) => ex !== null && ex !== undefined)
+        .map((ex: any) => {
           // ✅ Gestione NUOVO formato oggetti da Dashboard.tsx (baseline-aware)
           if (typeof ex === 'object' && ex.name) {
             // Nuovo formato: oggetto con { name, sets, reps, rest, intensity, notes, baseline }
@@ -114,17 +147,15 @@ export default function Workout() {
               type: 'standard'
             };
           } else {
-            // Fallback
-            return {
-              name: 'Unknown Exercise',
-              sets: 3,
-              reps: '10',
-              rest: 90,
-              notes: '',
-              type: 'standard'
-            };
+            // Should not reach here after filter, but safety fallback
+            return null;
           }
         })
+        .filter((ex: any) => ex !== null); // ✅ Remove any nulls from unknown formats
+
+      schedule.push({
+        dayName: dayName,
+        exercises: validExercises
       });
     }
 
