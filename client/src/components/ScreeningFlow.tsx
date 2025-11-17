@@ -274,9 +274,13 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
     }
 
     // 4. Score finale ponderato
+    // ✅ FIX PROPORZIONI: Practical conta DI PIÙ del quiz teorico!
+    // - Quiz teorico è utile ma secondario (20%)
+    // - Test pratici sono LA cosa più importante (60%)
+    // - Parametri fisici sono contesto (20%)
     const finalScore = (
-      quizScore * 0.5 +        // 50% peso al quiz teorico
-      parseFloat(practicalScore) * 0.3 +  // 30% peso ai test pratici
+      quizScore * 0.2 +                    // 20% peso al quiz teorico
+      parseFloat(practicalScore) * 0.6 +   // 60% peso ai test pratici (PRINCIPALE!)
       parseFloat(physicalScore) * 0.2      // 20% peso ai parametri fisici
     ).toFixed(1);
 
