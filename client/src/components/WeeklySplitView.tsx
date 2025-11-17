@@ -202,7 +202,8 @@ export function WeeklySplitCompact({ weeklySplit }: { weeklySplit: WeeklySplit }
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
       {weeklySplit.days.map((day, index) => {
-        const mainExercises = day.exercises.filter(ex => ex.pattern !== 'corrective');
+        const validExercises = day.exercises.filter(ex => ex && ex.name && ex.pattern);
+        const mainExercises = validExercises.filter(ex => ex.pattern !== 'corrective');
         return (
           <div
             key={index}

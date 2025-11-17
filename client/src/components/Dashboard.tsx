@@ -719,7 +719,7 @@ export default function Dashboard() {
                                   <p className={`font-semibold text-base ${
                                     isCorrective ? 'text-blue-300' : wasReplaced ? 'text-amber-300' : 'text-white'
                                   }`}>
-                                    {ex.name || ex}
+                                    {ex?.name || 'Unknown Exercise'}
                                     {isCorrective && <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">(Correttivo)</span>}
                                     {wasReplaced && <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">(Sostituito)</span>}
                                   </p>

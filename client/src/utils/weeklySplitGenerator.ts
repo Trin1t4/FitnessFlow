@@ -112,6 +112,11 @@ function generate3DayFullBody(options: SplitGeneratorOptions): WeeklySplit {
   const correctives = generateCorrectiveExercises(painAreas);
   days.forEach(day => day.exercises.push(...correctives));
 
+  // ✅ VALIDAZIONE: Rimuovi esercizi undefined/incompleti
+  days.forEach(day => {
+    day.exercises = day.exercises.filter(ex => ex && ex.name && ex.pattern);
+  });
+
   return {
     splitName: 'FULL BODY A/B/C (3x/week)',
     description: 'Allenamento total body con varianti diverse ogni sessione. Ottimale per frequenza 3x/settimana.',
@@ -189,6 +194,11 @@ function generate4DayUpperLower(options: SplitGeneratorOptions): WeeklySplit {
   // Aggiungi correttivi
   const correctives = generateCorrectiveExercises(painAreas);
   days.forEach(day => day.exercises.push(...correctives));
+
+  // ✅ VALIDAZIONE: Rimuovi esercizi undefined/incompleti
+  days.forEach(day => {
+    day.exercises = day.exercises.filter(ex => ex && ex.name && ex.pattern);
+  });
 
   return {
     splitName: 'UPPER/LOWER (4x/week)',
@@ -294,6 +304,11 @@ function generate6DayPPL(options: SplitGeneratorOptions): WeeklySplit {
   // Aggiungi correttivi
   const correctives = generateCorrectiveExercises(painAreas);
   days.forEach(day => day.exercises.push(...correctives));
+
+  // ✅ VALIDAZIONE: Rimuovi esercizi undefined/incompleti
+  days.forEach(day => {
+    day.exercises = day.exercises.filter(ex => ex && ex.name && ex.pattern);
+  });
 
   return {
     splitName: 'PUSH/PULL/LEGS (6x/week)',
