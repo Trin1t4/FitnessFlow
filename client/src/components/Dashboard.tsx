@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff } from 'lucide-react';
+import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut } from 'lucide-react';
 import { validateAndNormalizePainAreas } from '../utils/validators';
 import { generateProgram, generateProgramWithSplit } from '../utils/programGenerator';
 import { motion } from 'framer-motion';
@@ -404,6 +404,12 @@ export default function Dashboard() {
         setHasProgram(true);
         setSyncStatus(saveResult.fromCache ? 'offline' : 'synced');
 
+        // ✅ CLEANUP: Remove stale localStorage since we have fresh Supabase data
+        if (!saveResult.fromCache) {
+          console.log('🧹 Clearing stale localStorage cache (using Supabase as source of truth)');
+          localStorage.removeItem('currentProgram');
+        }
+
         // Refresh history
         await loadProgramHistory();
 
@@ -466,6 +472,18 @@ export default function Dashboard() {
     };
   }
 
+  // ✅ Logout function
+  const handleLogout = async () => {
+    try {
+      console.log('🚪 Logging out...');
+      await supabase.auth.signOut();
+      localStorage.clear(); // Clean all local data
+      navigate('/login');
+    } catch (error) {
+      console.error('❌ Error logging out:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-6xl mx-auto">
@@ -509,6 +527,17 @@ export default function Dashboard() {
                 Storico ({programHistory.length})
               </motion.button>
             )}
+
+            {/* Logout Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleLogout}
+              className="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white px-4 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-slate-500/20 transition-all duration-300"
+            >
+              <LogOut className="w-4 h-4" />
+              Esci
+            </motion.button>
 
             {/* Reset Button */}
             <motion.button
