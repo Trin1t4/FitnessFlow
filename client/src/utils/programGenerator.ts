@@ -107,6 +107,7 @@ export interface ProgramGeneratorOptions {
 
 /**
  * Genera programma personalizzato baseline-aware
+ * DEPRECATO: Usare generateProgramWithSplit() per split intelligenti
  *
  * @param options - Configurazione completa per generazione programma
  * @returns - Programma completo con esercizi e correttivi
@@ -248,5 +249,54 @@ export function generateProgram(options: ProgramGeneratorOptions): Omit<Program,
     goal,
     frequency,
     notes: `Programma personalizzato basato sulle TUE baseline. Parti da dove sei realmente, non da template generici.`
+  };
+}
+
+/**
+ * NUOVA FUNZIONE - Genera programma con split intelligente
+ * Sistema avanzato con giorni diversi e varianti
+ *
+ * @param options - Configurazione completa per generazione programma
+ * @returns - Programma completo con split settimanale
+ */
+export function generateProgramWithSplit(options: ProgramGeneratorOptions): any {
+  // Import dinamico per evitare circular dependencies
+  const { generateWeeklySplit } = require('./weeklySplitGenerator');
+
+  console.log('🎯 GENERAZIONE PROGRAMMA CON SPLIT INTELLIGENTE');
+  console.log('📍 Location:', options.location);
+  console.log('🏋️ Training Type:', options.trainingType);
+  console.log('📊 Frequenza:', options.frequency);
+
+  // Genera split settimanale
+  const weeklySplit = generateWeeklySplit({
+    level: options.level,
+    goal: options.goal,
+    location: options.location,
+    trainingType: options.trainingType,
+    frequency: options.frequency,
+    baselines: options.baselines,
+    painAreas: options.painAreas
+  });
+
+  console.log(`✅ Split generato: ${weeklySplit.splitName}`);
+  console.log(`📅 Giorni di allenamento: ${weeklySplit.days.length}`);
+
+  // Converte in formato Program compatibile con backend
+  // Appiattisci tutti gli esercizi per compatibilità
+  const allExercises: Exercise[] = [];
+  weeklySplit.days.forEach(day => {
+    allExercises.push(...day.exercises);
+  });
+
+  return {
+    name: `Programma ${options.level.toUpperCase()} - ${options.goal}`,
+    split: weeklySplit.splitName,
+    exercises: allExercises,
+    level: options.level,
+    goal: options.goal,
+    frequency: options.frequency,
+    notes: `${weeklySplit.description}\n\nProgramma personalizzato basato sulle TUE baseline. Ogni giorno ha esercizi diversi per stimoli ottimali.`,
+    weeklySplit: weeklySplit // Dati completi dello split
   };
 }

@@ -55,6 +55,19 @@ export interface Exercise {
   weight?: string; // per esercizi gym con carico
 }
 
+export interface DayWorkout {
+  dayNumber: number;
+  dayName: string;
+  focus: string;
+  exercises: Exercise[];
+}
+
+export interface WeeklySplit {
+  splitName: string;
+  description: string;
+  days: DayWorkout[];
+}
+
 export interface Program {
   name: string;
   level: Level;
@@ -65,6 +78,7 @@ export interface Program {
   correctiveExercises?: Exercise[];
   notes: string;
   createdAt: string;
+  weeklySplit?: WeeklySplit; // NUOVO: Split dettagliato per giorni
 }
 
 export interface WeeklySchedule {

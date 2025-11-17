@@ -2,10 +2,19 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2 } from 'lucide-react';
+import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff } from 'lucide-react';
 import { validateAndNormalizePainAreas } from '../utils/validators';
-import { generateProgram } from '../utils/programGenerator';
+import { generateProgram, generateProgramWithSplit } from '../utils/programGenerator';
 import { motion } from 'framer-motion';
+import WeeklySplitView from './WeeklySplitView';
+import {
+  createProgram,
+  getActiveProgram,
+  getAllPrograms,
+  migrateLocalStorageToSupabase,
+  syncProgramsFromCloud,
+  TrainingProgram
+} from '../lib/programService';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -15,6 +24,9 @@ export default function Dashboard() {
   const [generatingProgram, setGeneratingProgram] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showProgramHistory, setShowProgramHistory] = useState(false);
+  const [programHistory, setProgramHistory] = useState<TrainingProgram[]>([]);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'offline' | 'syncing'>('synced');
   const [dataStatus, setDataStatus] = useState({
     onboarding: null as any,
     quiz: null as any,
@@ -23,22 +35,78 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadData();
+    initializePrograms();
   }, []);
+
+  // NEW: Initialize programs from Supabase with migration
+  async function initializePrograms() {
+    try {
+      console.log('🔄 Initializing programs from Supabase...');
+
+      // Try to migrate localStorage to Supabase if needed
+      await migrateLocalStorageToSupabase();
+
+      // Load active program from Supabase
+      await loadProgramFromSupabase();
+
+      // Load program history
+      await loadProgramHistory();
+
+    } catch (error) {
+      console.error('❌ Error initializing programs:', error);
+      setSyncStatus('offline');
+    }
+  }
+
+  // NEW: Load active program from Supabase
+  async function loadProgramFromSupabase() {
+    try {
+      setSyncStatus('syncing');
+      const result = await getActiveProgram();
+
+      if (result.success && result.data) {
+        console.log('✅ Loaded active program from Supabase:', result.data.name);
+        setProgram(result.data);
+        setHasProgram(true);
+        setSyncStatus(result.fromCache ? 'offline' : 'synced');
+      } else {
+        console.log('ℹ️ No active program in Supabase');
+        // Fallback to localStorage
+        const savedProgram = localStorage.getItem('currentProgram');
+        if (savedProgram) {
+          setProgram(JSON.parse(savedProgram));
+          setHasProgram(true);
+        }
+        setSyncStatus('offline');
+      }
+    } catch (error) {
+      console.error('❌ Error loading program:', error);
+      setSyncStatus('offline');
+    }
+  }
+
+  // NEW: Load program history
+  async function loadProgramHistory() {
+    try {
+      const result = await getAllPrograms();
+      if (result.success && result.data) {
+        setProgramHistory(result.data);
+        console.log(`✅ Loaded ${result.data.length} programs from history`);
+      }
+    } catch (error) {
+      console.error('❌ Error loading program history:', error);
+    }
+  }
 
   function loadData() {
     // Carica TUTTI i dati salvati
     const onboarding = localStorage.getItem('onboarding_data');
     const quiz = localStorage.getItem('quiz_data');
     const screening = localStorage.getItem('screening_data');
-    const savedProgram = localStorage.getItem('currentProgram');
 
     if (onboarding) setDataStatus(prev => ({ ...prev, onboarding: JSON.parse(onboarding) }));
     if (quiz) setDataStatus(prev => ({ ...prev, quiz: JSON.parse(quiz) }));
     if (screening) setDataStatus(prev => ({ ...prev, screening: JSON.parse(screening) }));
-    if (savedProgram) {
-      setProgram(JSON.parse(savedProgram));
-      setHasProgram(true);
-    }
 
     console.log('📊 DATA STATUS:', {
       hasOnboarding: !!onboarding,
@@ -259,6 +327,7 @@ export default function Dashboard() {
   async function handleGenerateProgram() {
     try {
       setGeneratingProgram(true);
+      setSyncStatus('syncing');
 
       // USA I DATI SALVATI DA SCREENING
       const { onboarding, quiz, screening } = dataStatus;
@@ -270,7 +339,7 @@ export default function Dashboard() {
       }
 
       const userLevel = screening.level;
-      
+
       // Mapping goal
       const goalMap: Record<string, string> = {
         'forza': 'strength',
@@ -298,15 +367,61 @@ export default function Dashboard() {
       // Genera localmente
       const generatedProgram = generateLocalProgram(userLevel, mappedGoal, onboarding);
 
-      // Salva il programma
-      localStorage.setItem('currentProgram', JSON.stringify(generatedProgram));
-      setProgram(generatedProgram);
-      setHasProgram(true);
+      // NEW: Salva su Supabase (con fallback localStorage)
+      console.log('💾 Saving program to Supabase...');
+      const saveResult = await createProgram({
+        name: generatedProgram.name,
+        description: `Programma ${userLevel} per ${mappedGoal}`,
+        level: userLevel as 'beginner' | 'intermediate' | 'advanced',
+        goal: mappedGoal,
+        location: generatedProgram.location || 'home',
+        training_type: onboarding?.trainingType || 'bodyweight',
+        frequency: generatedProgram.frequency || 3,
+        split: generatedProgram.split,
+        days_per_week: generatedProgram.frequency || 3,
+        weekly_split: generatedProgram.weeklySplit || [],
+        exercises: generatedProgram.exercises || [],
+        total_weeks: generatedProgram.totalWeeks || 8,
+        start_date: new Date().toISOString(),
+        is_active: true,
+        status: 'active',
+        pain_areas: onboarding?.painAreas || [],
+        pattern_baselines: screening?.patternBaselines || {},
+        available_equipment: onboarding?.equipment || {},
+        metadata: {
+          screeningScores: {
+            final: screening.finalScore,
+            quiz: quiz?.score,
+            practical: screening.practicalScore,
+            physical: screening.physicalScore
+          }
+        }
+      });
 
-      alert(`✅ Programma ${userLevel.toUpperCase()} per ${mappedGoal.toUpperCase()} generato con successo!`);
+      if (saveResult.success) {
+        console.log('✅ Program saved to Supabase:', saveResult.data?.id);
+        setProgram(saveResult.data);
+        setHasProgram(true);
+        setSyncStatus(saveResult.fromCache ? 'offline' : 'synced');
+
+        // Refresh history
+        await loadProgramHistory();
+
+        alert(`✅ Programma ${userLevel.toUpperCase()} per ${mappedGoal.toUpperCase()} generato e salvato su cloud!`);
+      } else {
+        console.warn('⚠️ Failed to save to Supabase, using localStorage:', saveResult.error);
+        // Fallback to localStorage
+        localStorage.setItem('currentProgram', JSON.stringify(generatedProgram));
+        setProgram(generatedProgram);
+        setHasProgram(true);
+        setSyncStatus('offline');
+
+        alert(`⚠️ Programma generato (salvato localmente)\n\n${saveResult.error || 'Errore sincronizzazione cloud'}`);
+      }
 
     } catch (error) {
       console.error('❌ Error:', error);
+      setSyncStatus('offline');
       alert('Errore nella generazione del programma');
     } finally {
       setGeneratingProgram(false);
@@ -330,8 +445,8 @@ export default function Dashboard() {
     const rawPainAreas = onboarding?.painAreas || [];
     const painAreas = validateAndNormalizePainAreas(rawPainAreas);
 
-    // Usa la funzione estratta da programGenerator.ts
-    const program = generateProgram({
+    // Usa la NUOVA funzione con split intelligente
+    const program = generateProgramWithSplit({
       level: level as any,
       goal: goal as any,
       location,
@@ -354,7 +469,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-6xl mx-auto">
-        {/* Header con bottone Reset */}
+        {/* Header con bottoni Reset e History + Sync Status */}
         <div className="flex justify-between items-center mb-8">
           <motion.h1
             initial={{ opacity: 0, y: -20 }}
@@ -364,15 +479,48 @@ export default function Dashboard() {
           >
             Dashboard Intelligente
           </motion.h1>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowResetModal(true)}
-            className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-red-500/20 transition-all duration-300"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Reset
-          </motion.button>
+
+          <div className="flex items-center gap-3">
+            {/* Sync Status Indicator */}
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+              syncStatus === 'synced' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' :
+              syncStatus === 'syncing' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30' :
+              'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+            }`}>
+              {syncStatus === 'synced' ? <Cloud className="w-4 h-4" /> :
+               syncStatus === 'syncing' ? <Cloud className="w-4 h-4 animate-pulse" /> :
+               <CloudOff className="w-4 h-4" />}
+              <span className="font-medium">
+                {syncStatus === 'synced' ? 'Sincronizzato' :
+                 syncStatus === 'syncing' ? 'Sincronizzazione...' :
+                 'Offline'}
+              </span>
+            </div>
+
+            {/* Program History Button */}
+            {programHistory.length > 1 && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowProgramHistory(!showProgramHistory)}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all duration-300"
+              >
+                <History className="w-4 h-4" />
+                Storico ({programHistory.length})
+              </motion.button>
+            )}
+
+            {/* Reset Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowResetModal(true)}
+              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-red-500/20 transition-all duration-300"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Reset
+            </motion.button>
+          </div>
         </div>
 
         {/* Status Cards */}
@@ -532,59 +680,67 @@ export default function Dashboard() {
                     <p className="text-slate-300">Frequenza: <span className="font-display font-semibold text-white">{program.frequency}x/settimana</span></p>
                   </div>
 
-                  <div>
-                    <h4 className="font-display font-semibold text-lg mb-4">Esercizi (basati sulle tue baseline):</h4>
-                    <ul className="space-y-3">
-                      {program.exercises?.map((ex: any, i: number) => {
-                        const isCorrective = ex.pattern === 'corrective';
-                        const wasReplaced = ex.wasReplaced;
+                  {/* NUOVO: Visualizza split settimanale se disponibile */}
+                  {program.weeklySplit ? (
+                    <div>
+                      <h4 className="font-display font-semibold text-lg mb-4">Programma Settimanale:</h4>
+                      <WeeklySplitView weeklySplit={program.weeklySplit} showDetails={true} />
+                    </div>
+                  ) : (
+                    <div>
+                      <h4 className="font-display font-semibold text-lg mb-4">Esercizi (basati sulle tue baseline):</h4>
+                      <ul className="space-y-3">
+                        {program.exercises?.map((ex: any, i: number) => {
+                          const isCorrective = ex.pattern === 'corrective';
+                          const wasReplaced = ex.wasReplaced;
 
-                        return (
-                          <motion.li
-                            key={i}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.3, delay: i * 0.05 }}
-                            whileHover={{ scale: 1.01 }}
-                            className={`rounded-xl p-4 border backdrop-blur-sm transition-all duration-200 ${
-                              isCorrective
-                                ? 'bg-blue-500/10 border-blue-500/30 hover:border-blue-500/50'
-                                : wasReplaced
-                                ? 'bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50'
-                                : 'bg-slate-800/50 border-slate-600/50 hover:border-emerald-500/30'
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <span className={`font-mono font-bold text-lg ${
-                                isCorrective ? 'text-blue-400' : wasReplaced ? 'text-amber-400' : 'text-emerald-400'
-                              }`}>
-                                {isCorrective ? '🔧' : wasReplaced ? '⚠️' : `${i + 1}.`}
-                              </span>
-                              <div className="flex-1">
-                                <p className={`font-semibold text-base ${
-                                  isCorrective ? 'text-blue-300' : wasReplaced ? 'text-amber-300' : 'text-white'
+                          return (
+                            <motion.li
+                              key={i}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.3, delay: i * 0.05 }}
+                              whileHover={{ scale: 1.01 }}
+                              className={`rounded-xl p-4 border backdrop-blur-sm transition-all duration-200 ${
+                                isCorrective
+                                  ? 'bg-blue-500/10 border-blue-500/30 hover:border-blue-500/50'
+                                  : wasReplaced
+                                  ? 'bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50'
+                                  : 'bg-slate-800/50 border-slate-600/50 hover:border-emerald-500/30'
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <span className={`font-mono font-bold text-lg ${
+                                  isCorrective ? 'text-blue-400' : wasReplaced ? 'text-amber-400' : 'text-emerald-400'
                                 }`}>
-                                  {ex.name || ex}
-                                  {isCorrective && <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">(Correttivo)</span>}
-                                  {wasReplaced && <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">(Sostituito)</span>}
-                                </p>
-                                {ex.sets && ex.reps && (
-                                  <p className="text-sm text-slate-400 mt-2 font-medium">
-                                    <span className="font-mono text-emerald-400">{ex.sets} sets</span> × <span className="font-mono text-emerald-400">{ex.reps} reps</span>
-                                    {ex.intensity && <span className="text-blue-400 font-mono"> @ {ex.intensity}</span>}
-                                    {' • '}Rest: <span className="font-mono">{ex.rest}</span>
+                                  {isCorrective ? '🔧' : wasReplaced ? '⚠️' : `${i + 1}.`}
+                                </span>
+                                <div className="flex-1">
+                                  <p className={`font-semibold text-base ${
+                                    isCorrective ? 'text-blue-300' : wasReplaced ? 'text-amber-300' : 'text-white'
+                                  }`}>
+                                    {ex.name || ex}
+                                    {isCorrective && <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">(Correttivo)</span>}
+                                    {wasReplaced && <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">(Sostituito)</span>}
                                   </p>
-                                )}
-                                {ex.notes && (
-                                  <p className="text-xs text-slate-500 mt-2 italic">{ex.notes}</p>
-                                )}
+                                  {ex.sets && ex.reps && (
+                                    <p className="text-sm text-slate-400 mt-2 font-medium">
+                                      <span className="font-mono text-emerald-400">{ex.sets} sets</span> × <span className="font-mono text-emerald-400">{ex.reps} reps</span>
+                                      {ex.intensity && <span className="text-blue-400 font-mono"> @ {ex.intensity}</span>}
+                                      {' • '}Rest: <span className="font-mono">{ex.rest}</span>
+                                    </p>
+                                  )}
+                                  {ex.notes && (
+                                    <p className="text-xs text-slate-500 mt-2 italic">{ex.notes}</p>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          </motion.li>
-                        );
-                      })}
-                    </ul>
-                  </div>
+                            </motion.li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
 
                   {program.notes && (
                     <div className="mt-4 pt-4 border-t border-slate-600/50">
@@ -707,6 +863,151 @@ export default function Dashboard() {
                 Annulla
               </motion.button>
             </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Modal Program History */}
+      {showProgramHistory && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={() => setShowProgramHistory(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
+            className="bg-slate-800/90 backdrop-blur-xl rounded-2xl p-6 max-w-4xl w-full border border-slate-700/50 shadow-2xl max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-display font-bold text-white flex items-center gap-3">
+                <History className="w-8 h-8 text-blue-400" />
+                Storico Programmi
+              </h2>
+              <button
+                onClick={() => setShowProgramHistory(false)}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {programHistory.map((prog, index) => {
+                const isActive = prog.is_active;
+                const createdDate = prog.created_at ? new Date(prog.created_at).toLocaleDateString('it-IT') : 'N/A';
+                const startDate = prog.start_date ? new Date(prog.start_date).toLocaleDateString('it-IT') : 'N/A';
+
+                return (
+                  <motion.div
+                    key={prog.id || index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`p-5 rounded-xl border backdrop-blur-sm transition-all duration-200 ${
+                      isActive
+                        ? 'bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500/50'
+                        : 'bg-slate-700/50 border-slate-600/50 hover:border-slate-500/50'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <h3 className={`text-xl font-display font-bold mb-2 ${isActive ? 'text-emerald-300' : 'text-white'}`}>
+                          {prog.name}
+                          {isActive && (
+                            <span className="ml-3 text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              ATTIVO
+                            </span>
+                          )}
+                        </h3>
+                        {prog.description && (
+                          <p className="text-sm text-slate-400 mb-3">{prog.description}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                      <div className="text-sm">
+                        <span className="text-slate-400">Livello:</span>
+                        <p className="font-semibold text-white">{prog.level?.toUpperCase()}</p>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-slate-400">Obiettivo:</span>
+                        <p className="font-semibold text-white">{prog.goal}</p>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-slate-400">Frequenza:</span>
+                        <p className="font-semibold text-white">{prog.frequency}x/settimana</p>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-slate-400">Split:</span>
+                        <p className="font-semibold text-white">{prog.split}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-xs text-slate-400 mb-4">
+                      <div>Creato: {createdDate}</div>
+                      <div>Inizio: {startDate}</div>
+                    </div>
+
+                    {!isActive && (
+                      <div className="flex gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={async () => {
+                            if (confirm(`Vuoi impostare "${prog.name}" come programma attivo?`)) {
+                              setSyncStatus('syncing');
+                              const result = await import('../lib/programService').then(m => m.setActiveProgram(prog.id!));
+                              if (result.success) {
+                                setProgram(result.data);
+                                setHasProgram(true);
+                                setProgramHistory(prev => prev.map(p => ({
+                                  ...p,
+                                  is_active: p.id === prog.id
+                                })));
+                                setSyncStatus('synced');
+                                alert('Programma attivato con successo!');
+                              } else {
+                                setSyncStatus('offline');
+                                alert('Errore: ' + result.error);
+                              }
+                            }
+                          }}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm font-semibold transition-colors"
+                        >
+                          Attiva Programma
+                        </motion.button>
+
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setProgram(prog);
+                            setHasProgram(true);
+                            setShowProgramHistory(false);
+                          }}
+                          className="flex-1 bg-slate-600 hover:bg-slate-500 text-white py-2 px-4 rounded-lg text-sm font-semibold transition-colors"
+                        >
+                          Visualizza
+                        </motion.button>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {programHistory.length === 0 && (
+              <div className="text-center py-12 text-slate-400">
+                <History className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                <p>Nessun programma salvato</p>
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}
