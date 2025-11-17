@@ -104,6 +104,7 @@ export interface ProgramGeneratorOptions {
   baselines: PatternBaselines;
   painAreas: NormalizedPainArea[];
   equipment?: any;
+  muscularFocus?: string; // glutei, addome, petto, dorso, spalle, gambe, braccia, polpacci
 }
 
 /**
@@ -268,14 +269,15 @@ export function generateProgramWithSplit(options: ProgramGeneratorOptions): any 
   console.log('🏋️ Training Type:', options.trainingType);
   console.log('📊 Frequenza:', options.frequency);
 
-  // TODO: Implementare logica muscularFocus
-  // Se options.muscularFocus è presente (glutei, addome, petto, ecc.):
-  // 1. Aumentare volume (sets/reps) per esercizi target focus
-  // 2. Aggiungere 1-2 esercizi di isolamento per gruppo muscolare focus
-  // 3. Posizionare esercizi focus all'inizio della sessione (quando fresco)
-  // Esempio: se focus='petto' → aumentare sets di push exercises, aggiungere fly/crossover
+  // 💪 Muscular Focus System
+  if (options.muscularFocus) {
+    console.log('💪 Focus Muscolare:', options.muscularFocus.toUpperCase());
+    console.log('   → Volume aumentato per esercizi target');
+    console.log('   → Esercizi di isolamento aggiunti');
+    console.log('   → Focus esercizi posizionati all\'inizio');
+  }
 
-  // Genera split settimanale
+  // Genera split settimanale con muscular focus
   const weeklySplit = generateWeeklySplit({
     level: options.level,
     goal: options.goal,
@@ -283,7 +285,8 @@ export function generateProgramWithSplit(options: ProgramGeneratorOptions): any 
     trainingType: options.trainingType,
     frequency: options.frequency,
     baselines: options.baselines,
-    painAreas: options.painAreas
+    painAreas: options.painAreas,
+    muscularFocus: options.muscularFocus // ✅ Pass muscular focus to generator
   });
 
   console.log(`✅ Split generato: ${weeklySplit.splitName}`);

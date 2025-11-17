@@ -41,6 +41,120 @@ interface SplitGeneratorOptions {
   frequency: number;
   baselines: PatternBaselines;
   painAreas: NormalizedPainArea[];
+  muscularFocus?: string; // glutei, addome, petto, dorso, spalle, gambe, braccia, polpacci
+}
+
+/**
+ * MUSCULAR FOCUS SYSTEM
+ * Mappa focus muscolari → pattern di esercizi da enfatizzare
+ */
+const MUSCULAR_FOCUS_PATTERNS: Record<string, string[]> = {
+  glutei: ['lower_push', 'lower_pull'], // Squat, Deadlift, Hip Hinge
+  addome: ['core'],
+  petto: ['horizontal_push'], // Push-ups, Bench Press, Dips
+  dorso: ['horizontal_pull', 'vertical_pull'], // Rows, Pull-ups
+  spalle: ['vertical_push'], // Overhead Press, Pike Push-ups
+  gambe: ['lower_push', 'lower_pull'], // Tutti lower body
+  braccia: ['horizontal_push', 'horizontal_pull'], // Push/Pull compound
+  polpacci: [] // Richiede esercizio dedicato (non pattern, ma isolamento)
+};
+
+/**
+ * Esercizi di isolamento da aggiungere per ogni focus
+ */
+const ISOLATION_EXERCISES: Record<string, { name: string; sets: number; reps: string }[]> = {
+  glutei: [
+    { name: 'Hip Thrust', sets: 3, reps: '12-15' },
+    { name: 'Glute Bridge', sets: 3, reps: '15-20' }
+  ],
+  addome: [
+    { name: 'Plank', sets: 3, reps: '30-60s' },
+    { name: 'Dead Bug', sets: 3, reps: '12-15' }
+  ],
+  petto: [
+    { name: 'Chest Fly', sets: 3, reps: '12-15' },
+    { name: 'Cable Crossover', sets: 3, reps: '12-15' }
+  ],
+  dorso: [
+    { name: 'Face Pull', sets: 3, reps: '15-20' },
+    { name: 'Band Pull Apart', sets: 3, reps: '20-25' }
+  ],
+  spalle: [
+    { name: 'Lateral Raise', sets: 3, reps: '12-15' },
+    { name: 'Front Raise', sets: 3, reps: '12-15' }
+  ],
+  gambe: [
+    { name: 'Bulgarian Split Squat', sets: 3, reps: '10-12' },
+    { name: 'Walking Lunge', sets: 3, reps: '12-15' }
+  ],
+  braccia: [
+    { name: 'Bicep Curl', sets: 3, reps: '12-15' },
+    { name: 'Tricep Extension', sets: 3, reps: '12-15' }
+  ],
+  polpacci: [
+    { name: 'Calf Raise', sets: 4, reps: '15-20' },
+    { name: 'Seated Calf Raise', sets: 3, reps: '20-25' }
+  ]
+};
+
+/**
+ * APPLICA MUSCULAR FOCUS
+ * Modifica un workout day per enfatizzare un distretto muscolare
+ */
+function applyMuscularFocus(
+  day: DayWorkout,
+  focus: string,
+  options: SplitGeneratorOptions
+): void {
+  if (!focus || focus === '') return;
+
+  console.log(`🎯 Applicando focus muscolare: ${focus} su ${day.dayName}`);
+
+  const targetPatterns = MUSCULAR_FOCUS_PATTERNS[focus] || [];
+  const isolationExercises = ISOLATION_EXERCISES[focus] || [];
+
+  // 1. AUMENTA VOLUME per esercizi che matchano il focus (+1 set)
+  day.exercises.forEach(exercise => {
+    if (targetPatterns.includes(exercise.pattern)) {
+      const originalSets = exercise.sets;
+      exercise.sets = Math.min(exercise.sets + 1, 5); // Max 5 sets
+      console.log(`   ↑ ${exercise.name}: ${originalSets} → ${exercise.sets} sets (focus boost)`);
+
+      // Aggiungi nota
+      const focusNote = `💪 Focus ${focus}: volume aumentato`;
+      exercise.notes = exercise.notes
+        ? `${exercise.notes} | ${focusNote}`
+        : focusNote;
+    }
+  });
+
+  // 2. AGGIUNGI ESERCIZI DI ISOLAMENTO (1-2 esercizi)
+  const exercisesToAdd = isolationExercises.slice(0, 2); // Max 2 isolation
+  exercisesToAdd.forEach(iso => {
+    const isolationExercise: Exercise = {
+      pattern: 'accessory' as any,
+      name: iso.name,
+      sets: iso.sets,
+      reps: iso.reps,
+      rest: '60s',
+      intensity: '60-70%',
+      notes: `🎯 Isolamento ${focus} (focus muscolare)`
+    };
+    day.exercises.push(isolationExercise);
+    console.log(`   + Aggiunto: ${iso.name} (${iso.sets}x${iso.reps})`);
+  });
+
+  // 3. RIORDINA: Esercizi focus all'inizio (quando fresco)
+  day.exercises.sort((a, b) => {
+    const aIsFocus = targetPatterns.includes(a.pattern);
+    const bIsFocus = targetPatterns.includes(b.pattern);
+
+    if (aIsFocus && !bIsFocus) return -1; // a prima
+    if (!aIsFocus && bIsFocus) return 1;  // b prima
+    return 0; // mantieni ordine originale
+  });
+
+  console.log(`   ✅ Focus ${focus} applicato: ${day.exercises.length} esercizi totali`);
 }
 
 /**
@@ -116,6 +230,11 @@ function generate3DayFullBody(options: SplitGeneratorOptions): WeeklySplit {
   days.forEach(day => {
     day.exercises = day.exercises.filter(ex => ex && ex.name && ex.pattern);
   });
+
+  // 💪 APPLICA MUSCULAR FOCUS se presente
+  if (options.muscularFocus) {
+    days.forEach(day => applyMuscularFocus(day, options.muscularFocus!, options));
+  }
 
   return {
     splitName: 'FULL BODY A/B/C (3x/week)',
@@ -199,6 +318,11 @@ function generate4DayUpperLower(options: SplitGeneratorOptions): WeeklySplit {
   days.forEach(day => {
     day.exercises = day.exercises.filter(ex => ex && ex.name && ex.pattern);
   });
+
+  // 💪 APPLICA MUSCULAR FOCUS se presente
+  if (options.muscularFocus) {
+    days.forEach(day => applyMuscularFocus(day, options.muscularFocus!, options));
+  }
 
   return {
     splitName: 'UPPER/LOWER (4x/week)',
@@ -309,6 +433,11 @@ function generate6DayPPL(options: SplitGeneratorOptions): WeeklySplit {
   days.forEach(day => {
     day.exercises = day.exercises.filter(ex => ex && ex.name && ex.pattern);
   });
+
+  // 💪 APPLICA MUSCULAR FOCUS se presente
+  if (options.muscularFocus) {
+    days.forEach(day => applyMuscularFocus(day, options.muscularFocus!, options));
+  }
 
   return {
     splitName: 'PUSH/PULL/LEGS (6x/week)',

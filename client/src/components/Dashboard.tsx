@@ -446,12 +446,13 @@ export default function Dashboard() {
     const trainingType = onboarding?.trainingType || 'bodyweight';
     const equipment = onboarding?.equipment || {};
     const baselines = dataStatus.screening?.patternBaselines || {};
+    const muscularFocus = onboarding?.muscularFocus || ''; // ✅ Get muscular focus from onboarding
 
     // Valida pain areas usando il validator estratto
     const rawPainAreas = onboarding?.painAreas || [];
     const painAreas = validateAndNormalizePainAreas(rawPainAreas);
 
-    // Usa la NUOVA funzione con split intelligente
+    // Usa la NUOVA funzione con split intelligente + muscular focus
     const program = generateProgramWithSplit({
       level: level as any,
       goal: goal as any,
@@ -460,7 +461,8 @@ export default function Dashboard() {
       frequency,
       baselines,
       painAreas,
-      equipment
+      equipment,
+      muscularFocus // ✅ Pass muscular focus to generator
     });
 
     // Aggiungi campi richiesti dal formato esistente
