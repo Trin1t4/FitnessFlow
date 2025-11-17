@@ -621,6 +621,80 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
+        {/* Analytics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Workouts Completed */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+          >
+            <Card className="bg-gradient-to-br from-emerald-900/40 to-emerald-800/20 backdrop-blur-xl border-emerald-700/50 shadow-2xl shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all duration-300">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-display flex items-center gap-2 text-emerald-300">
+                  <Activity className="w-5 h-5" />
+                  Allenamenti
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-emerald-400">12</span>
+                  <span className="text-sm text-emerald-300/60">completati</span>
+                </div>
+                <p className="text-xs text-emerald-300/50 mt-2">Ultimo: 2 giorni fa</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Total Weight Lifted */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.5 }}
+          >
+            <Card className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 backdrop-blur-xl border-blue-700/50 shadow-2xl shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-display flex items-center gap-2 text-blue-300">
+                  <Target className="w-5 h-5" />
+                  Volume Totale
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-blue-400">3,850</span>
+                  <span className="text-sm text-blue-300/60">kg</span>
+                </div>
+                <p className="text-xs text-blue-300/50 mt-2">Media: 320 kg/sessione</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Progress */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.6 }}
+          >
+            <Card className="bg-gradient-to-br from-purple-900/40 to-purple-800/20 backdrop-blur-xl border-purple-700/50 shadow-2xl shadow-purple-500/10 hover:shadow-purple-500/20 transition-all duration-300">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-display flex items-center gap-2 text-purple-300">
+                  <Zap className="w-5 h-5" />
+                  Progressione
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-purple-400">+18%</span>
+                  <span className="text-sm text-purple-300/60">vs mese scorso</span>
+                </div>
+                <div className="mt-3 h-2 bg-purple-900/30 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full" style={{ width: '72%' }}></div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
         {/* Main Program Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

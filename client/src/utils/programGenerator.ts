@@ -268,6 +268,13 @@ export function generateProgramWithSplit(options: ProgramGeneratorOptions): any 
   console.log('🏋️ Training Type:', options.trainingType);
   console.log('📊 Frequenza:', options.frequency);
 
+  // TODO: Implementare logica muscularFocus
+  // Se options.muscularFocus è presente (glutei, addome, petto, ecc.):
+  // 1. Aumentare volume (sets/reps) per esercizi target focus
+  // 2. Aggiungere 1-2 esercizi di isolamento per gruppo muscolare focus
+  // 3. Posizionare esercizi focus all'inizio della sessione (quando fresco)
+  // Esempio: se focus='petto' → aumentare sets di push exercises, aggiungere fly/crossover
+
   // Genera split settimanale
   const weeklySplit = generateWeeklySplit({
     level: options.level,

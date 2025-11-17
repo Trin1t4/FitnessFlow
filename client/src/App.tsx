@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Pricing from "./pages/Pricing";
 import Onboarding from "./pages/Onboarding";
 import BodyCompositionScan from "./pages/BodyCompositionScan";
 import BiomechanicsQuiz from "./pages/BiomechanicsQuiz";
@@ -19,6 +20,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/pricing" element={<Pricing />} />
 
         {/* ONBOARDING - Senza auth per test */}
         <Route path="/onboarding" element={<Onboarding />} />

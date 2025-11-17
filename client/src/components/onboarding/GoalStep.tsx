@@ -33,10 +33,23 @@ const SPORTS_OPTIONS = [
   { value: 'altro', label: '🎯 Altro', roles: [] }
 ];
 
+const MUSCULAR_FOCUS_OPTIONS = [
+  { value: '', label: '🎯 Nessun Focus', desc: 'Sviluppo armonico generale' },
+  { value: 'glutei', label: '🍑 Glutei', desc: 'Focus su glutei e femorali' },
+  { value: 'addome', label: '💪 Addome', desc: 'Core e addominali' },
+  { value: 'petto', label: '💪 Petto', desc: 'Pettorale maggiore e minore' },
+  { value: 'dorso', label: '🏋️ Dorso', desc: 'Gran dorsale e trapezi' },
+  { value: 'spalle', label: '💪 Spalle', desc: 'Deltoidi e cuffia' },
+  { value: 'gambe', label: '🦵 Gambe', desc: 'Quadricipiti e polpacci' },
+  { value: 'braccia', label: '💪 Braccia', desc: 'Bicipiti e tricipiti' },
+  { value: 'polpacci', label: '🦵 Polpacci', desc: 'Focus su gastrocnemio' }
+];
+
 export default function GoalStep({ data, onNext }: GoalStepProps) {
   const [goal, setGoal] = useState(data.goal || '');
   const [sport, setSport] = useState(data.sport || '');
   const [sportRole, setSportRole] = useState(data.sportRole || '');
+  const [muscularFocus, setMuscularFocus] = useState(data.muscularFocus || '');
 
   const selectedSport = SPORTS_OPTIONS.find(s => s.value === sport);
   const sportRoles = selectedSport?.roles || [];
@@ -48,7 +61,8 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
     onNext({
       goal,
       sport: goal === 'prestazioni_sportive' ? sport : '',
-      sportRole: goal === 'prestazioni_sportive' ? sportRole : ''
+      sportRole: goal === 'prestazioni_sportive' ? sportRole : '',
+      muscularFocus: (goal === 'ipertrofia' || goal === 'tonificazione') ? muscularFocus : ''
     });
   };
 
@@ -99,6 +113,45 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
               </ul>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ✅ MUSCULAR FOCUS - Condizionale per ipertrofia/tonificazione */}
+      {(goal === 'ipertrofia' || goal === 'tonificazione') && (
+        <div className="space-y-4 bg-slate-700/30 rounded-lg p-5 border border-slate-600 animate-in fade-in duration-300">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-3">
+              💪 Focus Muscolare (opzionale)
+            </label>
+            <p className="text-xs text-slate-400 mb-4">
+              Vuoi dare priorità a un distretto muscolare specifico? Il programma aumenterà il volume di lavoro per quella zona.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {MUSCULAR_FOCUS_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setMuscularFocus(opt.value)}
+                className={`p-3 rounded-lg border text-left transition-all ${
+                  muscularFocus === opt.value
+                    ? 'border-emerald-500 bg-emerald-500/20 text-white'
+                    : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
+                }`}
+              >
+                <div className="font-bold text-sm mb-0.5">{opt.label}</div>
+                <div className="text-xs text-slate-400">{opt.desc}</div>
+              </button>
+            ))}
+          </div>
+
+          {muscularFocus && muscularFocus !== '' && (
+            <div className="bg-emerald-500/10 border border-emerald-500 rounded-lg p-3">
+              <p className="text-sm text-emerald-200">
+                ✓ Il programma aumenterà il volume di lavoro per {MUSCULAR_FOCUS_OPTIONS.find(o => o.value === muscularFocus)?.label.split(' ')[1].toLowerCase()}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

@@ -78,6 +78,7 @@ export interface OnboardingData {
   goal?: Goal;
   sport?: string; // if goal is sport_performance
   sportRole?: string;
+  muscularFocus?: string; // if goal is ipertrofia or tonificazione
 
   // Step 6: Pain/Injury
   painAreas?: PainEntry[];
