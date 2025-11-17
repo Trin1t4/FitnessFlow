@@ -34,10 +34,34 @@ export default function Onboarding() {
   // ✅ Salva onboarding in Supabase
   const saveOnboardingToDatabase = async (onboardingData: Partial<OnboardingData>) => {
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        console.error('[ONBOARDING] ❌ User not authenticated:', userError);
+      // ✅ FIX: Retry mechanism per gestire session loading ritardata
+      // (es: dopo email confirmation, sessione potrebbe non essere pronta subito)
+      let user = null;
+      let attempts = 0;
+      const maxAttempts = 3;
+
+      while (!user && attempts < maxAttempts) {
+        attempts++;
+        console.log(`[ONBOARDING] 🔄 Attempt ${attempts}/${maxAttempts} to get user session...`);
+
+        const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+
+        if (currentUser) {
+          user = currentUser;
+          console.log('[ONBOARDING] ✅ User session found:', user.email);
+          break;
+        }
+
+        if (attempts < maxAttempts) {
+          console.log('[ONBOARDING] ⏳ Session not ready, waiting 1 second...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          console.error('[ONBOARDING] ❌ User not authenticated after', maxAttempts, 'attempts:', userError);
+          throw new Error('User not authenticated. Prova a fare logout e login di nuovo.');
+        }
+      }
+
+      if (!user) {
         throw new Error('User not authenticated');
       }
 
