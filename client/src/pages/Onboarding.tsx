@@ -45,14 +45,20 @@ export default function Onboarding() {
       console.log('[ONBOARDING] 📤 Saving to Supabase:', JSON.stringify(onboardingData, null, 2));
       console.log('[ONBOARDING] 🏠 Final location value:', onboardingData.trainingLocation);
 
+      // ✅ FIX: UPSERT invece di UPDATE
+      // UPSERT = INSERT se non esiste, UPDATE se esiste
+      // Questo risolve il problema per nuovi utenti senza profilo
       const { error } = await supabase
         .from('user_profiles')
-        .update({
+        .upsert({
+          user_id: user.id,  // ← Necessario per UPSERT (chiave primaria)
           onboarding_data: onboardingData,
           onboarding_completed: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
+          updated_at: new Date().toISOString(),
+          created_at: new Date().toISOString()  // ← Per nuovi record
+        }, {
+          onUpdate: ['onboarding_data', 'onboarding_completed', 'updated_at']  // ← Campi da aggiornare se esiste già
+        });
 
       if (error) {
         console.error('[ONBOARDING] ❌ Error saving to database:', error);
