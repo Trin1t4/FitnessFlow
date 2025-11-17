@@ -468,19 +468,160 @@ export default function Dashboard() {
     return PAIN_EXERCISE_MAP[painArea]?.correctives || [];
   }
 
+  /**
+   * Mappa esercizi calisthenics/pesi liberi → varianti con macchine
+   * Per principianti in palestra che preferiscono macchine guidate
+   */
+  const MACHINE_EXERCISE_MAP: Record<string, string> = {
+    // LOWER BODY
+    'pistol': 'Leg Press',
+    'pistol assistito': 'Leg Press',
+    'pistol squat': 'Leg Press',
+    'pistol squat assistito': 'Leg Press',
+    'squat': 'Leg Press',
+    'squat completo': 'Leg Press',
+    'goblet squat': 'Leg Press',
+    'box squat': 'Leg Press',
+    'affondi': 'Leg Press',
+    'bulgarian split squat': 'Leg Press',
+
+    // LOWER PULL (Hamstrings/Glutes)
+    'nordic curl': 'Leg Curl Machine',
+    'romanian deadlift': 'Leg Curl Machine + Back Extension',
+    'glute bridge': 'Hip Thrust Machine',
+
+    // HORIZONTAL PUSH
+    'push-up': 'Chest Press Machine',
+    'push up': 'Chest Press Machine',
+    'archer push-up': 'Chest Press Machine',
+    'push-up standard': 'Chest Press Machine',
+    'bench press': 'Chest Press Machine',
+
+    // VERTICAL PUSH
+    'pike push-up': 'Shoulder Press Machine',
+    'pike push up': 'Shoulder Press Machine',
+    'elevated pike push-up': 'Shoulder Press Machine',
+    'hspu': 'Shoulder Press Machine',
+    'handstand push-up': 'Shoulder Press Machine',
+    'military press': 'Shoulder Press Machine',
+
+    // VERTICAL PULL
+    'pull-up': 'Lat Pulldown Machine',
+    'pull up': 'Lat Pulldown Machine',
+    'assisted pull-up': 'Lat Pulldown Machine',
+    'inverted row': 'Seated Row Machine',
+
+    // CORE (mantieni bodyweight - le macchine per core sono meno efficaci)
+    'plank': 'Plank',
+    'l-sit': 'Ab Crunch Machine',
+    'dragon flag': 'Ab Crunch Machine'
+  };
+
+  /**
+   * Converti esercizio in variante con macchine (se trainingType === 'machines')
+   */
+  function convertToMachineVariant(exerciseName: string): string {
+    const exerciseLower = exerciseName.toLowerCase();
+
+    // Cerca match esatto
+    if (MACHINE_EXERCISE_MAP[exerciseLower]) {
+      return MACHINE_EXERCISE_MAP[exerciseLower];
+    }
+
+    // Cerca match parziale (es. "Pistol Squat Assistito" → contiene "pistol")
+    for (const [key, machine] of Object.entries(MACHINE_EXERCISE_MAP)) {
+      if (exerciseLower.includes(key)) {
+        return machine;
+      }
+    }
+
+    // Fallback: mantieni originale
+    return exerciseName;
+  }
+
+  /**
+   * Valida e normalizza formato painAreas
+   * Supporta backward compatibility con formato stringa legacy
+   */
+  interface NormalizedPainArea {
+    area: string;
+    severity: 'mild' | 'moderate' | 'severe';
+  }
+
+  function validateAndNormalizePainAreas(painAreas: any[]): NormalizedPainArea[] {
+    if (!Array.isArray(painAreas)) {
+      console.warn('[VALIDATOR] painAreas non è array, ritorno array vuoto');
+      return [];
+    }
+
+    const validAreas = ['knee', 'shoulder', 'lower_back', 'wrist', 'ankle', 'elbow', 'hip'];
+    const validSeverities = ['mild', 'moderate', 'severe'];
+
+    const normalized = painAreas
+      .map((entry, index) => {
+        // Caso 1: Formato oggetto { area, severity }
+        if (typeof entry === 'object' && entry.area) {
+          const area = entry.area.toLowerCase();
+          const severity = entry.severity || 'mild';
+
+          if (!validAreas.includes(area)) {
+            console.warn(`[VALIDATOR] Area non valida ignorata: ${area}`);
+            return null;
+          }
+
+          if (!validSeverities.includes(severity)) {
+            console.warn(`[VALIDATOR] Severity non valida per ${area}: ${severity}, default a 'mild'`);
+            return { area, severity: 'mild' as const };
+          }
+
+          return { area, severity: severity as 'mild' | 'moderate' | 'severe' };
+        }
+
+        // Caso 2: Formato stringa legacy "knee", "shoulder", etc.
+        if (typeof entry === 'string') {
+          const area = entry.toLowerCase();
+
+          if (!validAreas.includes(area)) {
+            console.warn(`[VALIDATOR] Area stringa non valida ignorata: ${area}`);
+            return null;
+          }
+
+          console.log(`[VALIDATOR] Convertito formato legacy string → object: ${area}`);
+          return { area, severity: 'mild' as const };
+        }
+
+        // Caso 3: Formato sconosciuto
+        console.warn(`[VALIDATOR] Formato pain entry sconosciuto ignorato (index ${index}):`, entry);
+        return null;
+      })
+      .filter((entry): entry is NormalizedPainArea => entry !== null);
+
+    console.log(`[VALIDATOR] ✅ Normalized ${painAreas.length} pain entries → ${normalized.length} valid`);
+    return normalized;
+  }
+
   function generateLocalProgram(level: string, goal: string, onboarding: any) {
     const location = onboarding?.trainingLocation || 'home';
     const frequency = onboarding?.activityLevel?.weeklyFrequency || 3;
 
+    // ✅ FIX: Leggi trainingType ed equipment da onboarding
+    const trainingType = onboarding?.trainingType || 'bodyweight';
+    const equipment = onboarding?.equipment || {};
+
     // ✅ LEGGI BASELINE DALLO SCREENING
     const baselines = dataStatus.screening?.patternBaselines || {};
 
-    // ✅ LEGGI DOLORI DALL'ONBOARDING
-    const painAreas = onboarding?.painAreas || [];
+    // ✅ LEGGI DOLORI DALL'ONBOARDING E VALIDA FORMATO
+    const rawPainAreas = onboarding?.painAreas || [];
+    const painAreas = validateAndNormalizePainAreas(rawPainAreas);
 
-    console.log('🎯 GENERAZIONE PROGRAMMA BASELINE-AWARE + PAIN-AWARE');
+    console.log('🎯 GENERAZIONE PROGRAMMA BASELINE-AWARE + EQUIPMENT-AWARE');
+    console.log('📍 Location:', location);
+    console.log('🏋️ Training Type:', trainingType);
+    console.log('🔧 Equipment:', equipment);
     console.log('📊 Baselines dallo screening:', baselines);
-    console.log('🩹 Dolori rilevati:', painAreas);
+    console.log('🩹 Dolori rilevati (raw):', rawPainAreas);
+    console.log('🩹 Dolori validati:', painAreas);
 
     // ✅ COSTRUISCI ESERCIZI BASATI SU BASELINE
     const exercises = [];
@@ -512,8 +653,9 @@ export default function Dashboard() {
 
       // ✅ GESTIONE DOLORI: Controlla conflitti con zone doloranti
       for (const painEntry of painAreas) {
-        const painArea = painEntry.area || painEntry; // Supporta sia oggetto che stringa
-        const severity = painEntry.severity || 'mild'; // Default mild se non specificato
+        // painEntry è già normalizzato dal validator
+        const painArea = painEntry.area;
+        const severity = painEntry.severity;
 
         if (isExerciseConflicting(exerciseName, painArea)) {
           console.log(`⚠️ Conflitto: ${exerciseName} carica zona dolente: ${painArea} (${severity})`);
@@ -537,6 +679,18 @@ export default function Dashboard() {
         }
       }
 
+      // ✅ CONVERSIONE A MACCHINE (se palestra con trainingType === 'machines')
+      let machineNotes = '';
+      if (location === 'gym' && trainingType === 'machines') {
+        const originalExercise = exerciseName;
+        exerciseName = convertToMachineVariant(exerciseName);
+
+        if (exerciseName !== originalExercise) {
+          machineNotes = `Convertito a macchina guidata: ${originalExercise} → ${exerciseName}`;
+          console.log(`🏋️ ${machineNotes}`);
+        }
+      }
+
       exercises.push({
         pattern: patternId,
         name: exerciseName,
@@ -553,7 +707,8 @@ export default function Dashboard() {
         notes: [
           volumeCalc.notes,
           `Baseline: ${baselineReps} reps @ diff. ${baseline.difficulty}/10`,
-          painNotes
+          painNotes,
+          machineNotes
         ].filter(Boolean).join(' | ')
       });
 
@@ -563,7 +718,8 @@ export default function Dashboard() {
     // ✅ AGGIUNGI ESERCIZI CORRETTIVI per zone doloranti
     const correctiveExercises = [];
     for (const painEntry of painAreas) {
-      const painArea = painEntry.area || painEntry;
+      // painEntry è già normalizzato dal validator
+      const painArea = painEntry.area;
       const correctives = getCorrectiveExercises(painArea);
 
       for (const corrective of correctives) {
