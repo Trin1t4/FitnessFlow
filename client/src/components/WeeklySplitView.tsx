@@ -46,9 +46,10 @@ interface DayCardProps {
 function DayCard({ day, index, showDetails }: DayCardProps) {
   const [isExpanded, setIsExpanded] = React.useState(showDetails);
 
-  // Separa esercizi principali da correttivi
-  const mainExercises = day.exercises.filter(ex => ex.pattern !== 'corrective');
-  const correctiveExercises = day.exercises.filter(ex => ex.pattern === 'corrective');
+  // Filtra esercizi validi e separa principali da correttivi
+  const validExercises = day.exercises.filter(ex => ex && ex.name && ex.pattern);
+  const mainExercises = validExercises.filter(ex => ex.pattern !== 'corrective');
+  const correctiveExercises = validExercises.filter(ex => ex.pattern === 'corrective');
 
   return (
     <motion.div

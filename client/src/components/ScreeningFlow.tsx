@@ -220,7 +220,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
           variantName: selectedProgression.name,
           difficulty: selectedProgression.difficulty,
           reps: parseInt(reps),
-          score: selectedProgression.difficulty * parseInt(reps) * 10, // Normalizzato
+          score: selectedProgression.difficulty * parseInt(reps), // Fixed: removed × 10 multiplier
           mode: 'CALISTHENICS'
         }
       };
