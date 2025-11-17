@@ -1,10 +1,11 @@
-      import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2 } from 'lucide-react';
 import { validateAndNormalizePainAreas } from '../utils/validators';
 import { generateProgram } from '../utils/programGenerator';
+import { motion } from 'framer-motion';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -355,186 +356,257 @@ export default function Dashboard() {
       <div className="max-w-6xl mx-auto">
         {/* Header con bottone Reset */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">Dashboard Intelligente</h1>
-          <button
+          <motion.h1
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-5xl font-display font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent"
+          >
+            Dashboard Intelligente
+          </motion.h1>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setShowResetModal(true)}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+            className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-red-500/20 transition-all duration-300"
           >
             <RotateCcw className="w-4 h-4" />
             Reset
-          </button>
+          </motion.button>
         </div>
 
         {/* Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                {dataStatus.onboarding ? <CheckCircle className="w-5 h-5 text-green-500" /> : <AlertCircle className="w-5 h-5 text-yellow-500" />}
-                Onboarding
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-400">
-                {dataStatus.onboarding ? `Goal: ${dataStatus.onboarding.goal}` : 'Non completato'}
-              </p>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
+            <Card className="bg-slate-800/60 backdrop-blur-xl border-slate-700/50 shadow-2xl shadow-emerald-500/5 hover:shadow-emerald-500/10 transition-all duration-300">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-display flex items-center gap-2">
+                  {dataStatus.onboarding ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <AlertCircle className="w-5 h-5 text-amber-400" />}
+                  Onboarding
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-slate-400 font-medium">
+                  {dataStatus.onboarding ? (
+                    <>Goal: <span className="text-emerald-400">{dataStatus.onboarding.goal}</span></>
+                  ) : 'Non completato'}
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                {dataStatus.quiz ? <CheckCircle className="w-5 h-5 text-green-500" /> : <AlertCircle className="w-5 h-5 text-yellow-500" />}
-                Quiz Teorico
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-400">
-                {dataStatus.quiz ? `Score: ${dataStatus.quiz.score}%` : 'Non completato'}
-              </p>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+          >
+            <Card className="bg-slate-800/60 backdrop-blur-xl border-slate-700/50 shadow-2xl shadow-emerald-500/5 hover:shadow-emerald-500/10 transition-all duration-300">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-display flex items-center gap-2">
+                  {dataStatus.quiz ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <AlertCircle className="w-5 h-5 text-amber-400" />}
+                  Quiz Teorico
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-slate-400 font-medium">
+                  {dataStatus.quiz ? (
+                    <>Score: <span className="text-emerald-400 font-mono">{dataStatus.quiz.score}%</span></>
+                  ) : 'Non completato'}
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                {dataStatus.screening ? <CheckCircle className="w-5 h-5 text-green-500" /> : <AlertCircle className="w-5 h-5 text-yellow-500" />}
-                Screening
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-400">
-                {dataStatus.screening ? `Level: ${dataStatus.screening.level?.toUpperCase()}` : 'Non completato'}
-              </p>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          >
+            <Card className="bg-slate-800/60 backdrop-blur-xl border-slate-700/50 shadow-2xl shadow-emerald-500/5 hover:shadow-emerald-500/10 transition-all duration-300">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-display flex items-center gap-2">
+                  {dataStatus.screening ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <AlertCircle className="w-5 h-5 text-amber-400" />}
+                  Screening
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-slate-400 font-medium">
+                  {dataStatus.screening ? (
+                    <>Level: <span className="text-emerald-400 font-bold">{dataStatus.screening.level?.toUpperCase()}</span></>
+                  ) : 'Non completato'}
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
 
         {/* Main Program Card */}
-        <Card className="bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-2xl">
-              {hasProgram ? '✅ Il Tuo Programma' : '📋 Genera il Tuo Programma'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!hasProgram ? (
-              <>
-                {dataStatus.screening && (
-                  <div className="bg-gray-700/50 rounded-lg p-4">
-                    <h3 className="font-semibold mb-2">Il tuo profilo:</h3>
-                    <ul className="text-sm text-gray-300 space-y-1">
-                      <li>• Livello: <span className="text-green-400 font-bold">{dataStatus.screening.level?.toUpperCase()}</span></li>
-                      <li>• Goal: <span className="text-blue-400">{dataStatus.onboarding?.goal}</span></li>
-                      <li>• Location: <span className="text-yellow-400">{dataStatus.onboarding?.trainingLocation}</span></li>
-                      <li>• Score finale: {dataStatus.screening.finalScore}%</li>
-                    </ul>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleGenerateProgram}
-                  disabled={generatingProgram || !dataStatus.screening}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2"
-                >
-                  {generatingProgram ? 'Generazione...' : (
-                    <>
-                      <Zap className="w-5 h-5" />
-                      Genera Programma Personalizzato
-                    </>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <Card className="bg-slate-800/60 backdrop-blur-xl border-slate-700/50 shadow-2xl shadow-emerald-500/5">
+            <CardHeader>
+              <CardTitle className="text-3xl font-display font-bold">
+                {hasProgram ? '✅ Il Tuo Programma' : '📋 Genera il Tuo Programma'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!hasProgram ? (
+                <>
+                  {dataStatus.screening && (
+                    <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-6 border border-slate-600/50">
+                      <h3 className="font-display font-semibold text-lg mb-3">Il tuo profilo:</h3>
+                      <ul className="text-sm text-slate-300 space-y-2">
+                        <li className="flex items-center gap-2">
+                          <span>• Livello:</span>
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            {dataStatus.screening.level?.toUpperCase()}
+                          </span>
+                        </li>
+                        <li>• Goal: <span className="text-emerald-400 font-semibold">{dataStatus.onboarding?.goal}</span></li>
+                        <li>• Location: <span className="text-slate-200 font-semibold">{dataStatus.onboarding?.trainingLocation}</span></li>
+                        <li>• Score finale: <span className="text-emerald-400 font-mono font-bold">{dataStatus.screening.finalScore}%</span></li>
+                      </ul>
+                    </div>
                   )}
-                </button>
 
-                {!dataStatus.screening && (
-                  <p className="text-center text-gray-400 text-sm">
-                    Completa prima lo screening per generare il programma
-                  </p>
-                )}
-              </>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleGenerateProgram}
+                    disabled={generatingProgram || !dataStatus.screening}
+                    className="w-full bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:from-slate-600 disabled:to-slate-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-300 disabled:shadow-none"
+                  >
+                    {generatingProgram ? (
+                      <span className="flex items-center gap-2">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <Zap className="w-5 h-5" />
+                        </motion.div>
+                        Generazione...
+                      </span>
+                    ) : (
+                      <>
+                        <Zap className="w-5 h-5" />
+                        Genera Programma Personalizzato
+                      </>
+                    )}
+                  </motion.button>
+
+                  {!dataStatus.screening && (
+                    <p className="text-center text-slate-400 text-sm">
+                      Completa prima lo screening per generare il programma
+                    </p>
+                  )}
+                </>
             ) : (
               <>
-                <div className="bg-gray-700 rounded-lg p-6">
+                <div className="bg-slate-700/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-600/50">
                   <div className="mb-4">
-                    <h3 className="text-2xl font-bold mb-2">{program.name}</h3>
-                    <div className="flex gap-4 text-sm text-gray-400">
-                      <span>📊 Level: <span className="text-green-400">{program.level?.toUpperCase()}</span></span>
-                      <span>🎯 Goal: <span className="text-blue-400">{program.goal}</span></span>
-                      <span>📍 {program.location}</span>
+                    <h3 className="text-2xl font-display font-bold mb-3 bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                      {program.name}
+                    </h3>
+                    <div className="flex flex-wrap gap-3 text-sm">
+                      <span className="px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-medium">
+                        📊 Level: {program.level?.toUpperCase()}
+                      </span>
+                      <span className="px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-medium">
+                        🎯 Goal: {program.goal}
+                      </span>
+                      <span className="px-3 py-1.5 rounded-full bg-slate-600/50 text-slate-300 border border-slate-500/30 font-medium">
+                        📍 {program.location}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="mb-4">
-                    <p className="text-gray-300 mb-2">Split: <span className="font-semibold">{program.split}</span></p>
-                    <p className="text-gray-300">Frequenza: <span className="font-semibold">{program.frequency}x/settimana</span></p>
+                  <div className="mb-4 space-y-1">
+                    <p className="text-slate-300">Split: <span className="font-display font-semibold text-white">{program.split}</span></p>
+                    <p className="text-slate-300">Frequenza: <span className="font-display font-semibold text-white">{program.frequency}x/settimana</span></p>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold mb-3">Esercizi (basati sulle tue baseline):</h4>
+                    <h4 className="font-display font-semibold text-lg mb-4">Esercizi (basati sulle tue baseline):</h4>
                     <ul className="space-y-3">
                       {program.exercises?.map((ex: any, i: number) => {
                         const isCorrective = ex.pattern === 'corrective';
                         const wasReplaced = ex.wasReplaced;
 
                         return (
-                          <li
+                          <motion.li
                             key={i}
-                            className={`rounded-lg p-3 border ${
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3, delay: i * 0.05 }}
+                            whileHover={{ scale: 1.01 }}
+                            className={`rounded-xl p-4 border backdrop-blur-sm transition-all duration-200 ${
                               isCorrective
-                                ? 'bg-blue-900/20 border-blue-600'
+                                ? 'bg-blue-500/10 border-blue-500/30 hover:border-blue-500/50'
                                 : wasReplaced
-                                ? 'bg-orange-900/20 border-orange-600'
-                                : 'bg-gray-800/50 border-gray-600'
+                                ? 'bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50'
+                                : 'bg-slate-800/50 border-slate-600/50 hover:border-emerald-500/30'
                             }`}
                           >
-                            <div className="flex items-start gap-2">
-                              <span className={`font-bold ${
-                                isCorrective ? 'text-blue-400' : wasReplaced ? 'text-orange-400' : 'text-green-400'
+                            <div className="flex items-start gap-3">
+                              <span className={`font-mono font-bold text-lg ${
+                                isCorrective ? 'text-blue-400' : wasReplaced ? 'text-amber-400' : 'text-emerald-400'
                               }`}>
                                 {isCorrective ? '🔧' : wasReplaced ? '⚠️' : `${i + 1}.`}
                               </span>
                               <div className="flex-1">
-                                <p className={`font-medium ${
-                                  isCorrective ? 'text-blue-300' : wasReplaced ? 'text-orange-300' : 'text-white'
+                                <p className={`font-semibold text-base ${
+                                  isCorrective ? 'text-blue-300' : wasReplaced ? 'text-amber-300' : 'text-white'
                                 }`}>
                                   {ex.name || ex}
-                                  {isCorrective && <span className="text-xs ml-2 text-blue-400">(Correttivo)</span>}
-                                  {wasReplaced && <span className="text-xs ml-2 text-orange-400">(Sostituito)</span>}
+                                  {isCorrective && <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">(Correttivo)</span>}
+                                  {wasReplaced && <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">(Sostituito)</span>}
                                 </p>
                                 {ex.sets && ex.reps && (
-                                  <p className="text-sm text-gray-400 mt-1">
-                                    {ex.sets} sets × {ex.reps} reps
-                                    {ex.intensity && <span className="text-blue-400"> @ {ex.intensity}</span>}
-                                    {' • '}Rest: {ex.rest}
+                                  <p className="text-sm text-slate-400 mt-2 font-medium">
+                                    <span className="font-mono text-emerald-400">{ex.sets} sets</span> × <span className="font-mono text-emerald-400">{ex.reps} reps</span>
+                                    {ex.intensity && <span className="text-blue-400 font-mono"> @ {ex.intensity}</span>}
+                                    {' • '}Rest: <span className="font-mono">{ex.rest}</span>
                                   </p>
                                 )}
                                 {ex.notes && (
-                                  <p className="text-xs text-gray-500 mt-1">{ex.notes}</p>
+                                  <p className="text-xs text-slate-500 mt-2 italic">{ex.notes}</p>
                                 )}
                               </div>
                             </div>
-                          </li>
+                          </motion.li>
                         );
                       })}
                     </ul>
                   </div>
 
                   {program.notes && (
-                    <div className="mt-4 pt-4 border-t border-gray-600">
-                      <p className="text-xs text-gray-400">{program.notes}</p>
+                    <div className="mt-4 pt-4 border-t border-slate-600/50">
+                      <p className="text-sm text-slate-400 italic">{program.notes}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="flex gap-4">
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => navigate('/workout')}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-300"
                   >
                     <Activity className="w-5 h-5" />
                     Inizia Allenamento
-                  </button>
+                  </motion.button>
 
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => {
                       if (confirm('Vuoi rigenerare il programma?')) {
                         localStorage.removeItem('currentProgram');
@@ -542,80 +614,101 @@ export default function Dashboard() {
                         setProgram(null);
                       }
                     }}
-                    className="px-6 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg"
+                    className="px-6 bg-slate-700 hover:bg-slate-600 text-white py-4 rounded-xl border border-slate-600/50 transition-all duration-300"
                   >
                     Rigenera
-                  </button>
+                  </motion.button>
                 </div>
               </>
             )}
           </CardContent>
         </Card>
+        </motion.div>
       </div>
 
       {/* Modal Reset */}
       {showResetModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full">
-            <h2 className="text-2xl font-bold mb-4 text-white">🔄 Opzioni Reset</h2>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+        >
+          <motion.div
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
+            className="bg-slate-800/90 backdrop-blur-xl rounded-2xl p-6 max-w-md w-full border border-slate-700/50 shadow-2xl"
+          >
+            <h2 className="text-3xl font-display font-bold mb-6 text-white">🔄 Opzioni Reset</h2>
             
             <div className="space-y-4">
               {/* Reset Profondo */}
-              <div className="bg-red-900/20 border border-red-600 rounded-lg p-4">
-                <h3 className="font-semibold text-red-400 mb-2 flex items-center gap-2">
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-5 backdrop-blur-sm">
+                <h3 className="font-display font-semibold text-red-400 mb-2 flex items-center gap-2">
                   <Trash2 className="w-5 h-5" />
                   Reset Profondo
                 </h3>
-                <p className="text-sm text-gray-300 mb-3">
+                <p className="text-sm text-slate-300 mb-4">
                   Elimina TUTTO: localStorage, Supabase, programmi, assessments. Ricomincia da zero.
                 </p>
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={handleDeepReset}
                   disabled={resetting}
-                  className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white font-bold py-2 rounded"
+                  className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-slate-600 disabled:to-slate-700 text-white font-bold py-3 rounded-lg shadow-lg shadow-red-500/20 transition-all duration-300"
                 >
                   {resetting ? 'Reset in corso...' : 'Esegui Reset Profondo'}
-                </button>
+                </motion.button>
               </div>
 
               {/* Test Veloce */}
-              <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-400 mb-2">🧪 Test Veloce</h3>
-                <p className="text-sm text-gray-300 mb-3">
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-5 backdrop-blur-sm">
+                <h3 className="font-display font-semibold text-emerald-400 mb-2">🧪 Test Veloce</h3>
+                <p className="text-sm text-slate-300 mb-4">
                   Crea un profilo di test per provare i diversi livelli:
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => handleQuickTest('beginner')}
-                    className="bg-green-600 hover:bg-green-700 text-white py-2 rounded text-sm"
+                    className="bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-2 rounded-lg text-sm font-semibold shadow-md"
                   >
                     Principiante
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => handleQuickTest('intermediate')}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white py-2 rounded text-sm"
+                    className="bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white py-2 rounded-lg text-sm font-semibold shadow-md"
                   >
                     Intermedio
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => handleQuickTest('advanced')}
-                    className="bg-purple-600 hover:bg-purple-700 text-white py-2 rounded text-sm"
+                    className="bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white py-2 rounded-lg text-sm font-semibold shadow-md"
                   >
                     Avanzato
-                  </button>
+                  </motion.button>
                 </div>
               </div>
 
               {/* Annulla */}
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setShowResetModal(false)}
-                className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 rounded"
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl border border-slate-600/50 transition-all duration-300"
               >
                 Annulla
-              </button>
+              </motion.button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );

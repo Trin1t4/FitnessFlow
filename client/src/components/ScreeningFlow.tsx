@@ -2,8 +2,17 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { CheckCircle, Circle, ArrowRight, Info } from 'lucide-react';
 
+/**
+ * Formula di Brzycki per calcolare 1RM da peso e reps
+ * 1RM = weight / (1.0278 - 0.0278 × reps)
+ */
+function calculateOneRepMax(weight: number, reps: number): number {
+  if (reps === 1) return weight;
+  return weight / (1.0278 - 0.0278 * reps);
+}
+
 // ===== PROGRESSIONI CALISTHENICS SCIENTIFICHE =====
-const MOVEMENT_PATTERNS = [
+const CALISTHENICS_PATTERNS = [
   {
     id: 'lower_push',
     name: 'Lower Body Push (Squat)',
@@ -91,35 +100,131 @@ const MOVEMENT_PATTERNS = [
   }
 ];
 
+// ===== PROGRESSIONI PALESTRA (10RM TEST) =====
+const GYM_PATTERNS = [
+  {
+    id: 'lower_push',
+    name: 'Back Squat',
+    description: 'Test 10RM Squat con bilanciere',
+    exercise: { id: 'back_squat', name: 'Back Squat', unit: 'kg' }
+  },
+  {
+    id: 'horizontal_push',
+    name: 'Bench Press',
+    description: 'Test 10RM Panca piana con bilanciere',
+    exercise: { id: 'bench_press', name: 'Bench Press', unit: 'kg' }
+  },
+  {
+    id: 'vertical_push',
+    name: 'Military Press',
+    description: 'Test 10RM Shoulder Press con bilanciere',
+    exercise: { id: 'military_press', name: 'Military Press', unit: 'kg' }
+  },
+  {
+    id: 'vertical_pull',
+    name: 'Lat Pulldown',
+    description: 'Test 10RM Lat Machine',
+    exercise: { id: 'lat_pulldown', name: 'Lat Pulldown', unit: 'kg' }
+  },
+  {
+    id: 'lower_pull',
+    name: 'Deadlift',
+    description: 'Test 10RM Stacco da terra con bilanciere',
+    exercise: { id: 'deadlift', name: 'Deadlift', unit: 'kg' }
+  },
+  {
+    id: 'core',
+    name: 'Cable Crunch',
+    description: 'Test 10RM Cable Crunch',
+    exercise: { id: 'cable_crunch', name: 'Cable Crunch', unit: 'kg' }
+  }
+];
+
 export default function ScreeningFlow({ onComplete, userData, userId }) {
+  // Determina modalità test in base a location e trainingType
+  const isGymMode = userData?.trainingLocation === 'gym' &&
+                    (userData?.trainingType === 'equipment' || userData?.trainingType === 'machines');
+
+  const MOVEMENT_PATTERNS = isGymMode ? GYM_PATTERNS : CALISTHENICS_PATTERNS;
+  const testType = isGymMode ? 'GYM' : 'CALISTHENICS';
+
   const [currentPattern, setCurrentPattern] = useState(0);
   const [results, setResults] = useState({});
   const [selectedVariant, setSelectedVariant] = useState('');
   const [reps, setReps] = useState('');
+  const [weight, setWeight] = useState(''); // Per GYM mode (kg)
   const [showSummary, setShowSummary] = useState(false);
 
   const pattern = MOVEMENT_PATTERNS[currentPattern];
   const progress = ((currentPattern + 1) / MOVEMENT_PATTERNS.length) * 100;
 
+  console.log('[SCREENING] Mode:', testType, '| Location:', userData?.trainingLocation, '| TrainingType:', userData?.trainingType);
+
   const handleNext = () => {
-    if (!selectedVariant || !reps || parseInt(reps) === 0) {
-      alert('Seleziona una variante e inserisci il numero di ripetizioni');
-      return;
+    // Validation diversa per GYM vs CALISTHENICS
+    if (isGymMode) {
+      // GYM: serve peso in kg (10RM fisso)
+      if (!weight || parseFloat(weight) === 0) {
+        alert('Inserisci il peso massimo (10RM) per questo esercizio');
+        return;
+      }
+    } else {
+      // CALISTHENICS: serve variante + reps
+      if (!selectedVariant || !reps || parseInt(reps) === 0) {
+        alert('Seleziona una variante e inserisci il numero di ripetizioni');
+        return;
+      }
     }
 
-    const selectedProgression = pattern.progressions.find(p => p.id === selectedVariant);
+    let newResults;
 
-    const newResults = {
-      ...results,
-      [pattern.id]: {
-        patternName: pattern.name,
-        variantId: selectedVariant,
-        variantName: selectedProgression.name,
-        difficulty: selectedProgression.difficulty,
-        reps: parseInt(reps),
-        score: selectedProgression.difficulty * parseInt(reps) * 10 // Normalizzato
-      }
-    };
+    if (isGymMode) {
+      // GYM MODE: Calcola 1RM con formula Brzycki
+      const weight10RM = parseFloat(weight);
+      const oneRM = calculateOneRepMax(weight10RM, 10);
+
+      // Score basato su 1RM (normalizzato rispetto a peso corporeo)
+      const bodyWeight = userData?.personalInfo?.weight || 70;
+      const relativeStrength = oneRM / bodyWeight;
+
+      // Score: relativeStrength moltiplicato per fattore pattern
+      // Esempio: Squat 1RM = 100kg, BW = 70kg → 1.43 × 100 = 143
+      const score = Math.round(relativeStrength * 100);
+
+      newResults = {
+        ...results,
+        [pattern.id]: {
+          patternName: pattern.name,
+          variantId: pattern.exercise.id,
+          variantName: pattern.exercise.name,
+          weight10RM: weight10RM,
+          oneRM: Math.round(oneRM * 10) / 10, // Arrotonda a 1 decimale
+          relativeStrength: Math.round(relativeStrength * 100) / 100,
+          difficulty: 8, // GYM exercises considerati advanced difficulty
+          reps: 10, // Fisso per 10RM test
+          score: score,
+          mode: 'GYM'
+        }
+      };
+
+      console.log(`[GYM] ${pattern.name}: 10RM=${weight10RM}kg → 1RM=${Math.round(oneRM)}kg | Score=${score}`);
+    } else {
+      // CALISTHENICS MODE: Sistema attuale
+      const selectedProgression = pattern.progressions.find(p => p.id === selectedVariant);
+
+      newResults = {
+        ...results,
+        [pattern.id]: {
+          patternName: pattern.name,
+          variantId: selectedVariant,
+          variantName: selectedProgression.name,
+          difficulty: selectedProgression.difficulty,
+          reps: parseInt(reps),
+          score: selectedProgression.difficulty * parseInt(reps) * 10, // Normalizzato
+          mode: 'CALISTHENICS'
+        }
+      };
+    }
 
     setResults(newResults);
 
@@ -127,6 +232,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
       setCurrentPattern(currentPattern + 1);
       setSelectedVariant('');
       setReps('');
+      setWeight('');
     } else {
       // Completa screening
       calculateAndSave(newResults);
@@ -193,7 +299,8 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
 
     localStorage.setItem('screening_data', JSON.stringify(screeningData));
 
-    console.log('=== SCREENING CALISTHENICS COMPLETED ===');
+    const mode = Object.values(practicalResults)[0]?.mode || 'CALISTHENICS';
+    console.log(`=== SCREENING ${mode} COMPLETED ===`);
     console.log('Quiz Score:', quizScore + '%');
     console.log('Practical Score:', practicalScore + '%');
     console.log('Physical Score:', physicalScore + '%');
@@ -257,11 +364,27 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
                     {Object.values(screeningData.patternBaselines).map((pattern: any, idx: number) => (
                       <div key={idx} className="bg-slate-800/50 rounded-lg p-3 border border-slate-600">
                         <p className="text-sm text-slate-300 font-medium">{pattern.patternName}</p>
-                        <p className="text-emerald-400 text-sm mt-1">
-                          {pattern.variantName} × {pattern.reps} reps
-                        </p>
+                        {pattern.mode === 'GYM' ? (
+                          <>
+                            <p className="text-emerald-400 text-sm mt-1 font-mono">
+                              {pattern.variantName}: 10RM = <strong>{pattern.weight10RM} kg</strong>
+                            </p>
+                            <p className="text-blue-400 text-xs mt-1 font-mono">
+                              1RM stimato: {pattern.oneRM} kg • Rel. Strength: {pattern.relativeStrength}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-emerald-400 text-sm mt-1">
+                              {pattern.variantName} × {pattern.reps} reps
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">
+                              Difficoltà: {pattern.difficulty}/10
+                            </p>
+                          </>
+                        )}
                         <p className="text-xs text-slate-500 mt-1">
-                          Difficoltà: {pattern.difficulty}/10 • Score: {pattern.score}
+                          Score: {pattern.score}
                         </p>
                       </div>
                     ))}
@@ -306,47 +429,92 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="bg-emerald-500/10 border border-emerald-500 rounded-lg p-4">
-              <p className="text-emerald-300 font-medium mb-2">📋 Cosa fare:</p>
-              <ol className="text-emerald-200 text-sm space-y-1 list-decimal list-inside">
-                <li>Seleziona la variante più difficile che riesci a fare con buona forma</li>
-                <li>Inserisci il numero massimo di ripetizioni pulite che riesci a completare</li>
-              </ol>
+              <p className="text-emerald-300 font-medium mb-2">
+                📋 {isGymMode ? 'Test 10RM' : 'Cosa fare'}:
+              </p>
+              {isGymMode ? (
+                <ol className="text-emerald-200 text-sm space-y-1 list-decimal list-inside">
+                  <li>Trova il peso massimo con cui riesci a fare <strong>esattamente 10 ripetizioni</strong> con forma perfetta</li>
+                  <li>Inserisci il peso in kg (10RM = 10 Rep Max)</li>
+                  <li>Calcoleremo automaticamente il tuo 1RM usando la formula di Brzycki</li>
+                </ol>
+              ) : (
+                <ol className="text-emerald-200 text-sm space-y-1 list-decimal list-inside">
+                  <li>Seleziona la variante più difficile che riesci a fare con buona forma</li>
+                  <li>Inserisci il numero massimo di ripetizioni pulite che riesci a completare</li>
+                </ol>
+              )}
             </div>
 
-            {/* Dropdown Variante */}
-            <div className="space-y-2">
-              <label className="text-white font-medium">Variante</label>
-              <select
-                value={selectedVariant}
-                onChange={(e) => setSelectedVariant(e.target.value)}
-                className="w-full p-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-emerald-500 focus:outline-none"
-              >
-                <option value="">-- Seleziona la variante più difficile --</option>
-                {pattern.progressions.map((prog) => (
-                  <option key={prog.id} value={prog.id}>
-                    {prog.name} (Difficoltà {prog.difficulty}/10)
-                  </option>
-                ))}
-              </select>
-            </div>
+            {isGymMode ? (
+              /* GYM MODE: Solo input peso */
+              <div className="space-y-2">
+                <label className="text-white font-display font-semibold text-lg">
+                  Peso 10RM (kg) - {pattern.name}
+                </label>
+                <p className="text-slate-400 text-sm mb-2">
+                  Il peso massimo con cui riesci a fare esattamente 10 ripetizioni con forma perfetta
+                </p>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    placeholder="es. 60"
+                    className="w-full p-4 pr-12 rounded-xl bg-slate-700 border-2 border-slate-600 text-white font-mono text-lg focus:border-emerald-500 focus:outline-none"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-mono">kg</span>
+                </div>
+                {weight && parseFloat(weight) > 0 && (
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mt-2">
+                    <p className="text-blue-300 text-sm">
+                      🎯 1RM stimato: <strong className="font-mono text-lg">{Math.round(calculateOneRepMax(parseFloat(weight), 10))} kg</strong>
+                    </p>
+                    <p className="text-blue-400 text-xs mt-1">
+                      Calcolato con formula di Brzycki
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* CALISTHENICS MODE: Dropdown variante + input reps */
+              <>
+                <div className="space-y-2">
+                  <label className="text-white font-medium">Variante</label>
+                  <select
+                    value={selectedVariant}
+                    onChange={(e) => setSelectedVariant(e.target.value)}
+                    className="w-full p-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="">-- Seleziona la variante più difficile --</option>
+                    {pattern.progressions.map((prog) => (
+                      <option key={prog.id} value={prog.id}>
+                        {prog.name} (Difficoltà {prog.difficulty}/10)
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            {/* Input Reps */}
-            <div className="space-y-2">
-              <label className="text-white font-medium">Ripetizioni pulite massime</label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={reps}
-                onChange={(e) => setReps(e.target.value)}
-                placeholder="es. 10"
-                className="w-full p-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-emerald-500 focus:outline-none"
-              />
-            </div>
+                <div className="space-y-2">
+                  <label className="text-white font-medium">Ripetizioni pulite massime</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={reps}
+                    onChange={(e) => setReps(e.target.value)}
+                    placeholder="es. 10"
+                    className="w-full p-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+              </>
+            )}
 
             <button
               onClick={handleNext}
-              disabled={!selectedVariant || !reps}
+              disabled={isGymMode ? !weight : (!selectedVariant || !reps)}
               className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:from-emerald-600 hover:to-emerald-700 transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
             >
               {currentPattern < MOVEMENT_PATTERNS.length - 1 ? 'Prossimo Pattern' : 'Completa Assessment'}

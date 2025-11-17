@@ -78,8 +78,8 @@ export default function PainStep({ data, onNext }: PainStepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-white mb-2">🩺 Screening Dolori</h2>
-        <p className="text-slate-400">Hai dolori o fastidi attuali durante l'allenamento?</p>
+        <h2 className="text-3xl font-display font-bold text-white mb-2">🩺 Screening Dolori</h2>
+        <p className="text-slate-400 text-base">Hai dolori o fastidi attuali durante l'allenamento?</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -95,7 +95,7 @@ export default function PainStep({ data, onNext }: PainStepProps) {
           }`}
         >
           <div className="text-4xl mb-2">✅</div>
-          <div className="font-bold text-lg">Nessun dolore</div>
+          <div className="font-display font-bold text-lg">Nessun dolore</div>
           <div className="text-sm text-slate-400 mt-1">Mi sento bene</div>
         </button>
 
@@ -108,7 +108,7 @@ export default function PainStep({ data, onNext }: PainStepProps) {
           }`}
         >
           <div className="text-4xl mb-2">⚠️</div>
-          <div className="font-bold text-lg">Ho dolori</div>
+          <div className="font-display font-bold text-lg">Ho dolori</div>
           <div className="text-sm text-slate-400 mt-1">Specificare zone</div>
         </button>
       </div>
@@ -116,7 +116,7 @@ export default function PainStep({ data, onNext }: PainStepProps) {
       {hasPain === true && (
         <div className="space-y-4 animate-in fade-in duration-300">
           <div>
-            <h3 className="font-semibold text-white mb-3">Seleziona le zone con dolore/fastidio:</h3>
+            <h3 className="font-display font-semibold text-lg text-white mb-3">Seleziona le zone con dolore/fastidio:</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {PAIN_AREAS.map((area, index) => (
                 <button
@@ -138,8 +138,8 @@ export default function PainStep({ data, onNext }: PainStepProps) {
           </div>
 
           {selectedAreas.length > 0 && (
-            <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
-              <h3 className="font-semibold text-white mb-4">Intensità del dolore (1-10):</h3>
+            <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-5 border border-slate-600/50">
+              <h3 className="font-display font-semibold text-lg text-white mb-4">Intensità del dolore (1-10):</h3>
               <div className="space-y-3">
                 {selectedAreas.map((area) => {
                   const areaInfo = PAIN_AREAS.find((a) => a.value === area);
@@ -153,11 +153,11 @@ export default function PainStep({ data, onNext }: PainStepProps) {
                           {areaInfo?.icon} {areaInfo?.label}
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="text-white font-bold text-lg">{intensity}</span>
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            severity === 'severe' ? 'bg-red-500/20 text-red-400' :
-                            severity === 'moderate' ? 'bg-amber-500/20 text-amber-400' :
-                            'bg-green-500/20 text-green-400'
+                          <span className="text-white font-mono font-bold text-xl">{intensity}</span>
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
+                            severity === 'severe' ? 'bg-red-500/10 text-red-400 border-red-500/30' :
+                            severity === 'moderate' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
+                            'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                           }`}>
                             {severity === 'severe' ? 'Severo' : severity === 'moderate' ? 'Moderato' : 'Lieve'}
                           </span>
@@ -187,8 +187,8 @@ export default function PainStep({ data, onNext }: PainStepProps) {
             </div>
           )}
 
-          <div className="bg-amber-500/10 border border-amber-500 rounded-lg p-4">
-            <p className="text-sm text-amber-200">
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 backdrop-blur-sm">
+            <p className="text-sm text-amber-200 font-medium">
               ⚠️ Se i dolori sono severi (8+) o persistenti, consulta un medico prima di iniziare
             </p>
           </div>
