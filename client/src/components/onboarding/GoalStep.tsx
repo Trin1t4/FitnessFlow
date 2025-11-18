@@ -46,7 +46,7 @@ const MUSCULAR_FOCUS_OPTIONS = [
 ];
 
 export default function GoalStep({ data, onNext }: GoalStepProps) {
-  // Multi-goal support: array di goals (max 2)
+  // Multi-goal support: array di goals (max 3)
   const [goals, setGoals] = useState<string[]>(
     data.goals || (data.goal ? [data.goal] : [])
   );
@@ -69,15 +69,9 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
         }
         return newGoals;
       } else {
-        // Seleziona (max 2)
-        if (prev.length >= 2) {
-          // Rimuovi il primo e aggiungi il nuovo
-          const removed = prev[0];
-          if (removed === 'prestazioni_sportive') {
-            setSport('');
-            setSportRole('');
-          }
-          return [...prev.slice(1), goalValue];
+        // Seleziona (max 3) - blocca il 4°
+        if (prev.length >= 3) {
+          return prev; // Non permette più di 3
         }
         return [...prev, goalValue];
       }
@@ -109,15 +103,15 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
       <div>
         <h2 className="text-2xl font-bold text-white mb-2">🎯 Obiettivi</h2>
         <p className="text-slate-400">
-          Seleziona fino a <strong className="text-emerald-400">2 obiettivi</strong> per un programma personalizzato
+          Seleziona fino a <strong className="text-emerald-400">3 obiettivi</strong> per un programma personalizzato
         </p>
         {goals.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
-            {goals.map((g, i) => {
+            {goals.map((g) => {
               const goalOpt = GOAL_OPTIONS.find(o => o.value === g);
               return (
                 <span key={g} className="bg-emerald-500/30 text-emerald-300 px-3 py-1 rounded-full text-sm font-medium">
-                  {i + 1}. {goalOpt?.label || g}
+                  {goalOpt?.label || g}
                 </span>
               );
             })}
@@ -128,21 +122,26 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {GOAL_OPTIONS.map((opt) => {
           const isSelected = goals.includes(opt.value);
-          const selectionIndex = goals.indexOf(opt.value) + 1;
+          const isDisabled = !isSelected && goals.length >= 3;
 
           return (
             <button
               key={opt.value}
               onClick={() => toggleGoal(opt.value)}
+              disabled={isDisabled}
               className={`p-4 rounded-lg border-2 text-left transition-all relative ${
                 isSelected
                   ? 'border-emerald-500 bg-emerald-500/20 text-white'
+                  : isDisabled
+                  ? 'border-slate-700 bg-slate-800/50 text-slate-500 cursor-not-allowed opacity-50'
                   : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
               }`}
             >
               {isSelected && (
-                <div className="absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                  {selectionIndex}
+                <div className="absolute top-2 right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
                 </div>
               )}
               <div className="font-bold text-lg mb-1">{opt.label}</div>
