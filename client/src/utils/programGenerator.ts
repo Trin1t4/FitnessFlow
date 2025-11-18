@@ -80,15 +80,15 @@ export function calculateVolume(
         notes = 'Heavy Day - Forza massimale';
       } else if (dayType === 'volume') {
         sets = 4;
-        reps = Math.max(8, Math.min(workingReps, 10)); // 8-10 reps
-        rest = '2-3min';
-        intensity = '70-75%';
-        notes = 'Volume Day - Ipertrofia funzionale';
+        reps = Math.max(10, Math.min(workingReps, 15)); // 10-15 reps (VERO VOLUME!)
+        rest = '90-120s';
+        intensity = '65-70%';
+        notes = 'Volume Day - Ipertrofia + work capacity';
       } else { // moderate
         sets = 4;
-        reps = Math.max(5, Math.min(workingReps, 8)); // 5-8 reps
+        reps = Math.max(6, Math.min(workingReps, 10)); // 6-10 reps (non più 5-8!)
         rest = '2-3min';
-        intensity = '78-82%';
+        intensity = '75-80%';
         notes = 'Moderate Day - Forza-ipertrofia';
       }
     } else {
@@ -101,15 +101,15 @@ export function calculateVolume(
         notes = 'Heavy Day - Skill strength';
       } else if (dayType === 'volume') {
         sets = 5;
-        reps = Math.max(8, Math.min(workingReps, 12)); // 8-12 reps
+        reps = Math.max(10, Math.min(workingReps, 15)); // 10-15 reps (VERO VOLUME!)
         rest = '90s';
-        intensity = '65-70%';
-        notes = 'Volume Day - Capacità di lavoro';
+        intensity = '60-70%';
+        notes = 'Volume Day - Work capacity';
       } else { // moderate
         sets = 5;
-        reps = Math.max(5, Math.min(workingReps, 8)); // 5-8 reps
-        rest = '2min';
-        intensity = '75%';
+        reps = Math.max(6, Math.min(workingReps, 10)); // 6-10 reps (non più 5-8!)
+        rest = '90-120s';
+        intensity = '70-75%';
         notes = 'Moderate Day - Bilanciato';
       }
     }

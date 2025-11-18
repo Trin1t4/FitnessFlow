@@ -20,6 +20,64 @@ import {
   ACCESSORY_VARIANTS
 } from './exerciseVariants';
 
+/**
+ * Determina l'intensità dell'esercizio con ROTAZIONE tra giorni
+ * LOGICA: Mix intelligente + rotazione DUP
+ *
+ * Esempio 3x/week:
+ * - Giorno 1: Squat HEAVY, Bench HEAVY, Pulldown MODERATE, Core VOLUME
+ * - Giorno 2: Deadlift HEAVY, Military HEAVY, Bench MODERATE, Core VOLUME
+ * - Giorno 3: Squat HEAVY, Pulldown HEAVY, Bench MODERATE, Core VOLUME
+ *
+ * Ogni pattern viene colpito a intensità diverse nei 3 giorni
+ */
+function getIntensityForPattern(
+  patternId: string,
+  exerciseIndex: number,
+  dayIndex: number
+): 'heavy' | 'volume' | 'moderate' {
+  // 🎯 CORE/ACCESSORI: SEMPRE VOLUME (non cambiano)
+  if (patternId === 'core' || patternId === 'corrective') {
+    return 'volume';
+  }
+
+  // 🔄 ROTAZIONE DUP PER COMPOUND MOVEMENTS
+  // Ogni giorno ruota quali patterns sono HEAVY vs MODERATE
+
+  // GIORNO 1 (index 0): Lower Push + Horizontal Push = HEAVY
+  if (dayIndex === 0) {
+    if (patternId === 'lower_push' || patternId === 'horizontal_push') {
+      return 'heavy';
+    }
+    if (patternId === 'vertical_pull' || patternId === 'vertical_push') {
+      return 'moderate';
+    }
+  }
+
+  // GIORNO 2 (index 1): Lower Pull + Vertical Push = HEAVY
+  if (dayIndex === 1) {
+    if (patternId === 'lower_pull' || patternId === 'vertical_push') {
+      return 'heavy';
+    }
+    if (patternId === 'horizontal_push' || patternId === 'vertical_pull') {
+      return 'moderate';
+    }
+  }
+
+  // GIORNO 3 (index 2): Lower Push + Vertical Pull = HEAVY
+  if (dayIndex === 2) {
+    if (patternId === 'lower_push' || patternId === 'vertical_pull') {
+      return 'heavy';
+    }
+    if (patternId === 'horizontal_push' || patternId === 'vertical_push') {
+      return 'moderate';
+    }
+  }
+
+  // Default: moderate
+  return 'moderate';
+}
+
 export interface DayWorkout {
   dayNumber: number;
   dayName: string;
@@ -198,28 +256,28 @@ function generate3DayFullBody(options: SplitGeneratorOptions): WeeklySplit {
     }
   ];
 
-  // ✅ DAY A: HEAVY DAY (3-5 reps @ 85-90% for strength)
+  // ✅ DAY A: Squat HEAVY + Bench HEAVY + Pulldown MODERATE + Core VOLUME
   days[0].exercises = [
-    createExercise('lower_push', baselines.lower_push, 0, options, 'heavy'),
-    createExercise('horizontal_push', baselines.horizontal_push, 0, options, 'heavy'),
-    createExercise('vertical_pull', baselines.vertical_pull, 0, options, 'heavy'),
-    createExercise('core', baselines.core, 0, options, 'heavy')
+    createExercise('lower_push', baselines.lower_push, 0, options, getIntensityForPattern('lower_push', 0, 0)),
+    createExercise('horizontal_push', baselines.horizontal_push, 0, options, getIntensityForPattern('horizontal_push', 1, 0)),
+    createExercise('vertical_pull', baselines.vertical_pull, 0, options, getIntensityForPattern('vertical_pull', 2, 0)),
+    createExercise('core', baselines.core, 0, options, getIntensityForPattern('core', 3, 0))
   ];
 
-  // ✅ DAY B: VOLUME DAY (8-12 reps @ 70-75% for hypertrophy)
+  // ✅ DAY B: Deadlift HEAVY + Military HEAVY + Bench MODERATE + Core VOLUME
   days[1].exercises = [
-    createExercise('lower_pull', baselines.lower_pull, 0, options, 'volume'),
-    createExercise('vertical_push', baselines.vertical_push, 0, options, 'volume'),
-    createExercise('horizontal_push', baselines.horizontal_push, 1, options, 'volume'), // Variante diversa
-    createExercise('core', baselines.core, 1, options, 'volume')
+    createExercise('lower_pull', baselines.lower_pull, 0, options, getIntensityForPattern('lower_pull', 0, 1)),
+    createExercise('vertical_push', baselines.vertical_push, 0, options, getIntensityForPattern('vertical_push', 1, 1)),
+    createExercise('horizontal_push', baselines.horizontal_push, 1, options, getIntensityForPattern('horizontal_push', 2, 1)), // Variante diversa
+    createExercise('core', baselines.core, 1, options, getIntensityForPattern('core', 3, 1))
   ];
 
-  // ✅ DAY C: MODERATE DAY (5-8 reps @ 78-82% balanced)
+  // ✅ DAY C: Squat HEAVY + Pulldown HEAVY + Bench MODERATE + Core VOLUME
   days[2].exercises = [
-    createExercise('lower_push', baselines.lower_push, 1, options, 'moderate'), // Variante diversa
-    createExercise('vertical_pull', baselines.vertical_pull, 1, options, 'moderate'), // Variante diversa
-    createExercise('horizontal_push', baselines.horizontal_push, 0, options, 'moderate'),
-    createExercise('core', baselines.core, 2, options, 'moderate')
+    createExercise('lower_push', baselines.lower_push, 1, options, getIntensityForPattern('lower_push', 0, 2)), // Variante diversa
+    createExercise('vertical_pull', baselines.vertical_pull, 1, options, getIntensityForPattern('vertical_pull', 1, 2)), // Variante diversa
+    createExercise('horizontal_push', baselines.horizontal_push, 0, options, getIntensityForPattern('horizontal_push', 2, 2)),
+    createExercise('core', baselines.core, 2, options, getIntensityForPattern('core', 3, 2))
   ];
 
   // Aggiungi correttivi a tutti i giorni se necessario
