@@ -164,6 +164,21 @@ export async function createProgram(
       return { success: true, data: program, fromCache: true };
     }
 
+    // ✅ FIX: Deactivate all existing programs BEFORE creating new one
+    console.log('[ProgramService] Deactivating existing programs...');
+    const { error: deactivateError } = await supabase
+      .from('training_programs')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('is_active', true);
+
+    if (deactivateError) {
+      console.warn('[ProgramService] Warning: Failed to deactivate old programs:', deactivateError.message);
+      // Continue anyway - not critical
+    } else {
+      console.log('[ProgramService] ✅ Old programs deactivated');
+    }
+
     // Prepare program data
     const programData = {
       ...program,

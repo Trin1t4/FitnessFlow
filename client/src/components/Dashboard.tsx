@@ -80,6 +80,27 @@ export default function Dashboard() {
 
       if (result.success && result.data) {
         console.log('✅ Loaded active program from Supabase:', result.data.name);
+
+        // ✅ AUTO-REGENERATE: Check if screening is newer than program
+        const screeningData = dataStatus.screening || JSON.parse(localStorage.getItem('screening_data') || '{}');
+        const screeningTimestamp = screeningData.timestamp;
+        const programCreatedAt = result.data.created_at;
+
+        if (screeningTimestamp && programCreatedAt) {
+          const screeningDate = new Date(screeningTimestamp);
+          const programDate = new Date(programCreatedAt);
+
+          if (screeningDate > programDate) {
+            console.warn('⚠️ SCREENING PIÙ RECENTE DEL PROGRAMMA!');
+            console.warn(`   Screening: ${screeningDate.toISOString()}`);
+            console.warn(`   Programma: ${programDate.toISOString()}`);
+            console.warn('   → Programma obsoleto, rigenerazione necessaria!');
+
+            // Mostra warning ma non rigenera automaticamente (per evitare loop)
+            // L'utente deve cliccare "Rigenera"
+          }
+        }
+
         setProgram(result.data);
         setHasProgram(true);
         setSyncStatus(result.fromCache ? 'offline' : 'synced');
@@ -586,12 +607,17 @@ export default function Dashboard() {
    * Mantiene compatibilità con il codice esistente del Dashboard
    */
   function generateLocalProgram(level: string, goal: string, onboarding: any) {
-    const location = onboarding?.trainingLocation || 'home';
+    const location = onboarding?.trainingLocation || 'gym'; // ✅ FIX: Default gym invece di home
     const frequency = onboarding?.activityLevel?.weeklyFrequency || 3;
     const trainingType = onboarding?.trainingType || 'bodyweight';
     const equipment = onboarding?.equipment || {};
     const baselines = dataStatus.screening?.patternBaselines || {};
     const muscularFocus = onboarding?.muscularFocus || ''; // ✅ Get muscular focus from onboarding
+
+    // ⚠️ VALIDAZIONE: Avvisa se location mancante
+    if (!onboarding?.trainingLocation) {
+      console.warn('⚠️ trainingLocation missing in onboarding, defaulting to gym');
+    }
 
     // Valida pain areas usando il validator estratto
     const rawPainAreas = onboarding?.painAreas || [];
