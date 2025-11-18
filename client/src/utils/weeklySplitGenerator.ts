@@ -198,28 +198,28 @@ function generate3DayFullBody(options: SplitGeneratorOptions): WeeklySplit {
     }
   ];
 
-  // DAY A: Lower Push + Horizontal Push + Vertical Pull + Core
+  // ✅ DAY A: HEAVY DAY (3-5 reps @ 85-90% for strength)
   days[0].exercises = [
-    createExercise('lower_push', baselines.lower_push, 0, options),
-    createExercise('horizontal_push', baselines.horizontal_push, 0, options),
-    createExercise('vertical_pull', baselines.vertical_pull, 0, options),
-    createExercise('core', baselines.core, 0, options)
+    createExercise('lower_push', baselines.lower_push, 0, options, 'heavy'),
+    createExercise('horizontal_push', baselines.horizontal_push, 0, options, 'heavy'),
+    createExercise('vertical_pull', baselines.vertical_pull, 0, options, 'heavy'),
+    createExercise('core', baselines.core, 0, options, 'heavy')
   ];
 
-  // DAY B: Lower Pull + Vertical Push + Horizontal Push (variante) + Core
+  // ✅ DAY B: VOLUME DAY (8-12 reps @ 70-75% for hypertrophy)
   days[1].exercises = [
-    createExercise('lower_pull', baselines.lower_pull, 0, options),
-    createExercise('vertical_push', baselines.vertical_push, 0, options),
-    createExercise('horizontal_push', baselines.horizontal_push, 1, options), // Variante diversa
-    createExercise('core', baselines.core, 1, options)
+    createExercise('lower_pull', baselines.lower_pull, 0, options, 'volume'),
+    createExercise('vertical_push', baselines.vertical_push, 0, options, 'volume'),
+    createExercise('horizontal_push', baselines.horizontal_push, 1, options, 'volume'), // Variante diversa
+    createExercise('core', baselines.core, 1, options, 'volume')
   ];
 
-  // DAY C: Lower Push (variante) + Vertical Pull (variante) + Horizontal Push + Core
+  // ✅ DAY C: MODERATE DAY (5-8 reps @ 78-82% balanced)
   days[2].exercises = [
-    createExercise('lower_push', baselines.lower_push, 1, options), // Variante diversa
-    createExercise('vertical_pull', baselines.vertical_pull, 1, options), // Variante diversa
-    createExercise('horizontal_push', baselines.horizontal_push, 0, options),
-    createExercise('core', baselines.core, 2, options)
+    createExercise('lower_push', baselines.lower_push, 1, options, 'moderate'), // Variante diversa
+    createExercise('vertical_pull', baselines.vertical_pull, 1, options, 'moderate'), // Variante diversa
+    createExercise('horizontal_push', baselines.horizontal_push, 0, options, 'moderate'),
+    createExercise('core', baselines.core, 2, options, 'moderate')
   ];
 
   // Aggiungi correttivi a tutti i giorni se necessario
@@ -280,34 +280,34 @@ function generate4DayUpperLower(options: SplitGeneratorOptions): WeeklySplit {
     }
   ];
 
-  // UPPER A: Horizontal Push focus
+  // ✅ UPPER A: HEAVY DAY (Horizontal Push focus)
   days[0].exercises = [
-    createExercise('horizontal_push', baselines.horizontal_push, 0, options),
-    createExercise('vertical_pull', baselines.vertical_pull, 0, options),
-    createExercise('vertical_push', baselines.vertical_push, 0, options),
-    createExercise('core', baselines.core, 0, options)
+    createExercise('horizontal_push', baselines.horizontal_push, 0, options, 'heavy'),
+    createExercise('vertical_pull', baselines.vertical_pull, 0, options, 'heavy'),
+    createExercise('vertical_push', baselines.vertical_push, 0, options, 'heavy'),
+    createExercise('core', baselines.core, 0, options, 'heavy')
   ];
 
-  // LOWER A: Squat focus
+  // ✅ LOWER A: VOLUME DAY (Squat focus)
   days[1].exercises = [
-    createExercise('lower_push', baselines.lower_push, 0, options),
-    createExercise('lower_pull', baselines.lower_pull, 0, options),
-    createExercise('core', baselines.core, 1, options)
+    createExercise('lower_push', baselines.lower_push, 0, options, 'volume'),
+    createExercise('lower_pull', baselines.lower_pull, 0, options, 'volume'),
+    createExercise('core', baselines.core, 1, options, 'volume')
   ];
 
-  // UPPER B: Vertical Push focus + varianti
+  // ✅ UPPER B: MODERATE DAY (Vertical Push focus + varianti)
   days[2].exercises = [
-    createExercise('vertical_push', baselines.vertical_push, 1, options),
-    createExercise('horizontal_push', baselines.horizontal_push, 1, options), // Variante
-    createExercise('vertical_pull', baselines.vertical_pull, 1, options), // Variante
-    createExercise('core', baselines.core, 2, options)
+    createExercise('vertical_push', baselines.vertical_push, 1, options, 'moderate'),
+    createExercise('horizontal_push', baselines.horizontal_push, 1, options, 'moderate'), // Variante
+    createExercise('vertical_pull', baselines.vertical_pull, 1, options, 'moderate'), // Variante
+    createExercise('core', baselines.core, 2, options, 'moderate')
   ];
 
-  // LOWER B: Deadlift focus + varianti
+  // ✅ LOWER B: MODERATE DAY (Deadlift focus + varianti)
   days[3].exercises = [
-    createExercise('lower_pull', baselines.lower_pull, 1, options), // Variante
-    createExercise('lower_push', baselines.lower_push, 1, options), // Variante
-    createExercise('core', baselines.core, 3, options)
+    createExercise('lower_pull', baselines.lower_pull, 1, options, 'moderate'), // Variante
+    createExercise('lower_push', baselines.lower_push, 1, options, 'moderate'), // Variante
+    createExercise('core', baselines.core, 3, options, 'moderate')
   ];
 
   // Aggiungi correttivi
@@ -380,49 +380,49 @@ function generate6DayPPL(options: SplitGeneratorOptions): WeeklySplit {
     }
   ];
 
-  // PUSH A
+  // ✅ PUSH A: HEAVY DAY
   days[0].exercises = [
-    createExercise('horizontal_push', baselines.horizontal_push, 0, options),
-    createExercise('vertical_push', baselines.vertical_push, 0, options),
-    createAccessoryExercise('triceps', 0, options),
-    createExercise('core', baselines.core, 0, options)
+    createExercise('horizontal_push', baselines.horizontal_push, 0, options, 'heavy'),
+    createExercise('vertical_push', baselines.vertical_push, 0, options, 'heavy'),
+    createAccessoryExercise('triceps', 0, options, 'heavy'),
+    createExercise('core', baselines.core, 0, options, 'heavy')
   ];
 
-  // PULL A - Include Horizontal Pull (Row)
+  // ✅ PULL A: VOLUME DAY - Include Horizontal Pull (Row)
   days[1].exercises = [
-    createExercise('vertical_pull', baselines.vertical_pull, 0, options),
-    createHorizontalPullExercise(0, options), // Row pattern
-    createAccessoryExercise('biceps', 0, options),
-    createExercise('core', baselines.core, 1, options)
+    createExercise('vertical_pull', baselines.vertical_pull, 0, options, 'volume'),
+    createHorizontalPullExercise(0, options, 'volume'), // Row pattern
+    createAccessoryExercise('biceps', 0, options, 'volume'),
+    createExercise('core', baselines.core, 1, options, 'volume')
   ];
 
-  // LEGS A
+  // ✅ LEGS A: MODERATE DAY
   days[2].exercises = [
-    createExercise('lower_push', baselines.lower_push, 0, options),
-    createExercise('lower_pull', baselines.lower_pull, 0, options),
-    createAccessoryExercise('calves', 0, options),
-    createExercise('core', baselines.core, 2, options)
+    createExercise('lower_push', baselines.lower_push, 0, options, 'moderate'),
+    createExercise('lower_pull', baselines.lower_pull, 0, options, 'moderate'),
+    createAccessoryExercise('calves', 0, options, 'moderate'),
+    createExercise('core', baselines.core, 2, options, 'moderate')
   ];
 
-  // PUSH B (varianti)
+  // ✅ PUSH B: VOLUME DAY (varianti)
   days[3].exercises = [
-    createExercise('vertical_push', baselines.vertical_push, 1, options),
-    createExercise('horizontal_push', baselines.horizontal_push, 1, options),
-    createAccessoryExercise('triceps', 1, options)
+    createExercise('vertical_push', baselines.vertical_push, 1, options, 'volume'),
+    createExercise('horizontal_push', baselines.horizontal_push, 1, options, 'volume'),
+    createAccessoryExercise('triceps', 1, options, 'volume')
   ];
 
-  // PULL B (varianti)
+  // ✅ PULL B: MODERATE DAY (varianti)
   days[4].exercises = [
-    createHorizontalPullExercise(1, options), // Row variante
-    createExercise('vertical_pull', baselines.vertical_pull, 1, options),
-    createAccessoryExercise('biceps', 1, options)
+    createHorizontalPullExercise(1, options, 'moderate'), // Row variante
+    createExercise('vertical_pull', baselines.vertical_pull, 1, options, 'moderate'),
+    createAccessoryExercise('biceps', 1, options, 'moderate')
   ];
 
-  // LEGS B (varianti)
+  // ✅ LEGS B: HEAVY DAY (varianti)
   days[5].exercises = [
-    createExercise('lower_pull', baselines.lower_pull, 1, options),
-    createExercise('lower_push', baselines.lower_push, 1, options),
-    createAccessoryExercise('calves', 1, options)
+    createExercise('lower_pull', baselines.lower_pull, 1, options, 'heavy'),
+    createExercise('lower_push', baselines.lower_push, 1, options, 'heavy'),
+    createAccessoryExercise('calves', 1, options, 'heavy')
   ];
 
   // Aggiungi correttivi
@@ -448,12 +448,14 @@ function generate6DayPPL(options: SplitGeneratorOptions): WeeklySplit {
 
 /**
  * Crea un esercizio con gestione baseline, varianti e pain management
+ * @param dayType - Tipo di giorno per DUP: 'heavy', 'volume', 'moderate'
  */
 function createExercise(
   patternId: string,
   baseline: any,
   variantIndex: number,
-  options: SplitGeneratorOptions
+  options: SplitGeneratorOptions,
+  dayType: 'heavy' | 'volume' | 'moderate' = 'moderate'
 ): Exercise {
   const { level, goal, location, trainingType, painAreas } = options;
 
@@ -470,9 +472,9 @@ function createExercise(
     };
   }
 
-  // Calcola volume basato su baseline
+  // ✅ Calcola volume basato su baseline + dayType (DUP)
   const baselineReps = baseline.reps;
-  const volumeCalc = calculateVolume(baselineReps, goal, level, location);
+  const volumeCalc = calculateVolume(baselineReps, goal, level, location, dayType);
 
   // Determina quale variante usare
   const equipment = location === 'gym' ? 'gym' : 'bodyweight';
@@ -548,7 +550,8 @@ function createExercise(
  */
 function createHorizontalPullExercise(
   variantIndex: number,
-  options: SplitGeneratorOptions
+  options: SplitGeneratorOptions,
+  dayType: 'heavy' | 'volume' | 'moderate' = 'moderate'
 ): Exercise {
   const { level, goal, location, trainingType } = options;
 
@@ -560,8 +563,8 @@ function createHorizontalPullExercise(
   const selectedVariant = variants[variantIndex % variants.length];
   let exerciseName = selectedVariant.name;
 
-  // Volume generico (non abbiamo baseline per questo pattern)
-  const volumeCalc = calculateVolume(12, goal, level, location); // Assume 12 reps come baseline
+  // ✅ Volume generico con DUP (non abbiamo baseline per questo pattern)
+  const volumeCalc = calculateVolume(12, goal, level, location, dayType); // Assume 12 reps come baseline
 
   // Conversione a macchine
   if (location === 'gym' && trainingType === 'machines') {
@@ -585,7 +588,8 @@ function createHorizontalPullExercise(
 function createAccessoryExercise(
   muscleGroup: 'triceps' | 'biceps' | 'calves',
   variantIndex: number,
-  options: SplitGeneratorOptions
+  options: SplitGeneratorOptions,
+  dayType: 'heavy' | 'volume' | 'moderate' = 'moderate'
 ): Exercise {
   const { level, goal, location, trainingType } = options;
 

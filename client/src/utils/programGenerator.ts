@@ -23,19 +23,22 @@ export interface VolumeResult {
 }
 
 /**
- * Calcola volume (sets/reps/rest) basato su baseline e goal
- * Sistema adattivo con logica specifica per calisthenics
+ * Calcola volume (sets/reps/rest) basato su baseline, goal e dayType
+ * Sistema DUP (Daily Undulating Periodization) per variare stimoli
  *
  * @param baselineMaxReps - Max reps ottenute nello screening
  * @param goal - Obiettivo dell'allenamento
  * @param level - Livello dell'atleta
+ * @param location - Gym o home (default: gym)
+ * @param dayType - Tipo di giorno: 'heavy' (intensità), 'volume' (ipertrofia), 'moderate' (misto)
  * @returns - Volume configuration (sets, reps, rest, intensity)
  */
 export function calculateVolume(
   baselineMaxReps: number,
   goal: string,
   level: string,
-  location?: 'gym' | 'home'
+  location: 'gym' | 'home' = 'gym',
+  dayType: 'heavy' | 'volume' | 'moderate' = 'moderate'
 ): VolumeResult {
   // ✅ BEGINNER: Scheda di ADATTAMENTO ANATOMICO fissa
   // 3x10 @ 65% del massimale, rest 90s
@@ -52,57 +55,205 @@ export function calculateVolume(
     };
   }
 
-  // ✅ INTERMEDIATE/ADVANCED: Sistema adattivo basato su goal
-  // REGOLA CALISTHENICS: VOLUME è il re, non intensità!
-  // Forza = alto volume con progressioni di difficoltà
-  // Ipertrofia = volume moderato con TUT (tempo sotto tensione)
-  // Endurance = volume alto con reps alte
+  // ✅ INTERMEDIATE/ADVANCED: Sistema DUP (Daily Undulating Periodization)
+  // Ogni giorno ha intensità/volume diversi per stimoli ottimali
+  // Heavy = forza/intensità | Volume = ipertrofia | Moderate = misto
 
   const workingReps = Math.max(4, Math.floor(baselineMaxReps * 0.75));
-
-  // ✅ FORZA (Calisthenics): ALTO VOLUME, reps moderate (5-8)
-  // La progressione viene da varianti più difficili, non da reps bassissime
-  let sets = 4; // Default
+  let sets = 4;
   let reps = workingReps;
   let rest = '90s';
   let intensity = '75%';
+  let notes = '';
 
+  // ========================================
+  // 💪 STRENGTH (forza)
+  // ========================================
   if (goal === 'forza' || goal === 'strength') {
-    // ✅ DISTINGUE TRA GYM E CALISTHENICS
     if (location === 'gym') {
-      // 🏋️ GYM STRENGTH: Intensità alta, reps basse (Powerlifting style)
-      sets = level === 'advanced' ? 5 : 4; // 4-5 sets
-      reps = Math.max(3, Math.min(workingReps, 5)); // 3-5 reps (forza massimale)
-      rest = '3-5min'; // Recupero completo per sistema nervoso
-      intensity = '85-90%'; // Alta intensità per adattamenti neurali
+      // 🏋️ GYM STRENGTH
+      if (dayType === 'heavy') {
+        sets = level === 'advanced' ? 5 : 4;
+        reps = Math.max(3, Math.min(workingReps, 5)); // 3-5 reps
+        rest = '3-5min';
+        intensity = '85-90%';
+        notes = 'Heavy Day - Forza massimale';
+      } else if (dayType === 'volume') {
+        sets = 4;
+        reps = Math.max(8, Math.min(workingReps, 10)); // 8-10 reps
+        rest = '2-3min';
+        intensity = '70-75%';
+        notes = 'Volume Day - Ipertrofia funzionale';
+      } else { // moderate
+        sets = 4;
+        reps = Math.max(5, Math.min(workingReps, 8)); // 5-8 reps
+        rest = '2-3min';
+        intensity = '78-82%';
+        notes = 'Moderate Day - Forza-ipertrofia';
+      }
     } else {
-      // 🤸 CALISTHENICS STRENGTH: Volume alto per skill acquisition
-      sets = level === 'advanced' ? 6 : 5; // Più sets per pratica
-      reps = Math.max(5, Math.min(workingReps, 8)); // 5-8 reps (sweet spot calisthenics)
-      rest = '2-3min'; // Recupero completo ma non eccessivo
-      intensity = '75%'; // Volume > Intensità nel bodyweight
+      // 🤸 CALISTHENICS STRENGTH
+      if (dayType === 'heavy') {
+        sets = level === 'advanced' ? 6 : 5;
+        reps = Math.max(3, Math.min(workingReps, 6)); // 3-6 reps
+        rest = '2-3min';
+        intensity = '80-85%';
+        notes = 'Heavy Day - Skill strength';
+      } else if (dayType === 'volume') {
+        sets = 5;
+        reps = Math.max(8, Math.min(workingReps, 12)); // 8-12 reps
+        rest = '90s';
+        intensity = '65-70%';
+        notes = 'Volume Day - Capacità di lavoro';
+      } else { // moderate
+        sets = 5;
+        reps = Math.max(5, Math.min(workingReps, 8)); // 5-8 reps
+        rest = '2min';
+        intensity = '75%';
+        notes = 'Moderate Day - Bilanciato';
+      }
     }
-  } else if (goal === 'massa' || goal === 'massa muscolare' || goal === 'muscle_gain') {
-    // IPERTROFIA: Volume moderato-alto, TUT
-    sets = level === 'advanced' ? 5 : 4;
-    reps = Math.max(6, Math.min(workingReps, 12)); // 6-12 reps
-    rest = '60-90s';
-    intensity = '70-80%'; // TUT importante
-  } else if (goal === 'endurance') {
-    // ENDURANCE: Volume alto, reps alte, rest brevi
+  }
+  // ========================================
+  // 🏋️ HYPERTROPHY (ipertrofia/massa)
+  // ========================================
+  else if (goal === 'massa' || goal === 'massa muscolare' || goal === 'muscle_gain' || goal === 'ipertrofia') {
+    if (dayType === 'heavy') {
+      sets = level === 'advanced' ? 5 : 4;
+      reps = Math.max(6, Math.min(workingReps, 8)); // 6-8 reps
+      rest = '90-120s';
+      intensity = '80-85%';
+      notes = 'Heavy Day - Tensione meccanica';
+    } else if (dayType === 'volume') {
+      sets = 5;
+      reps = Math.max(10, Math.min(workingReps, 15)); // 10-15 reps
+      rest = '60-75s';
+      intensity = '65-70%';
+      notes = 'Volume Day - Stress metabolico';
+    } else { // moderate
+      sets = 4;
+      reps = Math.max(8, Math.min(workingReps, 12)); // 8-12 reps
+      rest = '75-90s';
+      intensity = '70-80%';
+      notes = 'Moderate Day - Ipertrofia classica';
+    }
+  }
+  // ========================================
+  // 🔥 FAT LOSS (tonificazione/dimagrimento)
+  // ========================================
+  else if (goal === 'fat_loss' || goal === 'tonificazione' || goal === 'dimagrimento' || goal === 'definizione') {
+    if (dayType === 'heavy') {
+      sets = 4;
+      reps = Math.max(8, Math.min(workingReps, 10)); // 8-10 reps
+      rest = '75-90s';
+      intensity = '75-80%';
+      notes = 'Heavy Day - Preservazione massa';
+    } else if (dayType === 'volume') {
+      sets = 4;
+      reps = Math.max(12, Math.min(workingReps, 15)); // 12-15 reps
+      rest = '45-60s';
+      intensity = '60-70%';
+      notes = 'Volume Day - Consumo calorico';
+    } else { // moderate
+      sets = 4;
+      reps = Math.max(10, Math.min(workingReps, 12)); // 10-12 reps
+      rest = '60-75s';
+      intensity = '70-75%';
+      notes = 'Moderate Day - Definizione';
+    }
+  }
+  // ========================================
+  // 🏃 ENDURANCE (resistenza)
+  // ========================================
+  else if (goal === 'endurance' || goal === 'resistenza') {
+    if (dayType === 'heavy') {
+      sets = 4;
+      reps = Math.max(12, Math.min(workingReps, 15)); // 12-15 reps
+      rest = '60s';
+      intensity = '65-70%';
+      notes = 'Heavy Day - Forza resistente';
+    } else if (dayType === 'volume') {
+      sets = 4;
+      reps = Math.max(15, Math.min(workingReps, 20)); // 15-20 reps
+      rest = '30-45s';
+      intensity = '55-65%';
+      notes = 'Volume Day - Capacità aerobica';
+    } else { // moderate
+      sets = 4;
+      reps = Math.max(12, Math.min(workingReps, 18)); // 12-18 reps
+      rest = '45-60s';
+      intensity = '60-70%';
+      notes = 'Moderate Day - Endurance muscolare';
+    }
+  }
+  // ========================================
+  // 🧘 GENERAL FITNESS (benessere)
+  // ========================================
+  else if (goal === 'general_fitness' || goal === 'benessere') {
+    if (dayType === 'heavy') {
+      sets = 4;
+      reps = Math.max(6, Math.min(workingReps, 10)); // 6-10 reps
+      rest = '90s';
+      intensity = '75-80%';
+      notes = 'Heavy Day - Forza generale';
+    } else if (dayType === 'volume') {
+      sets = 4;
+      reps = Math.max(10, Math.min(workingReps, 15)); // 10-15 reps
+      rest = '60-75s';
+      intensity = '65-75%';
+      notes = 'Volume Day - Fitness generale';
+    } else { // moderate
+      sets = 4;
+      reps = Math.max(8, Math.min(workingReps, 12)); // 8-12 reps
+      rest = '75-90s';
+      intensity = '70-78%';
+      notes = 'Moderate Day - Bilanciato';
+    }
+  }
+  // ========================================
+  // 🎯 SPECIAL GOALS (NO DUP - approccio specifico)
+  // ========================================
+  else if (goal === 'sport_performance' || goal === 'prestazioni_sportive') {
+    // Sport-specific: Forza esplosiva + resistenza specifica
     sets = 4;
-    reps = Math.max(12, Math.min(workingReps, 20)); // 12-20 reps
-    rest = '30-45s';
+    reps = Math.max(6, Math.min(workingReps, 10));
+    rest = '90-120s';
+    intensity = '70-80%';
+    notes = 'Allenamento sport-specifico';
+  } else if (goal === 'motor_recovery' || goal === 'recupero_motorio') {
+    // Recovery: Basso carico, focus tecnica e mobilità
+    sets = 3;
+    reps = Math.max(8, Math.min(workingReps, 12));
+    rest = '90-120s';
     intensity = '60-70%';
-  } else {
-    // GENERAL FITNESS: bilanciato
+    notes = 'Recupero motorio - Focus tecnica';
+  } else if (goal === 'pregnancy' || goal === 'gravidanza') {
+    // Pregnancy: Sicurezza e mobilità
+    sets = 3;
+    reps = Math.max(10, Math.min(workingReps, 15));
+    rest = '90-120s';
+    intensity = '50-65%';
+    notes = 'Gravidanza - Intensità controllata';
+  } else if (goal === 'disability' || goal === 'disabilita') {
+    // Disability: Adattamenti specifici
+    sets = 3;
+    reps = Math.max(8, Math.min(workingReps, 12));
+    rest = '120s';
+    intensity = '60-70%';
+    notes = 'Adattamenti specifici';
+  }
+  // ========================================
+  // DEFAULT FALLBACK
+  // ========================================
+  else {
     sets = 4;
-    reps = Math.max(8, Math.min(workingReps, 12)); // 8-12 reps
-    rest = '60-90s';
+    reps = Math.max(8, Math.min(workingReps, 12));
+    rest = '75-90s';
     intensity = '70%';
+    notes = 'Programma generale';
   }
 
-  return { sets, reps, rest, intensity };
+  return { sets, reps, rest, intensity, notes };
 }
 
 export interface ProgramGeneratorOptions {
