@@ -55,14 +55,32 @@ export default function LiveWorkoutSession({
   userId,
   programId,
   dayName,
-  exercises,
+  exercises: initialExercises,
   onWorkoutComplete
 }: LiveWorkoutSessionProps) {
+  // Pre-workout state
+  const [showPreWorkout, setShowPreWorkout] = useState(true);
+  const [mood, setMood] = useState<'great' | 'good' | 'ok' | 'tired'>('good');
+  const [sleepQuality, setSleepQuality] = useState(7);
+  const [showLocationSwitch, setShowLocationSwitch] = useState(false);
+  const [switchingLocation, setSwitchingLocation] = useState(false);
+  const [homeEquipment, setHomeEquipment] = useState({
+    dumbbell: false,
+    barbell: false,
+    pullUpBar: false,
+    rings: false,
+    bands: false,
+    kettlebell: false,
+    bench: false
+  });
+
   // Workout state
+  const [exercises, setExercises] = useState<Exercise[]>(initialExercises);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
   const [setLogs, setSetLogs] = useState<Record<string, SetLog[]>>({});
   const [workoutStartTime, setWorkoutStartTime] = useState<Date | null>(null);
+  const [locationSwitched, setLocationSwitched] = useState(false);
 
   // Current set state
   const [showRPEInput, setShowRPEInput] = useState(false);
@@ -91,15 +109,93 @@ export default function LiveWorkoutSession({
   const [adjustedSets, setAdjustedSets] = useState<Record<string, number>>({});
   const currentTargetSets = adjustedSets[currentExercise?.name] || currentExercise?.sets || 3;
 
-  // Initialize workout
-  useEffect(() => {
-    if (open && !workoutStartTime) {
-      setWorkoutStartTime(new Date());
-      toast.success('💪 Workout iniziato!', {
-        description: 'Completa ogni set e fornisci il tuo RPE'
+  // Handle location switch for THIS SESSION ONLY
+  const handleSessionLocationSwitch = async () => {
+    try {
+      setSwitchingLocation(true);
+
+      console.log('🏋️ Switching location for this session only...');
+      console.log('Equipment selected:', homeEquipment);
+
+      // Map gym exercises to home equivalents
+      const homeExercises = exercises.map(ex => {
+        // Keep core exercises as-is (bodyweight)
+        if (ex.pattern === 'core') return ex;
+
+        // Map gym → home equivalents based on pattern
+        const homeEquivalents: Record<string, { name: string; notes?: string }> = {
+          // Lower Push
+          'Squat (Bilanciere)': { name: 'Pistol Squat Assistito', notes: 'Usa una sedia per supporto' },
+          'Bulgarian Split Squat': { name: 'Split Squat Corpo Libero', notes: 'Aggiungi peso se hai manubri' },
+          'Leg Press': { name: 'Air Squat + Jump', notes: 'Volume alto per compensare' },
+
+          // Horizontal Push
+          'Panca Piana': { name: 'Push-up', notes: homeEquipment.dumbbell ? 'Usa manubri per push-up weighted' : 'Standard push-ups' },
+          'Chest Press Manubri': { name: 'Push-up Diamonds', notes: 'Focus su pettorali' },
+          'Piegamenti Sbarra': { name: 'Push-up Wide', notes: 'Ampia stance per petto' },
+
+          // Vertical Push
+          'Military Press': { name: 'Pike Push-up', notes: homeEquipment.dumbbell ? 'Usa manubri overhead' : 'Pike push-ups progressivi' },
+          'Shoulder Press Manubri': { name: 'Handstand Push-up Progressione', notes: 'Wall-assisted HSPU' },
+
+          // Vertical Pull
+          'Trazioni': { name: homeEquipment.pullUpBar ? ex.name : 'Australian Pull-up (Tavolo)', notes: homeEquipment.pullUpBar ? 'Usa sbarra' : 'Usa tavolo robusto' },
+          'Lat Machine': { name: 'Inverted Row (Tavolo)', notes: 'Usa tavolo o sbarra bassa' },
+          'Pull-down': { name: homeEquipment.bands ? 'Band Pull-down' : 'Scap Pull-ups', notes: 'Focus su dorsali' },
+
+          // Horizontal Pull
+          'Rematore Bilanciere': { name: homeEquipment.dumbbell ? 'Rematore Manubri' : 'Inverted Row', notes: 'Focus su middle back' },
+          'Rematore Manubri': { name: homeEquipment.dumbbell ? ex.name : 'Bodyweight Row (Tavolo)', notes: 'Mantieni intensità' },
+          'Cable Row': { name: homeEquipment.bands ? 'Band Row' : 'Inverted Row', notes: 'Controlla movimento' },
+
+          // Lower Pull
+          'Stacchi Rumeni': { name: homeEquipment.dumbbell ? 'RDL Manubri' : 'Nordic Curl Assistito', notes: 'Focus hamstrings' },
+          'Leg Curl': { name: 'Nordic Curl Progressione', notes: 'Usa letto/divano per bloccare piedi' },
+          'Good Morning': { name: 'Single Leg RDL', notes: 'Equilibrio + posterior chain' }
+        };
+
+        // Find home equivalent
+        const homeEquiv = homeEquivalents[ex.name];
+
+        if (homeEquiv) {
+          return {
+            ...ex,
+            name: homeEquiv.name,
+            notes: homeEquiv.notes || ex.notes,
+            intensity: ex.intensity // Keep same intensity intent
+          };
+        }
+
+        // If no specific mapping, keep original (might be bodyweight already)
+        return ex;
       });
+
+      setExercises(homeExercises);
+      setLocationSwitched(true);
+      setShowLocationSwitch(false);
+      setSwitchingLocation(false);
+
+      toast.success('🏠 Location cambiata per questa sessione!', {
+        description: 'Esercizi adattati per allenamento casa'
+      });
+
+      console.log('✅ Session exercises adapted for home:', homeExercises);
+
+    } catch (error) {
+      console.error('❌ Error switching location:', error);
+      toast.error('Errore durante cambio location');
+      setSwitchingLocation(false);
     }
-  }, [open]);
+  };
+
+  // Start workout after pre-check
+  const handleStartWorkout = () => {
+    setShowPreWorkout(false);
+    setWorkoutStartTime(new Date());
+    toast.success('💪 Workout iniziato!', {
+      description: `Mood: ${mood} • Sleep: ${sleepQuality}/10${locationSwitched ? ' • Casa' : ''}`
+    });
+  };
 
   // Rest timer countdown
   useEffect(() => {
@@ -355,7 +451,185 @@ export default function LiveWorkoutSession({
     }
   };
 
-  if (!open || !currentExercise) return null;
+  if (!open) return null;
+
+  // PRE-WORKOUT CHECK-IN
+  if (showPreWorkout) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      >
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          className="bg-slate-900 rounded-2xl p-6 max-w-lg w-full border border-slate-700 shadow-2xl"
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-white">👋 Pre-Workout Check-In</h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Mood Selection */}
+          <div className="mb-6">
+            <label className="block text-slate-300 text-sm mb-3">Come ti senti oggi?</label>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { value: 'great', emoji: '🔥', label: 'Ottimo' },
+                { value: 'good', emoji: '😊', label: 'Bene' },
+                { value: 'ok', emoji: '😐', label: 'OK' },
+                { value: 'tired', emoji: '😴', label: 'Stanco' }
+              ].map(({ value, emoji, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setMood(value as any)}
+                  className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+                    mood === value
+                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">{emoji}</div>
+                  <div className="text-xs font-semibold">{label}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Sleep Quality */}
+          <div className="mb-6">
+            <div className="flex justify-between text-sm text-slate-400 mb-2">
+              <span>Qualità del sonno</span>
+              <span className="text-white font-bold">{sleepQuality}/10</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={sleepQuality}
+              onChange={(e) => setSleepQuality(parseInt(e.target.value))}
+              className="w-full h-3 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            />
+            <div className="grid grid-cols-10 gap-1 mt-1">
+              {[1,2,3,4,5,6,7,8,9,10].map(val => (
+                <div
+                  key={val}
+                  className={`text-center text-xs ${sleepQuality === val ? 'text-emerald-400 font-bold' : 'text-slate-600'}`}
+                >
+                  {val}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Location Switch Button (VIOLA) */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowLocationSwitch(true)}
+            className="w-full mb-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300"
+          >
+            🏠 Cambia Location per Oggi
+          </motion.button>
+
+          {locationSwitched && (
+            <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg text-center">
+              <p className="text-purple-300 text-sm font-semibold">
+                ✅ Sessione adattata per casa!
+              </p>
+            </div>
+          )}
+
+          {/* Start Workout Button */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleStartWorkout}
+            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300"
+          >
+            <Play className="w-5 h-5" />
+            Inizia Allenamento
+          </motion.button>
+
+          {/* Location Switch Modal */}
+          {showLocationSwitch && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+              onClick={() => setShowLocationSwitch(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-xl font-bold text-white mb-4">🏠 Attrezzatura Casa Disponibile</h3>
+
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {[
+                    { key: 'dumbbell', label: 'Manubri', icon: '🏋️' },
+                    { key: 'barbell', label: 'Bilanciere', icon: '⚡' },
+                    { key: 'pullUpBar', label: 'Sbarra', icon: '🔥' },
+                    { key: 'rings', label: 'Anelli', icon: '⭕' },
+                    { key: 'bands', label: 'Elastici', icon: '🎗️' },
+                    { key: 'kettlebell', label: 'Kettlebell', icon: '🎯' }
+                  ].map(({ key, label, icon }) => (
+                    <label
+                      key={key}
+                      className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                        homeEquipment[key as keyof typeof homeEquipment]
+                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                          : 'bg-slate-700 border-slate-600 text-slate-300 hover:border-slate-500'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={homeEquipment[key as keyof typeof homeEquipment]}
+                        onChange={(e) => setHomeEquipment(prev => ({ ...prev, [key]: e.target.checked }))}
+                        className="w-4 h-4 rounded accent-emerald-500"
+                      />
+                      <span className="text-xl">{icon}</span>
+                      <span className="text-sm font-semibold">{label}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+                  <p className="text-blue-300 text-sm">
+                    💡 Gli esercizi verranno adattati automaticamente in base all'attrezzatura disponibile
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowLocationSwitch(false)}
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg transition-colors"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    onClick={handleSessionLocationSwitch}
+                    disabled={switchingLocation}
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all"
+                  >
+                    {switchingLocation ? 'Adattamento...' : 'Conferma'}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </motion.div>
+      </motion.div>
+    );
+  }
+
+  // MAIN WORKOUT UI (after pre-check)
+  if (!currentExercise) return null;
 
   return (
     <motion.div
