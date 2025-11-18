@@ -33,19 +33,27 @@ export default function Login() {
     } else if (data?.session) {
       // Smart routing: controlla PRIMA Supabase, poi localStorage
       try {
-        // Check se ha programma attivo su Supabase
-        const { data: programs, error: programError } = await supabase
-          .from('training_programs')
-          .select('id')
-          .eq('user_id', data.session.user.id)
-          .eq('is_active', true)
-          .limit(1);
+        // Usa localStorage userId (custom ID, non Supabase Auth UUID)
+        const storedUserId = localStorage.getItem('userId');
+        console.log('[LOGIN] 🔍 Checking for programs, userId:', storedUserId);
 
-        if (!programError && programs && programs.length > 0) {
-          // Ha programma su Supabase → Dashboard
-          console.log('[LOGIN] ✅ User has active program, going to dashboard');
-          window.location.href = "/dashboard";
-          return;
+        if (storedUserId) {
+          // Check se ha programma attivo su Supabase
+          const { data: programs, error: programError } = await supabase
+            .from('training_programs')
+            .select('id')
+            .eq('user_id', storedUserId)
+            .eq('is_active', true)
+            .limit(1);
+
+          console.log('[LOGIN] 📊 Supabase response:', { programs, error: programError });
+
+          if (!programError && programs && programs.length > 0) {
+            // Ha programma su Supabase → Dashboard
+            console.log('[LOGIN] ✅ User has active program, going to dashboard');
+            window.location.href = "/dashboard";
+            return;
+          }
         }
 
         // Se non ha programma su Supabase, controlla localStorage
