@@ -46,8 +46,11 @@ export default function Screening() {
     console.log('[SCREENING] Data:', screeningData);
 
     // I dati sono già salvati da ScreeningFlow in 'screening_data'
-    // Naviga direttamente alla dashboard
-    navigate('/dashboard');
+    // Aggiungi piccolo delay per permettere a Framer Motion di completare animations
+    // Questo previene il crash "removeChild" quando il componente si smonta
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 150);
   };
 
   if (loading) return <div>Caricamento...</div>;
