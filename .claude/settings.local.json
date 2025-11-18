@@ -14,7 +14,8 @@
       "Bash(find:*)",
       "Bash(xargs sed -i \"s|from ''''../lib/supabase''''|from ''''../lib/supabaseClient''''|g\")",
       "Bash(from '../lib/supabase')",
-      "Bash(from '../lib/supabaseClient')"
+      "Bash(from '../lib/supabaseClient')",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []

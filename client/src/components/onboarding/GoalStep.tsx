@@ -34,15 +34,15 @@ const SPORTS_OPTIONS = [
 ];
 
 const MUSCULAR_FOCUS_OPTIONS = [
-  { value: '', label: '🎯 Nessun Focus', desc: 'Sviluppo armonico generale' },
-  { value: 'glutei', label: '🍑 Glutei', desc: 'Focus su glutei e femorali' },
-  { value: 'addome', label: '💪 Addome', desc: 'Core e addominali' },
-  { value: 'petto', label: '💪 Petto', desc: 'Pettorale maggiore e minore' },
-  { value: 'dorso', label: '🏋️ Dorso', desc: 'Gran dorsale e trapezi' },
-  { value: 'spalle', label: '💪 Spalle', desc: 'Deltoidi e cuffia' },
-  { value: 'gambe', label: '🦵 Gambe', desc: 'Quadricipiti e polpacci' },
-  { value: 'braccia', label: '💪 Braccia', desc: 'Bicipiti e tricipiti' },
-  { value: 'polpacci', label: '🦵 Polpacci', desc: 'Focus su gastrocnemio' }
+  { value: '', label: 'Nessun Focus', desc: 'Sviluppo completo' },
+  { value: 'glutei', label: 'Glutei', desc: 'Volume aumentato' },
+  { value: 'addome', label: 'Addome', desc: 'Volume aumentato' },
+  { value: 'petto', label: 'Petto', desc: 'Volume aumentato' },
+  { value: 'dorso', label: 'Dorso', desc: 'Volume aumentato' },
+  { value: 'spalle', label: 'Spalle', desc: 'Volume aumentato' },
+  { value: 'gambe', label: 'Gambe', desc: 'Volume aumentato' },
+  { value: 'braccia', label: 'Braccia', desc: 'Volume aumentato' },
+  { value: 'polpacci', label: 'Polpacci', desc: 'Volume aumentato' }
 ];
 
 export default function GoalStep({ data, onNext }: GoalStepProps) {
@@ -144,14 +144,6 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
               </button>
             ))}
           </div>
-
-          {muscularFocus && muscularFocus !== '' && (
-            <div className="bg-emerald-500/10 border border-emerald-500 rounded-lg p-3">
-              <p className="text-sm text-emerald-200">
-                ✓ Il programma aumenterà il volume di lavoro per {MUSCULAR_FOCUS_OPTIONS.find(o => o.value === muscularFocus)?.label.split(' ')[1].toLowerCase()}
-              </p>
-            </div>
-          )}
         </div>
       )}
 
