@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut, Shield } from 'lucide-react';
+import LanguageSwitcher from './LanguageSwitcher';
 import { validateAndNormalizePainAreas } from '../utils/validators';
 import { generateProgram, generateProgramWithSplit } from '../utils/programGenerator';
 import { motion } from 'framer-motion';
@@ -838,6 +839,9 @@ export default function Dashboard() {
           </motion.h1>
 
           <div className="flex items-center gap-3">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
             {/* Sync Status Indicator */}
             <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
               syncStatus === 'synced' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' :
