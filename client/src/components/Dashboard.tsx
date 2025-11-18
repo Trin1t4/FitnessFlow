@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut } from 'lucide-react';
+import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut, Shield } from 'lucide-react';
 import { validateAndNormalizePainAreas } from '../utils/validators';
 import { generateProgram, generateProgramWithSplit } from '../utils/programGenerator';
 import { motion } from 'framer-motion';
@@ -17,6 +17,7 @@ import {
   syncProgramsFromCloud,
   TrainingProgram
 } from '../lib/programService';
+import * as adminService from '../lib/adminService';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -59,9 +60,12 @@ export default function Dashboard() {
     lastWorkout: null as string | null
   });
 
+  const [isAdmin, setIsAdmin] = useState(false);
+
   useEffect(() => {
     loadData();
     initializePrograms();
+    checkAdminStatus();
   }, []);
 
   useEffect(() => {
@@ -282,6 +286,18 @@ export default function Dashboard() {
       hasScreening: !!screening,
       screeningLevel: screening ? JSON.parse(screening).level : null
     });
+  }
+
+  async function checkAdminStatus() {
+    try {
+      const { data: isUserAdmin } = await adminService.isAdmin();
+      if (isUserAdmin) {
+        setIsAdmin(true);
+        console.log('🛡️ User is admin - showing Admin Panel button');
+      }
+    } catch (error) {
+      console.log('ℹ️ User is not admin or error checking status');
+    }
   }
 
   async function handleDeepReset() {
@@ -848,6 +864,19 @@ export default function Dashboard() {
               >
                 <History className="w-4 h-4" />
                 Storico ({programHistory.length})
+              </motion.button>
+            )}
+
+            {/* Admin Panel Button (solo per admin) */}
+            {isAdmin && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/admin')}
+                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-4 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all duration-300"
+              >
+                <Shield className="w-4 h-4" />
+                Admin Panel
               </motion.button>
             )}
 
