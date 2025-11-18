@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Zap, Menu } from "lucide-react";
 import LanguageToggle from "@/components/LanguageToggle";
+import { Link } from "react-router-dom";
 
 export default function Header() {
   return (
@@ -17,9 +18,9 @@ export default function Header() {
           <a href="#features" className="text-sm font-medium hover:text-primary transition-colors">
             Funzionalità
           </a>
-          <a href="#pricing" className="text-sm font-medium hover:text-primary transition-colors">
+          <Link to="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
             Prezzi
-          </a>
+          </Link>
           <a href="#about" className="text-sm font-medium hover:text-primary transition-colors">
             Chi Siamo
           </a>
