@@ -624,6 +624,7 @@ export default function Dashboard() {
     const equipment = onboarding?.equipment || {};
     const baselines = dataStatus.screening?.patternBaselines || {};
     const muscularFocus = onboarding?.muscularFocus || ''; // ✅ Get muscular focus from onboarding
+    const goals = onboarding?.goals || [goal]; // ✅ Multi-goal support (fallback to single goal)
 
     // ⚠️ VALIDAZIONE: Avvisa se location mancante
     if (!onboarding?.trainingLocation) {
@@ -634,10 +635,11 @@ export default function Dashboard() {
     const rawPainAreas = onboarding?.painAreas || [];
     const painAreas = validateAndNormalizePainAreas(rawPainAreas);
 
-    // Usa la NUOVA funzione con split intelligente + muscular focus
+    // Usa la NUOVA funzione con split intelligente + muscular focus + multi-goal
     const program = generateProgramWithSplit({
       level: level as any,
       goal: goal as any,
+      goals, // ✅ Multi-goal support
       location,
       trainingType: trainingType as any,
       frequency,

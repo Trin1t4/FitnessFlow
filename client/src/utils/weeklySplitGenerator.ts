@@ -95,12 +95,67 @@ export interface WeeklySplit {
 interface SplitGeneratorOptions {
   level: Level;
   goal: Goal;
+  goals?: string[]; // Multi-goal support (max 3)
   location: 'gym' | 'home';
   trainingType: 'bodyweight' | 'equipment' | 'machines';
   frequency: number;
   baselines: PatternBaselines;
   painAreas: NormalizedPainArea[];
   muscularFocus?: string; // glutei, addome, petto, dorso, spalle, gambe, braccia, polpacci
+}
+
+/**
+ * MULTI-GOAL VOLUME DISTRIBUTION
+ * Calcola il moltiplicatore di volume per ogni goal
+ *
+ * 1 goal: 100%
+ * 2 goals: 70% primario, 30% secondario
+ * 3 goals: 40% primario, 30% secondario, 30% terziario
+ */
+function getGoalVolumeMultiplier(goals: string[], goalIndex: number): number {
+  if (!goals || goals.length <= 1) return 1.0;
+
+  if (goals.length === 2) {
+    return goalIndex === 0 ? 0.7 : 0.3;
+  }
+
+  // 3 goals
+  if (goalIndex === 0) return 0.4;
+  return 0.3; // secondary and tertiary both get 30%
+}
+
+/**
+ * GOAL DISTRIBUTION INFO
+ * Genera una nota descrittiva sulla distribuzione degli obiettivi
+ */
+function getGoalDistributionNote(goals: string[]): string {
+  if (!goals || goals.length <= 1) return '';
+
+  const goalLabels: Record<string, string> = {
+    'forza': 'Forza',
+    'ipertrofia': 'Ipertrofia',
+    'massa': 'Massa',
+    'tonificazione': 'Tonificazione',
+    'dimagrimento': 'Dimagrimento',
+    'resistenza': 'Resistenza',
+    'benessere': 'Benessere',
+    'motor_recovery': 'Recupero',
+    'gravidanza': 'Gravidanza',
+    'disabilita': 'Disabilità',
+    'prestazioni_sportive': 'Sport'
+  };
+
+  if (goals.length === 2) {
+    const primary = goalLabels[goals[0]] || goals[0];
+    const secondary = goalLabels[goals[1]] || goals[1];
+    return `📊 Distribuzione: ${primary} (70%) + ${secondary} (30%)`;
+  }
+
+  // 3 goals
+  const primary = goalLabels[goals[0]] || goals[0];
+  const secondary = goalLabels[goals[1]] || goals[1];
+  const tertiary = goalLabels[goals[2]] || goals[2];
+  return `📊 Distribuzione: ${primary} (40%) + ${secondary} (30%) + ${tertiary} (30%)`;
 }
 
 /**
@@ -735,16 +790,32 @@ function generateCorrectiveExercises(painAreas: NormalizedPainArea[]): Exercise[
  * FUNZIONE PRINCIPALE - Genera split settimanale basato su frequenza
  */
 export function generateWeeklySplit(options: SplitGeneratorOptions): WeeklySplit {
-  const { frequency } = options;
+  const { frequency, goals } = options;
 
   console.log(`🗓️ Generazione split settimanale per ${frequency}x/settimana`);
 
+  // Log multi-goal info
+  if (goals && goals.length > 1) {
+    console.log(`🎯 Multi-goal detected: ${goals.join(', ')}`);
+    console.log(`📊 Volume distribution: ${goals.length === 2 ? '70-30' : '40-30-30'}`);
+  }
+
+  let split: WeeklySplit;
+
   if (frequency <= 3) {
-    return generate3DayFullBody(options);
+    split = generate3DayFullBody(options);
   } else if (frequency === 4) {
-    return generate4DayUpperLower(options);
+    split = generate4DayUpperLower(options);
   } else {
     // 5-6 giorni
-    return generate6DayPPL(options);
+    split = generate6DayPPL(options);
   }
+
+  // Aggiungi nota distribuzione obiettivi alla descrizione
+  const distributionNote = getGoalDistributionNote(goals || []);
+  if (distributionNote) {
+    split.description = `${split.description}\n\n${distributionNote}`;
+  }
+
+  return split;
 }

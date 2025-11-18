@@ -346,6 +346,7 @@ export function calculateVolume(
 export interface ProgramGeneratorOptions {
   level: Level;
   goal: Goal;
+  goals?: string[]; // Multi-goal support (max 3)
   location: 'gym' | 'home';
   trainingType: 'bodyweight' | 'equipment' | 'machines';
   frequency: number;
@@ -517,6 +518,12 @@ export function generateProgramWithSplit(options: ProgramGeneratorOptions): any 
   console.log('🏋️ Training Type:', options.trainingType);
   console.log('📊 Frequenza:', options.frequency);
 
+  // Multi-goal support logging
+  if (options.goals && options.goals.length > 1) {
+    console.log('🎯 Multi-goal:', options.goals.join(' + '));
+    console.log('📊 Distribuzione volume:', options.goals.length === 2 ? '70-30' : '40-30-30');
+  }
+
   // 💪 Muscular Focus System
   if (options.muscularFocus) {
     console.log('💪 Focus Muscolare:', options.muscularFocus.toUpperCase());
@@ -525,10 +532,11 @@ export function generateProgramWithSplit(options: ProgramGeneratorOptions): any 
     console.log('   → Focus esercizi posizionati all\'inizio');
   }
 
-  // Genera split settimanale con muscular focus
+  // Genera split settimanale con muscular focus e multi-goal
   const weeklySplit = generateWeeklySplit({
     level: options.level,
     goal: options.goal,
+    goals: options.goals, // ✅ Multi-goal support
     location: options.location,
     trainingType: options.trainingType,
     frequency: options.frequency,
