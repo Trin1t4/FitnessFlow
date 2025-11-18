@@ -74,11 +74,12 @@ export interface OnboardingData {
   // Step 4: Activity Level
   activityLevel?: ActivityLevel;
 
-  // Step 5: Goal
-  goal?: Goal;
-  sport?: string; // if goal is sport_performance
+  // Step 5: Goal (supporta multi-goal)
+  goal?: string; // backward compatibility (primo goal)
+  goals?: string[]; // multi-goal support (max 2-3)
+  sport?: string; // if goal includes sport_performance
   sportRole?: string;
-  muscularFocus?: string; // if goal is ipertrofia or tonificazione
+  muscularFocus?: string; // if goal includes ipertrofia or tonificazione
 
   // Step 6: Pain/Injury
   painAreas?: PainEntry[];
