@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from 'sonner';
+import { LanguageProvider } from './lib/i18n';
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -17,36 +18,38 @@ import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Toaster position="top-right" richColors />
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/pricing" element={<Pricing />} />
+    <LanguageProvider>
+      <BrowserRouter>
+        <Toaster position="top-right" richColors />
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/pricing" element={<Pricing />} />
 
-        {/* ONBOARDING - Senza auth per test */}
-        <Route path="/onboarding" element={<Onboarding />} />
-        
-        {/* PERCORSO PRINCIPALE - Senza auth per test */}
-        <Route path="/body-scan" element={<BodyCompositionScan />} />
-        <Route path="/quiz" element={<BiomechanicsQuiz />} />
-        <Route path="/screening" element={<Screening />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        
-        {/* RECOVERY - Senza auth per test */}
-        <Route path="/recovery-screening" element={<RecoveryScreening />} />
+          {/* ONBOARDING - Senza auth per test */}
+          <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* WORKOUT */}
-        <Route path="/workout" element={<Workout />} />
-        <Route path="/workout-session" element={<WorkoutSession />} />
+          {/* PERCORSO PRINCIPALE - Senza auth per test */}
+          <Route path="/body-scan" element={<BodyCompositionScan />} />
+          <Route path="/quiz" element={<BiomechanicsQuiz />} />
+          <Route path="/screening" element={<Screening />} />
+          <Route path="/dashboard" element={<Dashboard />} />
 
-        {/* ADMIN DASHBOARD */}
-        <Route path="/admin" element={<AdminDashboard />} />
+          {/* RECOVERY - Senza auth per test */}
+          <Route path="/recovery-screening" element={<RecoveryScreening />} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          {/* WORKOUT */}
+          <Route path="/workout" element={<Workout />} />
+          <Route path="/workout-session" element={<WorkoutSession />} />
+
+          {/* ADMIN DASHBOARD */}
+          <Route path="/admin" element={<AdminDashboard />} />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }
 

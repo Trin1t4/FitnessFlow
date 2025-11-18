@@ -34,6 +34,37 @@ export interface WorkoutLog {
   notes?: string;
   mood?: string;
   sleep_quality?: number;
+  // NEW: Contextual factors
+  stress_level?: number;
+  nutrition_quality?: 'good' | 'normal' | 'poor';
+  hydration?: 'good' | 'normal' | 'poor';
+  context_adjustment?: number;
+}
+
+// Input type for logWorkout function
+export interface WorkoutLogInput {
+  day_name: string;
+  split_type: string;
+  session_duration_minutes: number;
+  session_rpe: number;
+  exercises: Array<{
+    exercise_name: string;
+    pattern: string;
+    sets_completed: number;
+    reps_completed: number;
+    weight_used?: number;
+    exercise_rpe: number;
+    difficulty_vs_baseline?: 'easier' | 'as_expected' | 'harder';
+    notes?: string;
+  }>;
+  mood?: string;
+  sleep_quality?: number;
+  notes?: string;
+  // NEW: Contextual factors
+  stress_level?: number;
+  nutrition_quality?: 'good' | 'normal' | 'poor';
+  hydration?: 'good' | 'normal' | 'poor';
+  context_adjustment?: number;
 }
 
 export interface ExerciseLog {
@@ -91,6 +122,78 @@ export interface ProgramAdjustment {
 // ================================================================
 // WORKOUT LOGGING
 // ================================================================
+
+/**
+ * Log completo di un workout (crea log + esercizi + completa)
+ * Usato da LiveWorkoutSession
+ */
+export async function logWorkout(
+  userId: string,
+  programId: string,
+  input: WorkoutLogInput
+): Promise<{ data: WorkoutLog | null; error: any }> {
+  try {
+    console.log('[AutoRegulation] Logging workout:', input.day_name);
+
+    // 1. Create workout log
+    const { data: workoutLog, error: createError } = await supabase
+      .from('workout_logs')
+      .insert({
+        user_id: userId,
+        program_id: programId,
+        day_name: input.day_name,
+        split_type: input.split_type,
+        session_rpe: input.session_rpe,
+        session_duration_minutes: input.session_duration_minutes,
+        completed: true,
+        exercises_completed: input.exercises.length,
+        total_exercises: input.exercises.length,
+        mood: input.mood,
+        sleep_quality: input.sleep_quality,
+        notes: input.notes,
+        // NEW: Contextual factors
+        stress_level: input.stress_level,
+        nutrition_quality: input.nutrition_quality,
+        hydration: input.hydration,
+        context_adjustment: input.context_adjustment
+      })
+      .select()
+      .single();
+
+    if (createError || !workoutLog) {
+      throw createError || new Error('Failed to create workout log');
+    }
+
+    // 2. Add exercise logs
+    const exerciseInserts = input.exercises.map(ex => ({
+      workout_log_id: workoutLog.id,
+      exercise_name: ex.exercise_name,
+      pattern: ex.pattern,
+      sets_completed: ex.sets_completed,
+      reps_completed: ex.reps_completed,
+      weight_used: ex.weight_used,
+      exercise_rpe: ex.exercise_rpe,
+      difficulty_vs_baseline: ex.difficulty_vs_baseline,
+      notes: ex.notes
+    }));
+
+    const { error: exerciseError } = await supabase
+      .from('exercise_logs')
+      .insert(exerciseInserts);
+
+    if (exerciseError) {
+      console.error('[AutoRegulation] Error inserting exercise logs:', exerciseError);
+      // Continue anyway - workout log is saved
+    }
+
+    console.log('[AutoRegulation] Workout logged successfully:', workoutLog.id);
+
+    return { data: workoutLog, error: null };
+  } catch (error) {
+    console.error('[AutoRegulation] Error logging workout:', error);
+    return { data: null, error };
+  }
+}
 
 /**
  * Crea nuovo workout log
@@ -436,10 +539,11 @@ export async function applyAutoRegulation(
       throw saveError;
     }
 
-    console.log('[AutoRegulation] ✅ Adjustment creato:', savedAdjustment);
+    console.log('[AutoRegulation] ✅ Adjustment creato (NON applicato automaticamente):', savedAdjustment);
 
-    // 9. APPLICA AUTOMATICAMENTE (perché user ha scelto "Automatico")
-    await applyAdjustmentToProgram(savedAdjustment.id, programId, exercisesAffected);
+    // 9. NON APPLICA AUTOMATICAMENTE - restituisce l'adjustment per mostrarlo all'utente
+    // L'utente deciderà se accettare, rifiutare o modificare tramite DeloadSuggestionModal
+    // await applyAdjustmentToProgram(savedAdjustment.id, programId, exercisesAffected);
 
     return { data: savedAdjustment, error: null };
   } catch (error) {
@@ -523,6 +627,110 @@ export async function applyAdjustmentToProgram(
   }
 }
 
+/**
+ * Recupera adjustment pendenti (non applicati) per mostrare all'utente
+ */
+export async function getPendingAdjustments(
+  userId: string,
+  programId: string
+): Promise<{ data: ProgramAdjustment[] | null; error: any }> {
+  try {
+    const { data, error } = await supabase
+      .from('program_adjustments')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('program_id', programId)
+      .eq('applied', false)
+      .order('trigger_date', { ascending: false });
+
+    if (error) throw error;
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('[AutoRegulation] Errore get pending adjustments:', error);
+    return { data: null, error };
+  }
+}
+
+/**
+ * Rifiuta un adjustment (marca come non applicato e rifiutato)
+ */
+export async function rejectAdjustment(
+  adjustmentId: string
+): Promise<{ success: boolean; error: any }> {
+  try {
+    const { error } = await supabase
+      .from('program_adjustments')
+      .update({
+        applied: false,
+        user_accepted: false,
+        rejected_at: new Date().toISOString()
+      })
+      .eq('id', adjustmentId);
+
+    if (error) throw error;
+
+    console.log('[AutoRegulation] Adjustment rifiutato:', adjustmentId);
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('[AutoRegulation] Errore reject adjustment:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Posticipa un adjustment (imposta una data futura per rimostrarlo)
+ */
+export async function postponeAdjustment(
+  adjustmentId: string,
+  daysToPostpone: number = 7
+): Promise<{ success: boolean; error: any }> {
+  try {
+    const postponeUntil = new Date();
+    postponeUntil.setDate(postponeUntil.getDate() + daysToPostpone);
+
+    const { error } = await supabase
+      .from('program_adjustments')
+      .update({
+        postponed_until: postponeUntil.toISOString()
+      })
+      .eq('id', adjustmentId);
+
+    if (error) throw error;
+
+    console.log('[AutoRegulation] Adjustment posticipato fino a:', postponeUntil);
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('[AutoRegulation] Errore postpone adjustment:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Accetta e applica un adjustment (con possibili modifiche dall'utente)
+ */
+export async function acceptAndApplyAdjustment(
+  adjustment: ProgramAdjustment
+): Promise<{ success: boolean; error: any }> {
+  try {
+    if (!adjustment.id) {
+      throw new Error('Adjustment ID mancante');
+    }
+
+    // Applica l'adjustment al programma
+    const result = await applyAdjustmentToProgram(
+      adjustment.id,
+      adjustment.program_id,
+      adjustment.exercises_affected
+    );
+
+    return result;
+  } catch (error) {
+    console.error('[AutoRegulation] Errore accept and apply adjustment:', error);
+    return { success: false, error };
+  }
+}
+
 // ================================================================
 // WORKOUT HISTORY
 // ================================================================
@@ -588,6 +796,7 @@ export async function getAdjustmentHistory(
 
 export default {
   // Workout logging
+  logWorkout,
   createWorkoutLog,
   addExerciseLog,
   completeWorkout,
@@ -599,6 +808,12 @@ export default {
   // Auto-regulation
   applyAutoRegulation,
   applyAdjustmentToProgram,
+
+  // Adjustment management (interactive UI)
+  getPendingAdjustments,
+  rejectAdjustment,
+  postponeAdjustment,
+  acceptAndApplyAdjustment,
 
   // History
   getRecentWorkouts,

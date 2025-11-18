@@ -100,8 +100,9 @@ const CALISTHENICS_PATTERNS = [
   }
 ];
 
-// ===== PROGRESSIONI PALESTRA (10RM TEST) =====
-const GYM_PATTERNS = [
+// ===== PROGRESSIONI PALESTRA - PESI LIBERI (10RM TEST) =====
+// Per chi si allena con bilanciere e manubri
+const GYM_PATTERNS_FREEWEIGHTS = [
   {
     id: 'lower_push',
     name: 'Back Squat',
@@ -117,14 +118,20 @@ const GYM_PATTERNS = [
   {
     id: 'vertical_push',
     name: 'Military Press',
-    description: 'Test 10RM Shoulder Press con bilanciere',
+    description: 'Test 10RM Shoulder Press con bilanciere in piedi',
     exercise: { id: 'military_press', name: 'Military Press', unit: 'kg' }
   },
   {
     id: 'vertical_pull',
     name: 'Lat Pulldown',
-    description: 'Test 10RM Lat Machine',
+    description: 'Test 10RM Lat Machine (o Trazioni zavorrate)',
     exercise: { id: 'lat_pulldown', name: 'Lat Pulldown', unit: 'kg' }
+  },
+  {
+    id: 'horizontal_pull',
+    name: 'Pulley Basso',
+    description: 'Test 10RM Pulley Basso (rematore ai cavi)',
+    exercise: { id: 'low_cable_row', name: 'Pulley Basso', unit: 'kg' }
   },
   {
     id: 'lower_pull',
@@ -134,9 +141,56 @@ const GYM_PATTERNS = [
   },
   {
     id: 'core',
-    name: 'Cable Crunch',
-    description: 'Test 10RM Cable Crunch',
-    exercise: { id: 'cable_crunch', name: 'Cable Crunch', unit: 'kg' }
+    name: 'Crunch ai Cavi',
+    description: 'Test 10RM Crunch ai cavi',
+    exercise: { id: 'cable_crunch', name: 'Crunch ai Cavi', unit: 'kg' }
+  }
+];
+
+// ===== PROGRESSIONI PALESTRA - MACCHINE (10RM TEST) =====
+// Per chi si allena prevalentemente con macchine isotoniche
+const GYM_PATTERNS_MACHINES = [
+  {
+    id: 'lower_push',
+    name: 'Leg Press',
+    description: 'Test 10RM Leg Press (pressa)',
+    exercise: { id: 'leg_press', name: 'Leg Press', unit: 'kg' }
+  },
+  {
+    id: 'horizontal_push',
+    name: 'Chest Press',
+    description: 'Test 10RM Chest Press (pettorali)',
+    exercise: { id: 'chest_press', name: 'Chest Press', unit: 'kg' }
+  },
+  {
+    id: 'vertical_push',
+    name: 'Shoulder Press Machine',
+    description: 'Test 10RM Shoulder Press alla macchina',
+    exercise: { id: 'shoulder_press_machine', name: 'Shoulder Press Machine', unit: 'kg' }
+  },
+  {
+    id: 'vertical_pull',
+    name: 'Lat Pulldown',
+    description: 'Test 10RM Lat Machine',
+    exercise: { id: 'lat_pulldown', name: 'Lat Pulldown', unit: 'kg' }
+  },
+  {
+    id: 'horizontal_pull',
+    name: 'Pulley Basso',
+    description: 'Test 10RM Pulley Basso (rematore ai cavi)',
+    exercise: { id: 'low_cable_row', name: 'Pulley Basso', unit: 'kg' }
+  },
+  {
+    id: 'lower_pull',
+    name: 'Leg Curl',
+    description: 'Test 10RM Leg Curl (femorali)',
+    exercise: { id: 'leg_curl', name: 'Leg Curl', unit: 'kg' }
+  },
+  {
+    id: 'core',
+    name: 'Crunch ai Cavi',
+    description: 'Test 10RM Crunch ai cavi',
+    exercise: { id: 'cable_crunch', name: 'Crunch ai Cavi', unit: 'kg' }
   }
 ];
 
@@ -145,8 +199,26 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
   const isGymMode = userData?.trainingLocation === 'gym' &&
                     (userData?.trainingType === 'equipment' || userData?.trainingType === 'machines');
 
-  const MOVEMENT_PATTERNS = isGymMode ? GYM_PATTERNS : CALISTHENICS_PATTERNS;
-  const testType = isGymMode ? 'GYM' : 'CALISTHENICS';
+  // Distingui tra pesi liberi e macchine
+  const isMachinesMode = userData?.trainingType === 'machines';
+
+  // Seleziona il set di pattern corretto
+  let MOVEMENT_PATTERNS;
+  let testType;
+
+  if (!isGymMode) {
+    // Calisthenics / Corpo libero
+    MOVEMENT_PATTERNS = CALISTHENICS_PATTERNS;
+    testType = 'CALISTHENICS';
+  } else if (isMachinesMode) {
+    // Palestra con macchine isotoniche
+    MOVEMENT_PATTERNS = GYM_PATTERNS_MACHINES;
+    testType = 'GYM_MACHINES';
+  } else {
+    // Palestra con pesi liberi (bilanciere/manubri)
+    MOVEMENT_PATTERNS = GYM_PATTERNS_FREEWEIGHTS;
+    testType = 'GYM_FREEWEIGHTS';
+  }
 
   const [currentPattern, setCurrentPattern] = useState(0);
   const [results, setResults] = useState({});

@@ -35,9 +35,39 @@ interface SetLog {
   reps_completed: number;
   weight_used?: number;
   rpe: number;
+  rpe_adjusted?: number; // RPE normalizzato per fattori contestuali
+  rir_perceived?: number; // RIR percepito dall'utente
   adjusted: boolean;
   adjustment_reason?: string;
 }
+
+// Funzione per calcolare il fattore di normalizzazione RPE
+const calculateContextAdjustment = (
+  stressLevel: number,
+  sleepQuality: number,
+  nutritionQuality: 'good' | 'normal' | 'poor',
+  hydration: 'good' | 'normal' | 'poor'
+): number => {
+  let adjustment = 0;
+
+  // Stress alto inflaziona RPE (sottraiamo per normalizzare)
+  if (stressLevel >= 8) adjustment -= 1.0;
+  else if (stressLevel >= 7) adjustment -= 0.5;
+
+  // Sonno scarso inflaziona RPE
+  if (sleepQuality <= 3) adjustment -= 1.0;
+  else if (sleepQuality <= 5) adjustment -= 0.5;
+
+  // Nutrizione scarsa inflaziona RPE
+  if (nutritionQuality === 'poor') adjustment -= 0.5;
+  else if (nutritionQuality === 'good') adjustment += 0.25;
+
+  // Idratazione scarsa inflaziona RPE
+  if (hydration === 'poor') adjustment -= 0.5;
+  else if (hydration === 'good') adjustment += 0.25;
+
+  return adjustment;
+};
 
 interface LiveWorkoutSessionProps {
   open: boolean;
@@ -62,6 +92,11 @@ export default function LiveWorkoutSession({
   const [showPreWorkout, setShowPreWorkout] = useState(true);
   const [mood, setMood] = useState<'great' | 'good' | 'ok' | 'tired'>('good');
   const [sleepQuality, setSleepQuality] = useState(7);
+
+  // NEW: Contextual feedback
+  const [stressLevel, setStressLevel] = useState(5);
+  const [nutritionQuality, setNutritionQuality] = useState<'good' | 'normal' | 'poor'>('normal');
+  const [hydration, setHydration] = useState<'good' | 'normal' | 'poor'>('normal');
   const [showLocationSwitch, setShowLocationSwitch] = useState(false);
   const [switchingLocation, setSwitchingLocation] = useState(false);
   const [homeEquipment, setHomeEquipment] = useState({
@@ -98,6 +133,7 @@ export default function LiveWorkoutSession({
   // Current set state
   const [showRPEInput, setShowRPEInput] = useState(false);
   const [currentRPE, setCurrentRPE] = useState(7);
+  const [currentRIR, setCurrentRIR] = useState(2); // RIR percepito (0-5)
   const [currentReps, setCurrentReps] = useState(0);
   const [currentWeight, setCurrentWeight] = useState(0);
   const [restTimerActive, setRestTimerActive] = useState(false);
@@ -727,12 +763,18 @@ export default function LiveWorkoutSession({
   const handleRPESubmit = () => {
     if (!currentExercise) return;
 
-    // Log the set
+    // Calculate adjusted RPE for context
+    const contextAdj = calculateContextAdjustment(stressLevel, sleepQuality, nutritionQuality, hydration);
+    const adjustedRPE = Math.max(1, Math.min(10, currentRPE + contextAdj));
+
+    // Log the set with RIR
     const newSetLog: SetLog = {
       set_number: currentSet,
       reps_completed: currentReps,
       weight_used: currentWeight || undefined,
       rpe: currentRPE,
+      rpe_adjusted: adjustedRPE,
+      rir_perceived: currentRIR,
       adjusted: false
     };
 
@@ -749,6 +791,7 @@ export default function LiveWorkoutSession({
     setCurrentReps(0);
     setCurrentWeight(0);
     setCurrentRPE(7);
+    setCurrentRIR(2);
   };
 
   // Apply suggestion (adjust program)
@@ -848,25 +891,38 @@ export default function LiveWorkoutSession({
         };
       });
 
-      // Build workout notes with pain tracking
+      // Build workout notes with pain tracking and contextual factors
       const painNote = painAreas.length > 0
         ? `Pain areas: ${painAreas.map(p => `${p.area}(${p.intensity}/10)`).join(', ')}`
         : '';
 
+      const contextNote = `Context: stress=${stressLevel}/10, nutrition=${nutritionQuality}, hydration=${hydration}`;
+
+      // Calculate context adjustment for this session
+      const contextAdjustment = calculateContextAdjustment(stressLevel, sleepQuality, nutritionQuality, hydration);
+      const adjustedAvgRPE = Math.max(1, Math.min(10, avgRPE + contextAdjustment));
+
       const workoutNotes = [
         'Live workout with real-time RPE feedback',
-        painNote
+        painNote,
+        contextNote,
+        contextAdjustment !== 0 ? `RPE adjusted by ${contextAdjustment > 0 ? '+' : ''}${contextAdjustment.toFixed(1)} for context` : ''
       ].filter(Boolean).join(' | ');
 
       await autoRegulationService.logWorkout(userId, programId, {
         day_name: dayName,
         split_type: currentExercise?.pattern || 'Full Body',
         session_duration_minutes: duration,
-        session_rpe: avgRPE,
+        session_rpe: adjustedAvgRPE, // Use context-adjusted RPE
         exercises: exerciseLogs,
         mood: mood as any,
         sleep_quality: sleepQuality,
-        notes: workoutNotes
+        notes: workoutNotes,
+        // NEW: Additional context data
+        stress_level: stressLevel,
+        nutrition_quality: nutritionQuality,
+        hydration: hydration,
+        context_adjustment: contextAdjustment
       });
 
       if (onWorkoutComplete) {
@@ -972,6 +1028,97 @@ export default function LiveWorkoutSession({
               ))}
             </div>
           </div>
+
+          {/* NEW: Stress Level */}
+          <div className="mb-6">
+            <div className="flex justify-between text-sm text-slate-400 mb-2">
+              <span>Livello di stress</span>
+              <span className="text-white font-bold">{stressLevel}/10</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={stressLevel}
+              onChange={(e) => setStressLevel(parseInt(e.target.value))}
+              className="w-full h-3 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
+            />
+            <div className="flex justify-between text-xs text-slate-500 mt-1">
+              <span>Rilassato</span>
+              <span>Molto stressato</span>
+            </div>
+          </div>
+
+          {/* NEW: Nutrition & Hydration */}
+          <div className="mb-6 grid grid-cols-2 gap-4">
+            {/* Nutrition */}
+            <div>
+              <label className="block text-slate-300 text-sm mb-2">Nutrizione oggi</label>
+              <div className="flex flex-col gap-2">
+                {[
+                  { value: 'good', emoji: '🥗', label: 'Buona' },
+                  { value: 'normal', emoji: '🍽️', label: 'Normale' },
+                  { value: 'poor', emoji: '🍟', label: 'Scarsa' }
+                ].map(({ value, emoji, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setNutritionQuality(value as any)}
+                    className={`p-2 rounded-lg border-2 transition-all duration-200 flex items-center gap-2 ${
+                      nutritionQuality === value
+                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
+                    }`}
+                  >
+                    <span className="text-lg">{emoji}</span>
+                    <span className="text-xs font-semibold">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Hydration */}
+            <div>
+              <label className="block text-slate-300 text-sm mb-2">Idratazione</label>
+              <div className="flex flex-col gap-2">
+                {[
+                  { value: 'good', emoji: '💧', label: 'Buona' },
+                  { value: 'normal', emoji: '🥤', label: 'Normale' },
+                  { value: 'poor', emoji: '🏜️', label: 'Scarsa' }
+                ].map(({ value, emoji, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setHydration(value as any)}
+                    className={`p-2 rounded-lg border-2 transition-all duration-200 flex items-center gap-2 ${
+                      hydration === value
+                        ? 'bg-blue-500/20 border-blue-500 text-blue-300'
+                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
+                    }`}
+                  >
+                    <span className="text-lg">{emoji}</span>
+                    <span className="text-xs font-semibold">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Contextual Warning */}
+          {(stressLevel >= 7 || nutritionQuality === 'poor' || hydration === 'poor' || sleepQuality <= 4) && (
+            <div className="mb-6 bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+              <p className="text-amber-300 text-xs font-semibold mb-1">
+                ⚠️ Fattori che potrebbero influenzare il workout
+              </p>
+              <p className="text-slate-400 text-xs">
+                {stressLevel >= 7 && '• Stress alto → RPE potrebbe essere inflazionato'}
+                {sleepQuality <= 4 && ' • Sonno scarso → Performance ridotta'}
+                {nutritionQuality === 'poor' && ' • Nutrizione scarsa → Energia bassa'}
+                {hydration === 'poor' && ' • Disidratazione → Fatica precoce'}
+              </p>
+              <p className="text-amber-400 text-xs mt-2 font-semibold">
+                Il sistema terrà conto di questi fattori nel calcolo RPE
+              </p>
+            </div>
+          )}
 
           {/* PAIN SCREENING */}
           <div className="mb-6">
@@ -1422,7 +1569,7 @@ export default function LiveWorkoutSession({
           </div>
         )}
 
-        {/* RPE Input */}
+        {/* RPE & RIR Input */}
         {showRPEInput && !suggestion && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -1430,10 +1577,11 @@ export default function LiveWorkoutSession({
             className="space-y-4 mb-6"
           >
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-              <p className="text-blue-300 font-bold mb-2">Come ti sei sentito?</p>
-              <p className="text-slate-400 text-sm">RPE: Rate of Perceived Exertion (1-10)</p>
+              <p className="text-blue-300 font-bold mb-2">Feedback Post-Set</p>
+              <p className="text-slate-400 text-sm">RPE e RIR per calibrare la progressione</p>
             </div>
 
+            {/* RPE Scale */}
             <div>
               <div className="flex justify-between text-sm text-slate-400 mb-2">
                 <span>Molto Facile</span>
@@ -1460,11 +1608,69 @@ export default function LiveWorkoutSession({
               </div>
             </div>
 
+            {/* RIR (Reps In Reserve) */}
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+              <div className="flex justify-between items-center mb-3">
+                <div>
+                  <p className="text-purple-300 font-bold">RIR - Reps In Reserve</p>
+                  <p className="text-slate-400 text-xs">Quante reps potevi ancora fare?</p>
+                </div>
+                <span className="text-3xl font-bold text-purple-400">{currentRIR}</span>
+              </div>
+
+              <div className="grid grid-cols-6 gap-2">
+                {[0, 1, 2, 3, 4, 5].map(rir => (
+                  <button
+                    key={rir}
+                    onClick={() => setCurrentRIR(rir)}
+                    className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+                      currentRIR === rir
+                        ? 'bg-purple-500/30 border-purple-500 text-purple-300'
+                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="text-lg font-bold">{rir}</div>
+                    <div className="text-xs">
+                      {rir === 0 && 'Max'}
+                      {rir === 1 && '1 rep'}
+                      {rir === 2 && '2 rep'}
+                      {rir === 3 && '3 rep'}
+                      {rir === 4 && '4 rep'}
+                      {rir === 5 && '5+'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* RIR vs RPE Validation */}
+              {(() => {
+                // RPE 10 = RIR 0, RPE 9 = RIR 1, RPE 8 = RIR 2, etc.
+                const expectedRIR = Math.max(0, 10 - currentRPE);
+                const delta = Math.abs(currentRIR - expectedRIR);
+
+                if (delta >= 2) {
+                  return (
+                    <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2">
+                      <p className="text-amber-300 text-xs font-semibold">
+                        ⚠️ RPE {currentRPE} suggerisce RIR ~{expectedRIR}, ma hai indicato RIR {currentRIR}
+                      </p>
+                      <p className="text-slate-400 text-xs mt-1">
+                        {currentRIR > expectedRIR
+                          ? 'Il carico potrebbe essere troppo leggero per il target'
+                          : 'Il carico potrebbe essere troppo pesante per il target'}
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
             <button
               onClick={handleRPESubmit}
               className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 rounded-xl transition-all duration-300"
             >
-              Conferma RPE
+              Conferma Feedback
             </button>
           </motion.div>
         )}
@@ -1535,25 +1741,105 @@ export default function LiveWorkoutSession({
           )}
         </AnimatePresence>
 
-        {/* Set History for Current Exercise */}
+        {/* Set History for Current Exercise with Fatigue Analysis */}
         {setLogs[currentExercise.name]?.length > 0 && (
           <div className="bg-slate-800/30 rounded-xl p-4 mb-4">
-            <h4 className="text-slate-400 text-sm mb-2">Set Completati:</h4>
-            <div className="space-y-1">
-              {setLogs[currentExercise.name].map((set, idx) => (
-                <div key={idx} className="flex justify-between text-sm">
-                  <span className="text-slate-300">Set {set.set_number}</span>
-                  <span className="text-emerald-400">{set.reps_completed} reps</span>
-                  <span className={`${
-                    set.rpe >= 9 ? 'text-red-400' :
-                    set.rpe <= 4 ? 'text-blue-400' :
-                    'text-slate-400'
-                  }`}>
-                    RPE {set.rpe}
-                  </span>
-                  {set.adjusted && <span className="text-amber-400 text-xs">⚡ Adjusted</span>}
-                </div>
-              ))}
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-slate-400 text-sm">Set Completati:</h4>
+              {/* Fatigue Trend Indicator */}
+              {setLogs[currentExercise.name].length >= 2 && (() => {
+                const sets = setLogs[currentExercise.name];
+                const firstHalfAvg = sets.slice(0, Math.ceil(sets.length / 2)).reduce((a, b) => a + b.rpe, 0) / Math.ceil(sets.length / 2);
+                const secondHalfAvg = sets.slice(Math.ceil(sets.length / 2)).reduce((a, b) => a + b.rpe, 0) / (sets.length - Math.ceil(sets.length / 2));
+                const trend = secondHalfAvg - firstHalfAvg;
+
+                if (trend >= 1.5) {
+                  return (
+                    <span className="text-xs bg-red-500/20 text-red-300 px-2 py-1 rounded-full flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3" /> Fatica alta
+                    </span>
+                  );
+                } else if (trend >= 0.5) {
+                  return (
+                    <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3" /> Fatica crescente
+                    </span>
+                  );
+                } else if (trend <= -0.5) {
+                  return (
+                    <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-full flex items-center gap-1">
+                      <TrendingDown className="w-3 h-3" /> Warming up
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
+            <div className="space-y-2">
+              {setLogs[currentExercise.name].map((set, idx) => {
+                // Calculate adjusted RPE for this set
+                const contextAdj = calculateContextAdjustment(stressLevel, sleepQuality, nutritionQuality, hydration);
+                const adjustedRPE = Math.max(1, Math.min(10, set.rpe + contextAdj));
+
+                return (
+                  <div key={idx} className="flex items-center justify-between text-sm bg-slate-800/50 rounded-lg px-3 py-2">
+                    <span className="text-slate-300 font-semibold">Set {set.set_number}</span>
+                    <span className="text-emerald-400">{set.reps_completed} reps</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold ${
+                        set.rpe >= 9 ? 'text-red-400' :
+                        set.rpe >= 8 ? 'text-orange-400' :
+                        set.rpe <= 4 ? 'text-blue-400' :
+                        'text-slate-300'
+                      }`}>
+                        RPE {set.rpe}
+                      </span>
+                      {contextAdj !== 0 && (
+                        <span className="text-xs text-slate-500">
+                          (adj: {adjustedRPE.toFixed(1)})
+                        </span>
+                      )}
+                    </div>
+                    {set.rir_perceived !== undefined && (
+                      <span className="text-xs text-purple-400">
+                        RIR {set.rir_perceived}
+                      </span>
+                    )}
+                    {set.adjusted && <span className="text-amber-400 text-xs">⚡</span>}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Fatigue Warning */}
+            {setLogs[currentExercise.name].length >= 2 && (() => {
+              const sets = setLogs[currentExercise.name];
+              const lastTwoAvg = sets.slice(-2).reduce((a, b) => a + b.rpe, 0) / 2;
+
+              if (lastTwoAvg >= 9 && currentSet < currentTargetSets) {
+                return (
+                  <div className="mt-3 bg-red-500/10 border border-red-500/30 rounded-lg p-2">
+                    <p className="text-red-300 text-xs font-semibold">
+                      ⚠️ RPE molto alto negli ultimi set. Considera di:
+                    </p>
+                    <p className="text-slate-400 text-xs mt-1">
+                      • Ridurre le reps per i prossimi set
+                      • Aumentare il recupero
+                      • Terminare l'esercizio in anticipo
+                    </p>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
+            {/* Set Average Summary */}
+            <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-between text-xs">
+              <span className="text-slate-500">Media RPE:</span>
+              <span className="text-white font-bold">
+                {(setLogs[currentExercise.name].reduce((a, b) => a + b.rpe, 0) / setLogs[currentExercise.name].length).toFixed(1)}
+              </span>
             </div>
           </div>
         )}

@@ -10,6 +10,10 @@ import { motion } from 'framer-motion';
 import WeeklySplitView from './WeeklySplitView';
 import WorkoutLogger from './WorkoutLogger';
 import LiveWorkoutSession from './LiveWorkoutSession';
+import DeloadSuggestionModal from './DeloadSuggestionModal';
+import RetestNotification from './RetestNotification';
+import DeloadWeekNotification from './DeloadWeekNotification';
+import { getRetestSchedule, Goal, DeloadConfig } from '../utils/retestProgression';
 import {
   createProgram,
   getActiveProgram,
@@ -18,7 +22,15 @@ import {
   syncProgramsFromCloud,
   TrainingProgram
 } from '../lib/programService';
+import autoRegulationService, {
+  ProgramAdjustment,
+  getPendingAdjustments,
+  rejectAdjustment,
+  postponeAdjustment,
+  acceptAndApplyAdjustment
+} from '../lib/autoRegulationService';
 import * as adminService from '../lib/adminService';
+import { toast } from 'sonner';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -63,6 +75,14 @@ export default function Dashboard() {
 
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Deload suggestion state
+  const [showDeloadModal, setShowDeloadModal] = useState(false);
+  const [pendingAdjustment, setPendingAdjustment] = useState<ProgramAdjustment | null>(null);
+
+  // Retest state
+  const [retestSchedule, setRetestSchedule] = useState<ReturnType<typeof getRetestSchedule> | null>(null);
+  const [showRetestDismissed, setShowRetestDismissed] = useState(false);
+
   useEffect(() => {
     loadData();
     initializePrograms();
@@ -72,8 +92,23 @@ export default function Dashboard() {
   useEffect(() => {
     if (program) {
       calculateAnalytics();
+      calculateRetestSchedule();
     }
   }, [program]);
+
+  // Calculate retest schedule when program is loaded
+  function calculateRetestSchedule() {
+    if (!program?.start_date || !program?.goal || !program?.level) return;
+
+    const schedule = getRetestSchedule(
+      program.start_date,
+      program.goal as Goal,
+      program.level as 'beginner' | 'intermediate' | 'advanced'
+    );
+
+    setRetestSchedule(schedule);
+    console.log('[Dashboard] Retest schedule calculated:', schedule);
+  }
 
   // NEW: Initialize programs from Supabase with migration
   async function initializePrograms() {
@@ -826,6 +861,88 @@ export default function Dashboard() {
     }
   };
 
+  // ✅ Check for pending deload adjustments
+  async function checkPendingAdjustments() {
+    if (!program?.id) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: adjustments } = await getPendingAdjustments(user.id, program.id);
+
+      if (adjustments && adjustments.length > 0) {
+        // Show the most recent pending adjustment
+        const latestAdjustment = adjustments[0];
+        setPendingAdjustment(latestAdjustment);
+        setShowDeloadModal(true);
+        console.log('[Dashboard] Found pending adjustment:', latestAdjustment);
+      }
+    } catch (error) {
+      console.error('[Dashboard] Error checking pending adjustments:', error);
+    }
+  }
+
+  // ✅ Handle deload acceptance
+  async function handleDeloadAccept(modifiedAdjustment: ProgramAdjustment) {
+    try {
+      setSyncStatus('syncing');
+      const result = await acceptAndApplyAdjustment(modifiedAdjustment);
+
+      if (result.success) {
+        console.log('[Dashboard] Deload applied successfully');
+        // Reload program to get updated values
+        await loadProgramFromSupabase();
+        setShowDeloadModal(false);
+        setPendingAdjustment(null);
+        setSyncStatus('synced');
+
+        // Show success notification
+        const adjustmentLabel =
+          modifiedAdjustment.adjustment_type === 'deload_week' ? 'Deload' :
+          modifiedAdjustment.adjustment_type === 'decrease_volume' ? 'Riduzione volume' :
+          'Aumento volume';
+
+        alert(`✅ ${adjustmentLabel} applicato con successo!\n\nIl programma è stato aggiornato.`);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('[Dashboard] Error applying deload:', error);
+      setSyncStatus('offline');
+      alert('Errore nell\'applicare l\'adjustment. Riprova.');
+    }
+  }
+
+  // ✅ Handle deload rejection
+  async function handleDeloadReject() {
+    if (!pendingAdjustment?.id) return;
+
+    try {
+      await rejectAdjustment(pendingAdjustment.id);
+      setShowDeloadModal(false);
+      setPendingAdjustment(null);
+      console.log('[Dashboard] Deload rejected');
+    } catch (error) {
+      console.error('[Dashboard] Error rejecting deload:', error);
+    }
+  }
+
+  // ✅ Handle deload postponement
+  async function handleDeloadPostpone() {
+    if (!pendingAdjustment?.id) return;
+
+    try {
+      await postponeAdjustment(pendingAdjustment.id, 7); // Postpone 7 days
+      setShowDeloadModal(false);
+      setPendingAdjustment(null);
+      console.log('[Dashboard] Deload postponed for 7 days');
+      alert('Suggerimento rimandato di 7 giorni');
+    } catch (error) {
+      console.error('[Dashboard] Error postponing deload:', error);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-6xl mx-auto">
@@ -978,6 +1095,37 @@ export default function Dashboard() {
             </Card>
           </motion.div>
         </div>
+
+        {/* Deload Week Notification */}
+        {retestSchedule && retestSchedule.phase === 'deload' && retestSchedule.deloadConfig && !showRetestDismissed && hasProgram && (
+          <DeloadWeekNotification
+            daysUntilRetest={retestSchedule.daysUntilRetest}
+            deloadConfig={retestSchedule.deloadConfig}
+            nextRetestConfig={retestSchedule.nextConfig}
+            currentCycle={retestSchedule.currentCycle}
+            onDismiss={() => setShowRetestDismissed(true)}
+          />
+        )}
+
+        {/* Retest Notification */}
+        {retestSchedule && (retestSchedule.phase === 'retest' || retestSchedule.phase === 'training') && !showRetestDismissed && hasProgram && (
+          <RetestNotification
+            schedule={retestSchedule}
+            goal={(program?.goal || 'ipertrofia') as Goal}
+            baselines={dataStatus.screening?.patternBaselines || {}}
+            onStartRetest={() => {
+              // Navigate to screening with retest mode
+              navigate('/screening', {
+                state: {
+                  retestMode: true,
+                  targetRM: retestSchedule.nextConfig.targetRM,
+                  cycle: retestSchedule.currentCycle + 1
+                }
+              });
+            }}
+            onDismiss={() => setShowRetestDismissed(true)}
+          />
+        )}
 
         {/* Analytics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -1685,6 +1833,11 @@ export default function Dashboard() {
             await loadProgramFromSupabase();
             setShowLiveWorkout(false);
             setCurrentWorkoutDay(null);
+
+            // Check for pending deload adjustments after workout completion
+            setTimeout(() => {
+              checkPendingAdjustments();
+            }, 1000); // Small delay to allow auto-regulation to process
           }}
         />
       )}
@@ -1709,6 +1862,21 @@ export default function Dashboard() {
             setShowWorkoutLogger(false);
             setCurrentWorkoutDay(null);
           }}
+        />
+      )}
+
+      {/* Deload Suggestion Modal */}
+      {pendingAdjustment && (
+        <DeloadSuggestionModal
+          open={showDeloadModal}
+          onClose={() => {
+            setShowDeloadModal(false);
+            setPendingAdjustment(null);
+          }}
+          adjustment={pendingAdjustment}
+          onAccept={handleDeloadAccept}
+          onReject={handleDeloadReject}
+          onPostpone={handleDeloadPostpone}
         />
       )}
     </div>
