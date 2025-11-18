@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut } from 'lucide-react';
 import { validateAndNormalizePainAreas } from '../utils/validators';
@@ -469,14 +469,30 @@ export default function Dashboard() {
 
       const userLevel = screening.level;
 
-      // Mapping goal
+      // ✅ GOAL MAPPING COMPLETO - Mappa tutti i goal UI → Database
       const goalMap: Record<string, string> = {
+        // Strength & Muscle
         'forza': 'strength',
         'massa': 'muscle_gain',
         'massa muscolare': 'muscle_gain',
+        'ipertrofia': 'muscle_gain', // ✅ FIX: Era mancante!
+        'tonificazione': 'fat_loss', // Toning = definizione
+
+        // Fat Loss
         'definizione': 'fat_loss',
         'dimagrimento': 'fat_loss',
-        'resistenza': 'endurance'
+
+        // Endurance & Fitness
+        'resistenza': 'endurance',
+        'benessere': 'general_fitness',
+
+        // Sport & Recovery
+        'prestazioni_sportive': 'sport_performance',
+        'motor_recovery': 'motor_recovery',
+
+        // Special Cases
+        'gravidanza': 'pregnancy',
+        'disabilita': 'disability'
       };
 
       const originalGoal = onboarding?.goal || 'muscle_gain';

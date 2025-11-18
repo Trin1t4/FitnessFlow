@@ -10,7 +10,7 @@
  * - Program history tracking
  */
 
-import { supabase } from './supabase';
+import { supabase } from './supabaseClient';
 
 // ===== TYPES =====
 

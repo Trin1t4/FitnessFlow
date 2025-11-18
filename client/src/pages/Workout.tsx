@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 import { X, Info, AlertCircle } from 'lucide-react';
 import { RecoveryScreening } from '../pages/RecoveryScreening';
 import type { RecoveryData } from '../pages/RecoveryScreening';

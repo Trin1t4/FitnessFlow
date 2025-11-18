@@ -9,7 +9,12 @@
       "Bash(cat:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npm run dev:*)",
+      "Bash(find:*)",
+      "Bash(xargs sed -i \"s|from ''''../lib/supabase''''|from ''''../lib/supabaseClient''''|g\")",
+      "Bash(from '../lib/supabase')",
+      "Bash(from '../lib/supabaseClient')"
     ],
     "deny": [],
     "ask": []

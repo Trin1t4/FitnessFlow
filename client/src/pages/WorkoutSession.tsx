@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 import { Check, X, Timer } from 'lucide-react';
 import { PostSetScreening, SetFeedback } from '../components/PostSetScreening';
 import TUTTimer from '../components/TUTTimer';

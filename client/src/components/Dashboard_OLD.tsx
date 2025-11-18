@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 import { mapGoal, mapSportRole } from '../lib/goalMappings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Activity, Calendar, TrendingUp, Dumbbell, Clock, CheckCircle, AlertCircle, Zap, Target, Award } from 'lucide-react';

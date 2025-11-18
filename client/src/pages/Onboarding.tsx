@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 import { OnboardingData } from '../types/onboarding.types';
 import PersonalInfoStep from '../components/onboarding/PersonalInfoStep';
 import PhotoAnalysisStep from '../components/onboarding/PhotoAnalysisStep';
