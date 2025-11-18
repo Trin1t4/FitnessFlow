@@ -31,19 +31,46 @@ export default function Login() {
       setError(error.message);
       setLoading(false);
     } else if (data?.session) {
-      // Smart routing: controlla cosa ha già completato l'utente
-      const hasOnboarding = localStorage.getItem('onboarding_data');
-      const hasScreening = localStorage.getItem('screening_data');
+      // Smart routing: controlla PRIMA Supabase, poi localStorage
+      try {
+        // Check se ha programma attivo su Supabase
+        const { data: programs, error: programError } = await supabase
+          .from('training_programs')
+          .select('id')
+          .eq('user_id', data.session.user.id)
+          .eq('is_active', true)
+          .limit(1);
 
-      if (!hasOnboarding) {
-        // Primo login: inizia da onboarding
-        window.location.href = "/onboarding";
-      } else if (!hasScreening) {
-        // Ha fatto onboarding ma non screening
-        window.location.href = "/screening";
-      } else {
-        // Ha completato tutto: vai alla dashboard
-        window.location.href = "/dashboard";
+        if (!programError && programs && programs.length > 0) {
+          // Ha programma su Supabase → Dashboard
+          console.log('[LOGIN] ✅ User has active program, going to dashboard');
+          window.location.href = "/dashboard";
+          return;
+        }
+
+        // Se non ha programma su Supabase, controlla localStorage
+        const hasOnboarding = localStorage.getItem('onboarding_data');
+        const hasScreening = localStorage.getItem('screening_data');
+
+        if (!hasOnboarding) {
+          // Primo login: inizia da onboarding
+          window.location.href = "/onboarding";
+        } else if (!hasScreening) {
+          // Ha fatto onboarding ma non screening
+          window.location.href = "/screening";
+        } else {
+          // Ha localStorage ma non programma Supabase → screening per generare programma
+          window.location.href = "/screening";
+        }
+      } catch (err) {
+        console.error('[LOGIN] Error checking programs:', err);
+        // Fallback: controlla localStorage
+        const hasOnboarding = localStorage.getItem('onboarding_data');
+        if (hasOnboarding) {
+          window.location.href = "/dashboard";
+        } else {
+          window.location.href = "/onboarding";
+        }
       }
     } else {
       // fallback: redirect
