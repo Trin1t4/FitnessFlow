@@ -1205,24 +1205,6 @@ export default function Dashboard() {
                   </motion.button>
 
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      // Get first day of weekly split or use full program
-                      const firstDay = program.weekly_split?.days?.[0] || {
-                        name: 'Day 1',
-                        exercises: program.exercises || []
-                      };
-                      setCurrentWorkoutDay(firstDay);
-                      setShowWorkoutLogger(true);
-                    }}
-                    className="flex-1 bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300"
-                  >
-                    📝
-                    Registra Workout
-                  </motion.button>
-
-                  <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
