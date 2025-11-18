@@ -11,7 +11,7 @@ export interface RecoveryData {
   stressLevel: number;
   hasInjury: boolean;
   injuryDetails: string | null;
-  menstrualCycle: 'follicular' | 'ovulation' | 'luteal' | 'menstruation' | null;
+  menstrualCycle: 'follicular' | 'ovulation' | 'luteal' | 'menstruation' | 'menopause' | 'prefer_not_say' | null;
   isFemale: boolean;
   timestamp: string;
 }
@@ -25,9 +25,10 @@ export const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
   const [hasInjury, setHasInjury] = useState<boolean>(false);
   const [injuryDetails, setInjuryDetails] = useState<string>('');
   const [menstrualCycle, setMenstrualCycle] = useState<
-    'follicular' | 'ovulation' | 'luteal' | 'menstruation' | null
+    'follicular' | 'ovulation' | 'luteal' | 'menstruation' | 'menopause' | 'prefer_not_say' | null
   >(null);
   const [isFemale, setIsFemale] = useState<boolean>(false);
+  const [hasMenopausePreference, setHasMenopausePreference] = useState<boolean>(false);
 
   useEffect(() => {
     fetchUserGender();
@@ -35,6 +36,14 @@ export const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
 
   const fetchUserGender = async () => {
     try {
+      // Check localStorage for saved menstrual preference (menopausa = chiedi una volta)
+      const savedPreference = localStorage.getItem('menstrual_preference');
+      if (savedPreference === 'menopause') {
+        console.log('[RECOVERY] ✅ User has menopause preference saved - hiding menstrual section');
+        setHasMenopausePreference(true);
+        setMenstrualCycle('menopause'); // Auto-set per salvare nei dati
+      }
+
       const { data: userData } = await supabase.auth.getUser();
       if (userData.user) {
         const { data: profileData } = await supabase
@@ -52,33 +61,50 @@ export const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
     }
   };
 
+  // Handler per salvare preferenza menopausa (chiedi una volta sola)
+  const handleMenstrualChoice = (choice: 'menopause' | 'prefer_not_say' | 'follicular' | 'ovulation' | 'luteal' | 'menstruation') => {
+    setMenstrualCycle(choice);
+
+    // SOLO menopausa viene salvata (chiedi una volta)
+    if (choice === 'menopause') {
+      localStorage.setItem('menstrual_preference', 'menopause');
+      console.log('[RECOVERY] 💾 Saved menopause preference - will not ask again');
+      setHasMenopausePreference(true);
+    }
+    // Ciclo normale o "Non voglio rispondere" = NON salvare (chiedi sempre)
+  };
+
   // Calcola gli adattamenti in tempo reale
   const getAdaptations = () => {
     const adaptations: string[] = [];
-    
+
     if (sleepHours < 6) {
       const reduction = sleepHours < 5 ? 30 : 20;
       adaptations.push(`🔻 Volume ridotto del ${reduction}% per sonno insufficiente`);
     }
-    
+
     if (stressLevel >= 8) {
       adaptations.push('🔻 Intensità ridotta del 20% per stress elevato');
     } else if (stressLevel >= 6) {
       adaptations.push('⚠️ Intensità ridotta del 10% per stress moderato');
     }
-    
+
     if (hasInjury && injuryDetails) {
       adaptations.push('🩹 Esercizi modificati per evitare zone doloranti');
     }
-    
+
     if (isFemale && menstrualCycle === 'menstruation') {
       adaptations.push('🔴 Intensità ottimizzata per fase mestruale');
     }
-    
+
+    if (isFemale && menstrualCycle === 'menopause') {
+      adaptations.push('🧘‍♀️ Programma ottimizzato per menopausa (focus resistenza)');
+    }
+
     if (adaptations.length === 0) {
       return ['✅ Nessun adattamento necessario - Allenamento standard'];
     }
-    
+
     return adaptations;
   };
 
@@ -214,15 +240,18 @@ export const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
             )}
           </div>
 
-          {/* Ciclo Mestruale (solo donne) */}
-          {isFemale && (
+          {/* Ciclo Mestruale (solo donne) - NASCONDI se ha salvato menopausa */}
+          {isFemale && !hasMenopausePreference && (
             <div className="space-y-3">
               <label className="block">
                 <span className="text-lg font-semibold text-gray-900">🩸 Fase del ciclo mestruale</span>
+                <p className="text-xs text-gray-500 mt-1">
+                  Se scegli "Menopausa", non ti chiederemo più questa domanda
+                </p>
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => setMenstrualCycle('menstruation')}
+                  onClick={() => handleMenstrualChoice('menstruation')}
                   className={`p-4 border-2 rounded-xl font-semibold text-sm transition-all ${
                     menstrualCycle === 'menstruation'
                       ? 'bg-red-100 border-red-500 text-red-900'
@@ -232,7 +261,7 @@ export const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
                   🔴 Mestruazione<br/><span className="text-xs font-normal">(Giorni 1-5)</span>
                 </button>
                 <button
-                  onClick={() => setMenstrualCycle('follicular')}
+                  onClick={() => handleMenstrualChoice('follicular')}
                   className={`p-4 border-2 rounded-xl font-semibold text-sm transition-all ${
                     menstrualCycle === 'follicular'
                       ? 'bg-emerald-100 border-emerald-500 text-emerald-900'
@@ -242,7 +271,7 @@ export const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
                   🟢 Follicolare<br/><span className="text-xs font-normal">(Giorni 6-12)</span>
                 </button>
                 <button
-                  onClick={() => setMenstrualCycle('ovulation')}
+                  onClick={() => handleMenstrualChoice('ovulation')}
                   className={`p-4 border-2 rounded-xl font-semibold text-sm transition-all ${
                     menstrualCycle === 'ovulation'
                       ? 'bg-amber-100 border-amber-500 text-amber-900'
@@ -252,7 +281,7 @@ export const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
                   🟡 Ovulazione<br/><span className="text-xs font-normal">(Giorni 13-15)</span>
                 </button>
                 <button
-                  onClick={() => setMenstrualCycle('luteal')}
+                  onClick={() => handleMenstrualChoice('luteal')}
                   className={`p-4 border-2 rounded-xl font-semibold text-sm transition-all ${
                     menstrualCycle === 'luteal'
                       ? 'bg-orange-100 border-orange-500 text-orange-900'
@@ -261,6 +290,44 @@ export const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
                 >
                   🟠 Luteale<br/><span className="text-xs font-normal">(Giorni 16-28)</span>
                 </button>
+                {/* NUOVE OPZIONI: Menopausa + Non voglio rispondere */}
+                <button
+                  onClick={() => handleMenstrualChoice('menopause')}
+                  className={`p-4 border-2 rounded-xl font-semibold text-sm transition-all ${
+                    menstrualCycle === 'menopause'
+                      ? 'bg-purple-100 border-purple-500 text-purple-900'
+                      : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  🧘‍♀️ Menopausa<br/><span className="text-xs font-normal">(Non chiederò più)</span>
+                </button>
+                <button
+                  onClick={() => handleMenstrualChoice('prefer_not_say')}
+                  className={`p-4 border-2 rounded-xl font-semibold text-sm transition-all ${
+                    menstrualCycle === 'prefer_not_say'
+                      ? 'bg-gray-100 border-gray-500 text-gray-900'
+                      : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  🙅‍♀️ Preferisco non rispondere<br/><span className="text-xs font-normal">(Chiederò ogni volta)</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Badge info se ha menopausa salvata */}
+          {isFemale && hasMenopausePreference && (
+            <div className="p-4 bg-purple-50 border-2 border-purple-300 rounded-xl">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🧘‍♀️</span>
+                <div>
+                  <p className="text-sm font-semibold text-purple-900">
+                    Programma ottimizzato per menopausa
+                  </p>
+                  <p className="text-xs text-purple-700 mt-0.5">
+                    Focus su resistenza, densità ossea e recupero. Preferenza salvata.
+                  </p>
+                </div>
               </div>
             </div>
           )}
