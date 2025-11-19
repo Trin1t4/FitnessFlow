@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd client && npm install && npm run build",
-  "outputDirectory": "client/dist",
+  "buildCommand": "cd packages/web && npm install && npm run build",
+  "outputDirectory": "packages/web/dist",
   "functions": {
     "api/*.js": {
       "maxDuration": 30

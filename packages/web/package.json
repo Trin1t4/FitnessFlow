@@ -1,6 +1,7 @@
 {
-  "name": "trainsmart-client",
+  "name": "@fitnessflow/web",
   "version": "3.1.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",

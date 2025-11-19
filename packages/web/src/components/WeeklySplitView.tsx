@@ -4,10 +4,11 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { WeeklySplit, DayWorkout, Exercise } from '../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Target, Zap, Activity } from 'lucide-react';
+import { Target, Zap, Activity, Info, ChevronDown } from 'lucide-react';
+import { getExerciseDescription } from '../utils/exerciseDescriptions';
 
 interface WeeklySplitViewProps {
   weeklySplit: WeeklySplit;
@@ -121,6 +122,9 @@ interface ExerciseRowProps {
 }
 
 function ExerciseRow({ exercise, index, isCorrective = false }: ExerciseRowProps) {
+  const [showDescription, setShowDescription] = React.useState(false);
+  const exerciseInfo = getExerciseDescription(exercise.name);
+
   const patternColors: Record<string, string> = {
     lower_push: 'bg-green-600',
     lower_pull: 'bg-yellow-600',
@@ -139,65 +143,118 @@ function ExerciseRow({ exercise, index, isCorrective = false }: ExerciseRowProps
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className={`flex items-center gap-3 p-3 rounded-lg ${
-        isCorrective ? 'bg-gray-700/50' : 'bg-gray-700'
-      }`}
+      className={`rounded-lg ${isCorrective ? 'bg-gray-700/50' : 'bg-gray-700'}`}
     >
-      {/* Pattern Badge */}
-      <div className={`${patternColor} rounded px-2 py-1 text-xs font-medium text-white uppercase tracking-wider min-w-[100px] text-center`}>
-        {exercise.pattern.replace('_', ' ')}
-      </div>
+      {/* Main Row */}
+      <div className="flex items-center gap-3 p-3">
+        {/* Pattern Badge */}
+        <div className={`${patternColor} rounded px-2 py-1 text-xs font-medium text-white uppercase tracking-wider min-w-[100px] text-center`}>
+          {exercise.pattern.replace('_', ' ')}
+        </div>
 
-      {/* Exercise Info */}
-      <div className="flex-1">
-        <p className="text-white font-medium">{exercise.name}</p>
-        {exercise.notes && (
-          <p className="text-xs text-gray-400 mt-1">{exercise.notes}</p>
-        )}
-      </div>
+        {/* Exercise Info */}
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-white font-medium">{exercise.name}</p>
+            {exerciseInfo && (
+              <button
+                onClick={() => setShowDescription(!showDescription)}
+                className="text-gray-400 hover:text-blue-400 transition-colors"
+                title="Mostra spiegazione"
+              >
+                <Info className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          {exercise.notes && (
+            <p className="text-xs text-gray-400 mt-1">{exercise.notes}</p>
+          )}
+        </div>
 
-      {/* Volume Info */}
-      <div className="flex items-center gap-4 text-sm">
-        <div className="text-center">
-          <p className="text-gray-400 text-xs">Sets</p>
-          <p className="text-white font-bold">{exercise.sets}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-gray-400 text-xs">Reps</p>
-          <p className="text-white font-bold">{exercise.reps}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-gray-400 text-xs">Rest</p>
-          <p className="text-white font-bold">{exercise.rest}</p>
-        </div>
-        {exercise.intensity && (
+        {/* Volume Info */}
+        <div className="flex items-center gap-4 text-sm">
           <div className="text-center">
-            <p className="text-gray-400 text-xs">Intensità</p>
-            <p className="text-blue-400 font-bold">{exercise.intensity}</p>
+            <p className="text-gray-400 text-xs">Sets</p>
+            <p className="text-white font-bold">{exercise.sets}</p>
           </div>
-        )}
-      </div>
-
-      {/* Baseline indicator - larghezza fissa per allineamento */}
-      <div className="min-w-[120px] text-right">
-        {exercise.baseline ? (
-          <div className="text-xs text-green-400 flex items-center justify-end gap-1">
-            <Activity className="w-3 h-3" />
-            <span>Baseline: {exercise.baseline.maxReps}r</span>
+          <div className="text-center">
+            <p className="text-gray-400 text-xs">Reps</p>
+            <p className="text-white font-bold">{exercise.reps}</p>
           </div>
-        ) : (
-          <div className="text-xs text-gray-500 italic">
-            No baseline
+          <div className="text-center">
+            <p className="text-gray-400 text-xs">Rest</p>
+            <p className="text-white font-bold">{exercise.rest}</p>
           </div>
-        )}
-      </div>
-
-      {/* Replaced indicator */}
-      {exercise.wasReplaced && (
-        <div className="bg-yellow-600 rounded px-2 py-1 text-xs font-medium text-white">
-          Sostituito
+          {exercise.intensity && (
+            <div className="text-center">
+              <p className="text-gray-400 text-xs">Intensità</p>
+              <p className="text-blue-400 font-bold">{exercise.intensity}</p>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Baseline indicator - larghezza fissa per allineamento */}
+        <div className="min-w-[120px] text-right">
+          {exercise.baseline ? (
+            <div className="text-xs text-green-400 flex items-center justify-end gap-1">
+              <Activity className="w-3 h-3" />
+              <span>Baseline: {exercise.baseline.maxReps}r</span>
+            </div>
+          ) : (
+            <div className="text-xs text-gray-500 italic">
+              No baseline
+            </div>
+          )}
+        </div>
+
+        {/* Replaced indicator */}
+        {exercise.wasReplaced && (
+          <div className="bg-yellow-600 rounded px-2 py-1 text-xs font-medium text-white">
+            Sostituito
+          </div>
+        )}
+      </div>
+
+      {/* Description Panel */}
+      <AnimatePresence>
+        {showDescription && exerciseInfo && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-3 pb-3 pt-0 border-t border-gray-600 mt-0">
+              <div className="bg-gray-800 rounded-lg p-3 mt-3">
+                {/* Description */}
+                {exerciseInfo.description && (
+                  <p className="text-sm text-gray-300 mb-3">
+                    {exerciseInfo.description}
+                  </p>
+                )}
+
+                {/* Technique Cues */}
+                {exerciseInfo.technique && exerciseInfo.technique.length > 0 && (
+                  <div>
+                    <p className="text-xs text-blue-400 font-medium mb-2 uppercase tracking-wider">
+                      Tecnica
+                    </p>
+                    <ul className="space-y-1">
+                      {exerciseInfo.technique.map((cue, i) => (
+                        <li key={i} className="text-xs text-gray-400 flex items-start gap-2">
+                          <span className="text-blue-400 mt-0.5">•</span>
+                          {cue}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
