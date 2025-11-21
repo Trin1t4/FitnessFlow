@@ -2,6 +2,20 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from 'react';
 import { Toaster } from 'sonner';
 import { LanguageProvider } from './lib/i18n';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
+// React Query configuration
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 // Critical routes (eager loaded)
 import Landing from "./pages/Landing";
@@ -32,40 +46,44 @@ const PageLoader = () => (
 
 function App() {
   return (
-    <LanguageProvider>
-      <BrowserRouter>
-        <Toaster position="top-right" richColors />
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/pricing" element={<Pricing />} />
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <BrowserRouter>
+          <Toaster position="top-right" richColors />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/pricing" element={<Pricing />} />
 
-            {/* ONBOARDING - Senza auth per test */}
-            <Route path="/onboarding" element={<Onboarding />} />
+              {/* ONBOARDING - Senza auth per test */}
+              <Route path="/onboarding" element={<Onboarding />} />
 
-            {/* PERCORSO PRINCIPALE - Senza auth per test */}
-            <Route path="/body-scan" element={<BodyCompositionScan />} />
-            <Route path="/quiz" element={<BiomechanicsQuiz />} />
-            <Route path="/screening" element={<Screening />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+              {/* PERCORSO PRINCIPALE - Senza auth per test */}
+              <Route path="/body-scan" element={<BodyCompositionScan />} />
+              <Route path="/quiz" element={<BiomechanicsQuiz />} />
+              <Route path="/screening" element={<Screening />} />
+              <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* RECOVERY - Senza auth per test */}
-            <Route path="/recovery-screening" element={<RecoveryScreening />} />
+              {/* RECOVERY - Senza auth per test */}
+              <Route path="/recovery-screening" element={<RecoveryScreening />} />
 
-            {/* WORKOUT */}
-            <Route path="/workout" element={<Workout />} />
-            <Route path="/workout-session" element={<WorkoutSession />} />
+              {/* WORKOUT */}
+              <Route path="/workout" element={<Workout />} />
+              <Route path="/workout-session" element={<WorkoutSession />} />
 
-            {/* ADMIN DASHBOARD */}
-            <Route path="/admin" element={<AdminDashboard />} />
+              {/* ADMIN DASHBOARD */}
+              <Route path="/admin" element={<AdminDashboard />} />
 
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </LanguageProvider>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </LanguageProvider>
+      {/* React Query DevTools - solo in development */}
+      <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+    </QueryClientProvider>
   );
 }
 
