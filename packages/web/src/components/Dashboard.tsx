@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabaseClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut, Shield } from 'lucide-react';
@@ -32,19 +33,28 @@ import autoRegulationService, {
 } from '../lib/autoRegulationService';
 import * as adminService from '../lib/adminService';
 import { toast } from 'sonner';
+// ✅ React Query hooks
+import { useCurrentProgram, useUserPrograms, useCreateProgram, programKeys } from '../hooks/useProgram';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  // ✅ React Query hooks - replaces manual state management
+  const { data: program, isLoading: programLoading, error: programError, refetch: refetchProgram } = useCurrentProgram();
+  const { data: programHistory = [] } = useUserPrograms();
+
+  // ✅ Derived states from React Query
+  const hasProgram = !!program;
+  const syncStatus: 'synced' | 'offline' | 'syncing' = programLoading ? 'syncing' : programError ? 'offline' : 'synced';
+
+  // UI states (not related to data fetching)
   const [loading, setLoading] = useState(false);
-  const [hasProgram, setHasProgram] = useState(false);
-  const [program, setProgram] = useState<any>(null);
   const [generatingProgram, setGeneratingProgram] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showProgramHistory, setShowProgramHistory] = useState(false);
-  const [programHistory, setProgramHistory] = useState<TrainingProgram[]>([]);
-  const [syncStatus, setSyncStatus] = useState<'synced' | 'offline' | 'syncing'>('synced');
   const [showWorkoutLogger, setShowWorkoutLogger] = useState(false);
   const [currentWorkoutDay, setCurrentWorkoutDay] = useState<any>(null);
   const [showLiveWorkout, setShowLiveWorkout] = useState(false);
@@ -112,84 +122,14 @@ export default function Dashboard() {
     console.log('[Dashboard] Retest schedule calculated:', schedule);
   }
 
-  // NEW: Initialize programs from Supabase with migration
+  // ✅ SIMPLIFIED: Only handle localStorage migration (React Query handles fetching)
   async function initializePrograms() {
     try {
-      console.log('🔄 Initializing programs from Supabase...');
-
-      // Try to migrate localStorage to Supabase if needed
+      console.log('🔄 Migrating localStorage to Supabase if needed...');
       await migrateLocalStorageToSupabase();
-
-      // Load active program from Supabase
-      await loadProgramFromSupabase();
-
-      // Load program history
-      await loadProgramHistory();
-
+      console.log('✅ Migration complete, React Query will handle data fetching');
     } catch (error) {
-      console.error('❌ Error initializing programs:', error);
-      setSyncStatus('offline');
-    }
-  }
-
-  // NEW: Load active program from Supabase
-  async function loadProgramFromSupabase() {
-    try {
-      setSyncStatus('syncing');
-      const result = await getActiveProgram();
-
-      if (result.success && result.data) {
-        console.log('✅ Loaded active program from Supabase:', result.data.name);
-
-        // ✅ AUTO-REGENERATE: Check if screening is newer than program
-        const screeningData = dataStatus.screening || JSON.parse(localStorage.getItem('screening_data') || '{}');
-        const screeningTimestamp = screeningData.timestamp;
-        const programCreatedAt = result.data.created_at;
-
-        if (screeningTimestamp && programCreatedAt) {
-          const screeningDate = new Date(screeningTimestamp);
-          const programDate = new Date(programCreatedAt);
-
-          if (screeningDate > programDate) {
-            console.warn('⚠️ SCREENING PIÙ RECENTE DEL PROGRAMMA!');
-            console.warn(`   Screening: ${screeningDate.toISOString()}`);
-            console.warn(`   Programma: ${programDate.toISOString()}`);
-            console.warn('   → Programma obsoleto, rigenerazione necessaria!');
-
-            // Mostra warning ma non rigenera automaticamente (per evitare loop)
-            // L'utente deve cliccare "Rigenera"
-          }
-        }
-
-        setProgram(result.data);
-        setHasProgram(true);
-        setSyncStatus(result.fromCache ? 'offline' : 'synced');
-      } else {
-        console.log('ℹ️ No active program in Supabase');
-        // Fallback to localStorage
-        const savedProgram = localStorage.getItem('currentProgram');
-        if (savedProgram) {
-          setProgram(JSON.parse(savedProgram));
-          setHasProgram(true);
-        }
-        setSyncStatus('offline');
-      }
-    } catch (error) {
-      console.error('❌ Error loading program:', error);
-      setSyncStatus('offline');
-    }
-  }
-
-  // NEW: Load program history
-  async function loadProgramHistory() {
-    try {
-      const result = await getAllPrograms();
-      if (result.success && result.data) {
-        setProgramHistory(result.data);
-        console.log(`✅ Loaded ${result.data.length} programs from history`);
-      }
-    } catch (error) {
-      console.error('❌ Error loading program history:', error);
+      console.error('❌ Error during migration:', error);
     }
   }
 
@@ -422,8 +362,8 @@ export default function Dashboard() {
 
       // 3. RESET UI STATE
       console.log('3️⃣ Resetting UI state...');
-      setHasProgram(false);
-      setProgram(null);
+      // ✅ React Query: Invalidate all cached data
+      queryClient.clear(); // Clear all React Query cache
       setDataStatus({
         onboarding: null,
         quiz: null,
@@ -432,7 +372,7 @@ export default function Dashboard() {
 
       console.log('✅ DEEP RESET COMPLETE!');
       alert('✅ Reset completo! Tutti i dati sono stati eliminati.\n\nVerrai reindirizzato all\'onboarding.');
-      
+
       // 4. REDIRECT
       setTimeout(() => {
         navigate('/onboarding');
@@ -549,7 +489,6 @@ export default function Dashboard() {
   async function handleGenerateProgram() {
     try {
       setGeneratingProgram(true);
-      setSyncStatus('syncing');
 
       // USA I DATI SALVATI DA SCREENING
       const { onboarding, quiz, screening } = dataStatus;
@@ -614,9 +553,6 @@ export default function Dashboard() {
 
       if (saveResult.success) {
         console.log('✅ Program saved to Supabase:', saveResult.data?.id);
-        setProgram(saveResult.data);
-        setHasProgram(true);
-        setSyncStatus(saveResult.fromCache ? 'offline' : 'synced');
 
         // ✅ CLEANUP: Remove stale localStorage since we have fresh Supabase data
         if (!saveResult.fromCache) {
@@ -624,24 +560,19 @@ export default function Dashboard() {
           localStorage.removeItem('currentProgram');
         }
 
-        // Refresh history
-        await loadProgramHistory();
+        // ✅ React Query: Invalidate to refetch fresh data
+        await queryClient.invalidateQueries({ queryKey: programKeys.all });
 
         alert(`✅ Programma ${userLevel.toUpperCase()} per ${mappedGoal.toUpperCase()} generato e salvato su cloud!`);
       } else {
         console.warn('⚠️ Failed to save to Supabase, using localStorage:', saveResult.error);
         // Fallback to localStorage
         localStorage.setItem('currentProgram', JSON.stringify(generatedProgram));
-        setProgram(generatedProgram);
-        setHasProgram(true);
-        setSyncStatus('offline');
-
         alert(`⚠️ Programma generato (salvato localmente)\n\n${saveResult.error || 'Errore sincronizzazione cloud'}`);
       }
 
     } catch (error) {
       console.error('❌ Error:', error);
-      setSyncStatus('offline');
       alert('Errore nella generazione del programma');
     } finally {
       setGeneratingProgram(false);
@@ -826,12 +757,11 @@ export default function Dashboard() {
 
       if (saveResult.success) {
         console.log('✅ New program saved:', saveResult.data?.id);
-        setProgram(saveResult.data);
-        setHasProgram(true);
-        setSyncStatus(saveResult.fromCache ? 'offline' : 'synced');
 
         localStorage.removeItem('currentProgram');
-        await loadProgramHistory();
+
+        // ✅ React Query: Invalidate to refetch fresh data
+        await queryClient.invalidateQueries({ queryKey: programKeys.all });
 
         const locationLabel = newLocation === 'gym' ? 'PALESTRA' : 'CASA';
         alert(`✅ Location cambiata!\n\nNuovo programma per ${locationLabel} generato con successo!`);
@@ -840,9 +770,6 @@ export default function Dashboard() {
       } else {
         console.warn('⚠️ Failed to save:', saveResult.error);
         localStorage.setItem('currentProgram', JSON.stringify(generatedProgram));
-        setProgram(generatedProgram);
-        setHasProgram(true);
-        setSyncStatus('offline');
         alert(`⚠️ Programma generato (salvato localmente)\n\n${saveResult.error || 'Errore sincronizzazione cloud'}`);
         setShowLocationSwitch(false);
         console.groupEnd();
@@ -850,7 +777,6 @@ export default function Dashboard() {
 
     } catch (error) {
       console.error('❌ Error switching location:', error);
-      setSyncStatus('offline');
       alert('Errore durante il cambio di location');
       console.groupEnd();
     } finally {
@@ -895,16 +821,16 @@ export default function Dashboard() {
   // ✅ Handle deload acceptance
   async function handleDeloadAccept(modifiedAdjustment: ProgramAdjustment) {
     try {
-      setSyncStatus('syncing');
       const result = await acceptAndApplyAdjustment(modifiedAdjustment);
 
       if (result.success) {
         console.log('[Dashboard] Deload applied successfully');
-        // Reload program to get updated values
-        await loadProgramFromSupabase();
+
+        // ✅ React Query: Invalidate to refetch updated program
+        await queryClient.invalidateQueries({ queryKey: programKeys.all });
+
         setShowDeloadModal(false);
         setPendingAdjustment(null);
-        setSyncStatus('synced');
 
         // Show success notification
         const adjustmentLabel =
@@ -918,7 +844,6 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('[Dashboard] Error applying deload:', error);
-      setSyncStatus('offline');
       alert('Errore nell\'applicare l\'adjustment. Riprova.');
     }
   }
@@ -1414,11 +1339,13 @@ export default function Dashboard() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => {
+                    onClick={async () => {
                       if (confirm('Vuoi rigenerare il programma?')) {
                         localStorage.removeItem('currentProgram');
-                        setHasProgram(false);
-                        setProgram(null);
+
+                        // ✅ React Query: Clear program cache (will show "no program" state)
+                        queryClient.setQueryData(programKeys.current(program?.user_id || ''), null);
+                        await queryClient.invalidateQueries({ queryKey: programKeys.all });
                       }
                     }}
                     className="px-6 bg-slate-700 hover:bg-slate-600 text-white py-4 rounded-xl border border-slate-600/50 transition-all duration-300"
@@ -1612,19 +1539,12 @@ export default function Dashboard() {
                           whileTap={{ scale: 0.98 }}
                           onClick={async () => {
                             if (confirm(`Vuoi impostare "${prog.name}" come programma attivo?`)) {
-                              setSyncStatus('syncing');
                               const result = await import('../lib/programService').then(m => m.setActiveProgram(prog.id!));
                               if (result.success) {
-                                setProgram(result.data);
-                                setHasProgram(true);
-                                setProgramHistory(prev => prev.map(p => ({
-                                  ...p,
-                                  is_active: p.id === prog.id
-                                })));
-                                setSyncStatus('synced');
+                                // ✅ React Query: Invalidate to refetch all programs
+                                await queryClient.invalidateQueries({ queryKey: programKeys.all });
                                 alert('Programma attivato con successo!');
                               } else {
-                                setSyncStatus('offline');
                                 alert('Errore: ' + result.error);
                               }
                             }
@@ -1638,13 +1558,12 @@ export default function Dashboard() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => {
-                            setProgram(prog);
-                            setHasProgram(true);
+                            // Just close modal - program is already in React Query cache
                             setShowProgramHistory(false);
                           }}
                           className="flex-1 bg-slate-600 hover:bg-slate-500 text-white py-2 px-4 rounded-lg text-sm font-semibold transition-colors"
                         >
-                          Visualizza
+                          Chiudi
                         </motion.button>
                       </div>
                     )}
@@ -1840,7 +1759,10 @@ export default function Dashboard() {
           exercises={currentWorkoutDay.exercises || []}
           onWorkoutComplete={async () => {
             console.log('✅ Workout completato, refreshing program...');
-            await loadProgramFromSupabase();
+
+            // ✅ React Query: Invalidate to refetch updated program
+            await queryClient.invalidateQueries({ queryKey: programKeys.all });
+
             setShowLiveWorkout(false);
             setCurrentWorkoutDay(null);
 
@@ -1867,8 +1789,10 @@ export default function Dashboard() {
           exercises={currentWorkoutDay.exercises || []}
           onWorkoutLogged={async () => {
             console.log('✅ Workout logged, refreshing program...');
-            // Refresh program from Supabase (may have been auto-adjusted)
-            await loadProgramFromSupabase();
+
+            // ✅ React Query: Invalidate to refetch updated program
+            await queryClient.invalidateQueries({ queryKey: programKeys.all });
+
             setShowWorkoutLogger(false);
             setCurrentWorkoutDay(null);
           }}
