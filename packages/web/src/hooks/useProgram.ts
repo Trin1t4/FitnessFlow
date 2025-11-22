@@ -3,6 +3,7 @@
  * Sostituisce fetch diretti con cached queries
  */
 
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabaseClient';
 import { useAppStore } from '../store/useAppStore';
@@ -19,22 +20,33 @@ export const programKeys = {
  * Cache: 5 minutes, auto-refetch in background
  */
 export function useCurrentProgram() {
-  const userId = useAppStore((state) => state.userId);
+  // ✅ FIX: Get userId from Supabase session instead of store (more reliable)
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id || null);
+    });
+  }, []);
 
   return useQuery({
     queryKey: programKeys.current(userId || ''),
     queryFn: async () => {
-      if (!userId) {
-        console.log('[useCurrentProgram] No userId, skipping fetch');
+      // Double-check session at fetch time
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id;
+
+      if (!currentUserId) {
+        console.log('[useCurrentProgram] No userId in session, skipping fetch');
         throw new Error('No user ID');
       }
 
-      console.log('[useCurrentProgram] Fetching active program for user:', userId);
+      console.log('[useCurrentProgram] Fetching active program for user:', currentUserId);
 
       const { data, error } = await supabase
         .from('programs')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', currentUserId)
         .eq('is_active', true)
         .single();
 
