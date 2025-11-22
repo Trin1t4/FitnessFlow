@@ -126,7 +126,7 @@ interface ExerciseRowProps {
 }
 
 function ExerciseRow({ exercise, index, isCorrective = false }: ExerciseRowProps) {
-  const [showDescription, setShowDescription] = React.useState(false);
+  const [showDescription, setShowDescription] = React.useState(true); // ✅ Always show description by default
   const exerciseInfo = getExerciseDescription(exercise.name);
 
   const patternColors: Record<string, string> = {

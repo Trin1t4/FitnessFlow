@@ -203,7 +203,7 @@ export default function PreWorkoutCheck({ workout, onComplete, onSkip }: PreWork
   const exercisesWithWeight = workout?.exercises?.filter((ex: any) => ex.weight && ex.weight > 0) || [];
 
   return (
-    <div className="min-h-screen bg-background flex items-center py-12">
+    <div className="min-h-screen max-h-screen overflow-y-auto bg-background flex items-center py-12">
       <div className="max-w-2xl mx-auto px-4 w-full">
         <Card>
           <CardHeader className="text-center">
