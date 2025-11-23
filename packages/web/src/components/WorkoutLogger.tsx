@@ -18,10 +18,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, TrendingUp, TrendingDown, Video } from 'lucide-react';
 import autoRegulationService, { ExerciseLog } from '../lib/autoRegulationService';
 import { toast } from 'sonner';
 import { useTranslation } from '../lib/i18n';
+import VideoUploadModal from './VideoUploadModal';
 
 interface Exercise {
   name: string;
@@ -70,6 +71,10 @@ export default function WorkoutLogger({
   const [sleepQuality, setSleepQuality] = useState<number>(7);
   const [workoutNotes, setWorkoutNotes] = useState<string>('');
   const [loading, setLoading] = useState(false);
+
+  // State video correction modal
+  const [showVideoUpload, setShowVideoUpload] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
 
   // Inizializza logs con valori default
   useEffect(() => {
@@ -376,6 +381,23 @@ export default function WorkoutLogger({
                       className="h-9 text-sm"
                     />
                   </div>
+
+                  {/* Video Form Check Button */}
+                  <div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedExercise(exercise);
+                        setShowVideoUpload(true);
+                      }}
+                      className="w-full"
+                    >
+                      <Video className="w-4 h-4 mr-2" />
+                      📹 Record Form Check
+                    </Button>
+                  </div>
                 </div>
               );
             })}
@@ -466,6 +488,26 @@ export default function WorkoutLogger({
           </div>
         </div>
       </DialogContent>
+
+      {/* Video Upload Modal */}
+      {showVideoUpload && selectedExercise && (
+        <VideoUploadModal
+          open={showVideoUpload}
+          onClose={() => {
+            setShowVideoUpload(false);
+            setSelectedExercise(null);
+          }}
+          exerciseName={selectedExercise.name}
+          exercisePattern={selectedExercise.pattern}
+          onUploadComplete={(correctionId) => {
+            setShowVideoUpload(false);
+            setSelectedExercise(null);
+            toast.success('Video caricato! Analisi in corso...');
+            // Opzionale: naviga a feedback view
+            // window.location.href = `/video-feedback/${correctionId}`;
+          }}
+        />
+      )}
     </Dialog>
   );
 }
