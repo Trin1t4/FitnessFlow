@@ -15,6 +15,7 @@ import LiveWorkoutSession from './LiveWorkoutSession';
 import DeloadSuggestionModal from './DeloadSuggestionModal';
 import RetestNotification from './RetestNotification';
 import DeloadWeekNotification from './DeloadWeekNotification';
+import PaywallModal from './PaywallModal';
 import { getRetestSchedule, Goal, DeloadConfig } from '../utils/retestProgression';
 import {
   createProgram,
@@ -86,11 +87,46 @@ export default function Dashboard() {
   // Retest state
   const [showRetestDismissed, setShowRetestDismissed] = useState(false);
 
+  // Paywall state
+  const [showPaywall, setShowPaywall] = useState(false);
+
   useEffect(() => {
     loadData();
     initializePrograms();
     checkAdminStatus();
+    checkPaywallTrigger();
   }, []);
+
+  // Check if user should see paywall (after 7 days)
+  async function checkPaywallTrigger() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('created_at, subscription_tier')
+        .eq('id', user.id)
+        .single();
+
+      if (!userData) return;
+
+      const daysSinceSignup = Math.floor(
+        (Date.now() - new Date(userData.created_at).getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      console.log('[Paywall] Days since signup:', daysSinceSignup, 'Tier:', userData.subscription_tier);
+
+      // Show paywall after 7 days if still on free tier
+      if (daysSinceSignup >= 7 && userData.subscription_tier === 'free') {
+        console.log('[Paywall] ✅ Triggering paywall modal');
+        setShowPaywall(true);
+      }
+    } catch (error) {
+      console.error('[Paywall] Error checking trigger:', error);
+    }
+  }
 
   // ✅ MEMOIZED: Retest schedule calculation (auto-recomputes when program changes)
   const retestSchedule = useMemo(() => {
@@ -1841,6 +1877,24 @@ export default function Dashboard() {
           onPostpone={handleDeloadPostpone}
         />
       )}
+
+      {/* Paywall Modal */}
+      <PaywallModal
+        open={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onSelectPlan={(tier) => {
+          console.log('[Paywall] Selected tier:', tier);
+          // TODO: Integrate Stripe payment flow
+          alert(`Piano ${tier.toUpperCase()} selezionato!\n\nIntegrazione Stripe in arrivo...`);
+        }}
+        userProgress={{
+          workoutsCompleted: analytics.daysActive,
+          baselineImprovements: dataStatus.screening?.patternBaselines
+            ? Object.keys(dataStatus.screening.patternBaselines).map(p => `${p} baseline`)
+            : [],
+          injuriesAvoided: program?.pain_areas?.length || 0
+        }}
+      />
     </div>
   );
 }

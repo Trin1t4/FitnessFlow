@@ -33,6 +33,7 @@ const Workout = lazy(() => import('./pages/Workout'));
 const WorkoutSession = lazy(() => import('./pages/WorkoutSession'));
 const RecoveryScreening = lazy(() => import('./components/RecoveryScreening'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const VideoFeedback = lazy(() => import('./pages/VideoFeedback'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -75,6 +76,9 @@ function App() {
 
               {/* ADMIN DASHBOARD */}
               <Route path="/admin" element={<AdminDashboard />} />
+
+              {/* VIDEO FEEDBACK */}
+              <Route path="/video-feedback/:correctionId" element={<VideoFeedback />} />
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
