@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabaseClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut, Shield } from 'lucide-react';
+import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut, Shield, ClipboardList } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from '../lib/i18n';
 import { validateAndNormalizePainAreas } from '../utils/validators';
@@ -1828,7 +1828,10 @@ export default function Dashboard() {
             await queryClient.invalidateQueries({ queryKey: programKeys.all });
 
             setShowLiveWorkout(false);
-            setCurrentWorkoutDay(null);
+            // NON resettare currentWorkoutDay qui, serve per WorkoutLogger
+
+            // ✅ Apri WorkoutLogger dopo LiveWorkout
+            setShowWorkoutLogger(true);
 
             // Check for pending deload adjustments after workout completion
             setTimeout(() => {
