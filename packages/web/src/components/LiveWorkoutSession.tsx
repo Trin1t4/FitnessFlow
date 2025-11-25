@@ -16,7 +16,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Play, Pause, SkipForward, X, Info } from 'lucide-react';
+import { CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Play, Pause, SkipForward, X, Info, ThumbsDown } from 'lucide-react';
 import { toast } from 'sonner';
 import autoRegulationService from '../lib/autoRegulationService';
 import { supabase } from '../lib/supabaseClient';
@@ -24,6 +24,9 @@ import { useTranslation } from '../lib/i18n';
 import { getExerciseDescription } from '../utils/exerciseDescriptions';
 import painManagementService from '../lib/painManagementService';
 import HybridRecoveryModal from './HybridRecoveryModal';
+import VideoUploadModal from './VideoUploadModal';
+import ExerciseDislikeModal from './ExerciseDislikeModal';
+import { getVariantsForExercise } from '../utils/exerciseVariants';
 
 interface Exercise {
   name: string;
@@ -33,6 +36,7 @@ interface Exercise {
   rest: string;
   intensity: string;
   notes?: string;
+  weight?: number | string; // Peso suggerito in kg
 }
 
 interface SetLog {
@@ -175,6 +179,9 @@ export default function LiveWorkoutSession({
   const [restTimeRemaining, setRestTimeRemaining] = useState(0);
   const [showExerciseDescription, setShowExerciseDescription] = useState(false);
 
+  // Video upload modal state
+  const [showVideoUpload, setShowVideoUpload] = useState(false);
+
   // Pain tracking state
   const [currentPainLevel, setCurrentPainLevel] = useState(0); // 0-10 scale
   const [showPainAlert, setShowPainAlert] = useState(false);
@@ -187,6 +194,10 @@ export default function LiveWorkoutSession({
     painLevel: number;
     sessions: number;
   } | null>(null);
+
+  // Exercise Dislike Modal state
+  const [showDislikeModal, setShowDislikeModal] = useState(false);
+  const [adjustedWeights, setAdjustedWeights] = useState<Record<string, number>>({});
 
   // Adjustment state
   const [suggestion, setSuggestion] = useState<{
@@ -972,12 +983,16 @@ export default function LiveWorkoutSession({
 
     // Check for pain-based adaptation
     if (currentPainLevel >= 4) {
+      // TODO: Get goal from program data (for now defaulting to 'forza')
+      const userGoal = 'forza'; // This should come from program metadata
+
       const suggestion = painManagementService.suggestAdaptation(
         currentPainLevel,
         currentWeight || 0,
         currentReps,
         100,
-        painAdaptations
+        painAdaptations,
+        userGoal
       );
 
       console.log('🩹 Pain adaptation suggested:', suggestion);
@@ -1230,6 +1245,77 @@ export default function LiveWorkoutSession({
     }
   };
 
+  // ===== EXERCISE DISLIKE HANDLERS =====
+
+  // Handle weight reduction from dislike modal
+  const handleReduceWeight = (percentage: number) => {
+    if (!currentExercise) return;
+
+    const currentWeight = adjustedWeights[currentExercise.name]
+      || (typeof currentExercise.weight === 'number' ? currentExercise.weight : parseFloat(String(currentExercise.weight)) || 0);
+
+    const newWeight = Math.round(currentWeight * (1 - percentage / 100) * 10) / 10;
+
+    setAdjustedWeights(prev => ({
+      ...prev,
+      [currentExercise.name]: newWeight
+    }));
+
+    setCurrentWeight(newWeight);
+
+    toast.success(`💪 Peso ridotto: ${currentWeight}kg → ${newWeight}kg (-${percentage}%)`);
+    console.log(`[DISLIKE] Weight reduced for ${currentExercise.name}: ${currentWeight}kg → ${newWeight}kg`);
+  };
+
+  // Handle exercise replacement from dislike modal
+  const handleReplaceExercise = (reason: 'pain' | 'dislike') => {
+    if (!currentExercise) return;
+
+    // Get variants for this exercise pattern
+    const variants = getVariantsForExercise(currentExercise.name, currentExercise.pattern);
+
+    if (variants && variants.length > 0) {
+      // Pick first variant that's different from current
+      const replacement = variants.find(v => v !== currentExercise.name) || variants[0];
+
+      // Replace in exercises array
+      setExercises(prev => prev.map((ex, idx) =>
+        idx === currentExerciseIndex
+          ? { ...ex, name: replacement, notes: `${reason === 'pain' ? '🩹' : '🔄'} Sostituito: ${currentExercise.name}` }
+          : ex
+      ));
+
+      toast.success(`🔄 ${currentExercise.name} → ${replacement}`);
+      console.log(`[DISLIKE] Exercise replaced: ${currentExercise.name} → ${replacement} (reason: ${reason})`);
+    } else {
+      toast.error('❌ Nessuna variante disponibile per questo esercizio');
+      console.warn(`[DISLIKE] No variants found for ${currentExercise.name}`);
+    }
+  };
+
+  // Handle pain report from dislike modal
+  const handlePainFromDislike = (area: string, level: number) => {
+    console.log(`[DISLIKE] Pain reported: ${area} - Level ${level}/10`);
+
+    // Add to pain areas for this session
+    setPainAreas(prev => [...prev.filter(p => p.area !== area), { area, intensity: level }]);
+
+    // Log to pain management service
+    painManagementService.logPainEvent({
+      area,
+      intensity: level,
+      exercise: currentExercise?.name || '',
+      timestamp: new Date().toISOString()
+    });
+  };
+
+  // Get current weight for exercise (adjusted or original)
+  const getCurrentExerciseWeight = () => {
+    if (!currentExercise) return undefined;
+    return adjustedWeights[currentExercise.name]
+      || (typeof currentExercise.weight === 'number' ? currentExercise.weight : currentExercise.weight);
+  };
+
   if (!open) return null;
 
   // PRE-WORKOUT CHECK-IN
@@ -1243,7 +1329,7 @@ export default function LiveWorkoutSession({
         <motion.div
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
-          className="bg-slate-900 rounded-2xl p-6 max-w-lg w-full border border-slate-700 shadow-2xl"
+          className="bg-slate-900 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-700 shadow-2xl"
         >
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-white">👋 Pre-Workout Check-In</h2>
@@ -1727,7 +1813,7 @@ export default function LiveWorkoutSession({
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        className="bg-slate-900 rounded-2xl p-6 max-w-2xl w-full border border-slate-700 shadow-2xl"
+        className="bg-slate-900 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-700 shadow-2xl"
       >
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
@@ -1778,15 +1864,14 @@ export default function LiveWorkoutSession({
                 </span>
               )}
             </div>
-            {exerciseInfo && (
-              <button
-                onClick={() => setShowExerciseDescription(!showExerciseDescription)}
-                className="text-slate-400 hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-slate-700/50"
-                title="Mostra spiegazione esercizio"
-              >
-                <Info className="w-5 h-5" />
-              </button>
-            )}
+            {/* Dislike button */}
+            <button
+              onClick={() => setShowDislikeModal(true)}
+              className="p-2 bg-slate-700/50 hover:bg-red-500/20 border border-slate-600 hover:border-red-500/50 rounded-lg transition-all group"
+              title={t('exercise_dislike.title')}
+            >
+              <ThumbsDown className="w-5 h-5 text-slate-400 group-hover:text-red-400 transition-colors" />
+            </button>
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
@@ -1803,40 +1888,32 @@ export default function LiveWorkoutSession({
             </div>
           </div>
 
-          {/* Exercise Description Panel */}
-          <AnimatePresence>
-            {showExerciseDescription && exerciseInfo && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="mt-4 bg-slate-900/80 rounded-lg p-4 border border-slate-700/50 overflow-hidden"
-              >
-                {/* Description */}
-                <p className="text-sm text-slate-300 mb-3 leading-relaxed">
-                  {exerciseInfo.description}
-                </p>
+          {/* Exercise Description Panel - Always Visible */}
+          {exerciseInfo && (
+            <div className="mt-4 bg-slate-900/80 rounded-lg p-4 border border-slate-700/50">
+              {/* Description */}
+              <p className="text-sm text-slate-300 mb-3 leading-relaxed">
+                {exerciseInfo.description}
+              </p>
 
-                {/* Technique */}
-                {exerciseInfo.technique && exerciseInfo.technique.length > 0 && (
-                  <div>
-                    <p className="text-xs text-blue-400 font-medium mb-2 uppercase tracking-wide">
-                      Tecnica Corretta
-                    </p>
-                    <ul className="space-y-1.5">
-                      {exerciseInfo.technique.map((cue, i) => (
-                        <li key={i} className="text-xs text-slate-400 flex items-start gap-2">
-                          <span className="text-blue-400 mt-0.5">•</span>
-                          <span>{cue}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+              {/* Technique */}
+              {exerciseInfo.technique && exerciseInfo.technique.length > 0 && (
+                <div>
+                  <p className="text-xs text-blue-400 font-medium mb-2 uppercase tracking-wide">
+                    Tecnica Corretta
+                  </p>
+                  <ul className="space-y-1.5">
+                    {exerciseInfo.technique.map((cue, i) => (
+                      <li key={i} className="text-xs text-slate-400 flex items-start gap-2">
+                        <span className="text-blue-400 mt-0.5">•</span>
+                        <span>{cue}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* Rest Timer */}
@@ -2074,6 +2151,15 @@ export default function LiveWorkoutSession({
               </div>
             )}
 
+            {/* Video Upload Button */}
+            <button
+              onClick={() => setShowVideoUpload(true)}
+              className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 mb-3"
+            >
+              <span>📹</span>
+              <span>Carica Video Form Check</span>
+            </button>
+
             <button
               onClick={handleRPESubmit}
               className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 rounded-xl transition-all duration-300"
@@ -2287,6 +2373,33 @@ export default function LiveWorkoutSession({
           onSkip={handleSkipExercise}
         />
       )}
+
+      {/* Video Upload Modal */}
+      <VideoUploadModal
+        open={showVideoUpload}
+        onClose={() => setShowVideoUpload(false)}
+        exerciseName={currentExercise.name}
+        exercisePattern={currentExercise.pattern}
+        setNumber={currentSet}
+        onUploadComplete={(correctionId) => {
+          setShowVideoUpload(false);
+          toast.success('Video caricato! Analisi in corso...', {
+            description: `Riceverai il feedback tra pochi secondi. ID: ${correctionId.substring(0, 8)}...`
+          });
+        }}
+      />
+
+      {/* Exercise Dislike Modal */}
+      <ExerciseDislikeModal
+        open={showDislikeModal}
+        onClose={() => setShowDislikeModal(false)}
+        exerciseName={currentExercise.name}
+        exercisePattern={currentExercise.pattern}
+        currentWeight={getCurrentExerciseWeight()}
+        onReduceWeight={handleReduceWeight}
+        onReplaceExercise={handleReplaceExercise}
+        onReportPain={handlePainFromDislike}
+      />
     </motion.div>
   );
 }

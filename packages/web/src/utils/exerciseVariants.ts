@@ -510,3 +510,30 @@ export function getEasierVariant(
   validVariants.sort((a, b) => a.difficulty - b.difficulty);
   return validVariants[0].name;
 }
+
+/**
+ * Get all variants for a given exercise name and pattern
+ * Used by ExerciseDislikeModal to find replacements
+ */
+export function getVariantsForExercise(
+  exerciseName: string,
+  patternId: string
+): string[] {
+  const variantMap: Record<string, ExerciseVariant[]> = {
+    lower_push: LOWER_PUSH_VARIANTS,
+    lower_pull: LOWER_PULL_VARIANTS,
+    horizontal_push: HORIZONTAL_PUSH_VARIANTS,
+    horizontal_pull: HORIZONTAL_PULL_VARIANTS,
+    vertical_push: VERTICAL_PUSH_VARIANTS,
+    vertical_pull: VERTICAL_PULL_VARIANTS,
+    core: CORE_VARIANTS
+  };
+
+  const variants = variantMap[patternId];
+  if (!variants) return [];
+
+  // Return all variant names except the current one
+  return variants
+    .map(v => v.name)
+    .filter(name => name !== exerciseName);
+}

@@ -61,6 +61,9 @@ const translations: Translations = {
   "onboarding.title": { it: "Setup Iniziale", en: "Initial Setup", fr: "Configuration initiale", es: "Configuración inicial" },
   "onboarding.subtitle": { it: "Personalizziamo il tuo programma", en: "Let's personalize your program", fr: "Personnalisons votre programme", es: "Personalicemos tu programa" },
   "onboarding.step": { it: "Passo", en: "Step", fr: "Étape", es: "Paso" },
+  "onboarding.step_of": { it: "Step {{current}} di {{total}}", en: "Step {{current}} of {{total}}", fr: "Étape {{current}} sur {{total}}", es: "Paso {{current}} de {{total}}" },
+  "onboarding.error.location_missing": { it: "⚠️ Errore: location non salvata. Riprova il step location.", en: "⚠️ Error: location not saved. Please retry the location step.", fr: "⚠️ Erreur: emplacement non enregistré. Veuillez réessayer l'étape emplacement.", es: "⚠️ Error: ubicación no guardada. Por favor, vuelve al paso de ubicación." },
+  "onboarding.error.save_failed": { it: "❌ Errore nel salvare i dati. Riprova.", en: "❌ Error saving data. Please try again.", fr: "❌ Erreur lors de l'enregistrement des données. Veuillez réessayer.", es: "❌ Error al guardar los datos. Por favor, inténtalo de nuevo." },
 
   // Onboarding - Personal Info
   "onboarding.personal.title": { it: "Dati Biometrici", en: "Biometric Data", fr: "Données biométriques", es: "Datos biométricos" },
@@ -418,7 +421,7 @@ const translations: Translations = {
   "lang.es": { it: "Spagnolo", en: "Spanish", fr: "Espagnol", es: "Español" },
 
   // Dashboard
-  "dashboard.title": { it: "Dashboard", en: "Dashboard", fr: "Tableau de bord", es: "Panel" },
+  "dashboard.title": { it: "Dashboard Intelligente", en: "Smart Dashboard", fr: "Tableau de Bord Intelligent", es: "Panel Inteligente" },
   "dashboard.welcome": { it: "Bentornato", en: "Welcome back", fr: "Bon retour", es: "Bienvenido" },
   "dashboard.no_program": { it: "Nessun Programma Trovato", en: "No Program Found", fr: "Aucun programme trouvé", es: "No se encontró programa" },
   "dashboard.no_program_desc": { it: "Non hai ancora un programma attivo", en: "You don't have an active program yet", fr: "Vous n'avez pas encore de programme actif", es: "Aún no tienes un programa activo" },
@@ -571,7 +574,148 @@ const translations: Translations = {
   "workoutLogger.notesPlaceholder": { it: "es. Sentito dolore al gomito sinistro", en: "e.g. Felt pain in left elbow", fr: "ex. Douleur au coude gauche", es: "ej. Sentí dolor en el codo izquierdo" },
   "workoutLogger.rpeHigh": { it: "RPE Alto", en: "High RPE", fr: "RPE Élevé", es: "RPE Alto" },
   "workoutLogger.rpeWarning": { it: "Il tuo RPE medio è {rpe}/10. Se questo trend continua per 2+ sessioni, il sistema ridurrà automaticamente il volume per prevenire sovrallenamento.", en: "Your average RPE is {rpe}/10. If this trend continues for 2+ sessions, the system will automatically reduce volume to prevent overtraining.", fr: "Votre RPE moyen est de {rpe}/10. Si cette tendance se poursuit pendant 2+ séances, le système réduira automatiquement le volume pour éviter le surentraînement.", es: "Tu RPE promedio es {rpe}/10. Si esta tendencia continúa por 2+ sesiones, el sistema reducirá automáticamente el volumen para prevenir el sobreentrenamiento." },
+
+  // Dashboard - Titles & Status
+  "dashboard.analytics.today": { it: "Oggi", en: "Today", fr: "Aujourd'hui", es: "Hoy" },
+  "dashboard.analytics.yesterday": { it: "Ieri", en: "Yesterday", fr: "Hier", es: "Ayer" },
+  "dashboard.analytics.days_ago": { it: "{{days}} giorni fa", en: "{{days}} days ago", fr: "Il y a {{days}} jours", es: "Hace {{days}} días" },
+  "dashboard.sync_status.synced": { it: "Sincronizzato", en: "Synced", fr: "Synchronisé", es: "Sincronizado" },
+  "dashboard.sync_status.syncing": { it: "Sincronizzazione...", en: "Syncing...", fr: "Synchronisation...", es: "Sincronizando..." },
+  "dashboard.sync_status.offline": { it: "Offline", en: "Offline", fr: "Hors ligne", es: "Sin conexión" },
+
+  // Dashboard - Reset Messages
+  "dashboard.reset.button_label": { it: "Reset", en: "Reset", fr: "Réinitialiser", es: "Restablecer" },
+  "dashboard.reset.complete_message": { it: "✅ Reset completo! Tutti i dati sono stati eliminati.\n\nVerrai reindirizzato all'onboarding.", en: "✅ Complete reset! All data has been deleted.\n\nYou will be redirected to onboarding.", fr: "✅ Réinitialisation complète! Toutes les données ont été supprimées.\n\nVous serez redirigé vers l'onboarding.", es: "✅ Reinicio completo! Todos los datos han sido eliminados.\n\nSerás redirigido al onboarding." },
+  "dashboard.reset.error_message": { it: "Errore durante il reset. Alcuni dati potrebbero non essere stati eliminati.", en: "Error during reset. Some data may not have been deleted.", fr: "Erreur lors de la réinitialisation. Certaines données n'ont peut-être pas été supprimées.", es: "Error durante el reinicio. Es posible que algunos datos no se hayan eliminado." },
+  "dashboard.reset.modal_title": { it: "🔄 Opzioni Reset", en: "🔄 Reset Options", fr: "🔄 Options de Réinitialisation", es: "🔄 Opciones de Reinicio" },
+  "dashboard.reset.deep_reset": { it: "Reset Profondo", en: "Deep Reset", fr: "Réinitialisation Profonde", es: "Reinicio Profundo" },
+  "dashboard.reset.deep_reset_desc": { it: "Elimina TUTTO: programmi, dati, progressi. Ricomincia da zero.", en: "Delete EVERYTHING: programs, data, progress. Start fresh.", fr: "Supprimer TOUT: programmes, données, progrès. Repartir de zéro.", es: "Eliminar TODO: programas, datos, progresos. Empezar de cero." },
+  "dashboard.reset.executing": { it: "Reset in corso...", en: "Resetting...", fr: "Réinitialisation...", es: "Reiniciando..." },
+  "dashboard.reset.execute_deep": { it: "Esegui Reset Profondo", en: "Execute Deep Reset", fr: "Exécuter la Réinitialisation Profonde", es: "Ejecutar Reinicio Profundo" },
+
+  // Dashboard - Analytics
+  "dashboard.analytics.total_volume": { it: "Volume Totale", en: "Total Volume", fr: "Volume Total", es: "Volumen Total" },
+  "dashboard.analytics.weekly": { it: "Settimanale: {{volume}} reps/week", en: "Weekly: {{volume}} reps/week", fr: "Hebdomadaire: {{volume}} reps/semaine", es: "Semanal: {{volume}} reps/semana" },
+  "dashboard.analytics.days_active": { it: "Giorni Attivi", en: "Days Active", fr: "Jours Actifs", es: "Días Activos" },
+  "dashboard.analytics.progression": { it: "Progressione", en: "Progression", fr: "Progression", es: "Progresión" },
+  "dashboard.analytics.last_workout": { it: "Ultimo Workout", en: "Last Workout", fr: "Dernier Entraînement", es: "Último Entrenamiento" },
+
+  // Dashboard - Error Messages
+  "dashboard.error.program_not_recovered": { it: "⚠️ Errore: Programma salvato ma non recuperato. Ricarica la pagina.", en: "⚠️ Error: Program saved but not recovered. Reload the page.", fr: "⚠️ Erreur: Programme enregistré mais non récupéré. Rechargez la page.", es: "⚠️ Error: Programa guardado pero no recuperado. Recarga la página." },
+  "dashboard.error.saved_locally": { it: "⚠️ Programma generato (salvato localmente)", en: "⚠️ Program generated (saved locally)", fr: "⚠️ Programme généré (enregistré localement)", es: "⚠️ Programa generado (guardado localmente)" },
+  "dashboard.error.cloud_sync": { it: "Errore sincronizzazione cloud", en: "Cloud sync error", fr: "Erreur de synchronisation cloud", es: "Error de sincronización en la nube" },
+  "dashboard.error.adjustment": { it: "Errore nell'applicare l'adjustment. Riprova.", en: "Error applying adjustment. Try again.", fr: "Erreur lors de l'application de l'ajustement. Réessayez.", es: "Error al aplicar el ajuste. Inténtalo de nuevo." },
+
+  // Dashboard - Program Generation
+  "dashboard.program.your_program_title": { it: "✅ Il Tuo Programma", en: "✅ Your Program", fr: "✅ Votre Programme", es: "✅ Tu Programa" },
+  "dashboard.program.generate_title": { it: "📋 Genera il Tuo Programma", en: "📋 Generate Your Program", fr: "📋 Générer Votre Programme", es: "📋 Generar Tu Programa" },
+  "dashboard.generate.complete_screening_warning": { it: "⚠️ Completa prima lo screening per determinare il tuo livello!", en: "⚠️ Complete screening first to determine your level!", fr: "⚠️ Complétez d'abord le dépistage pour déterminer votre niveau!", es: "⚠️ ¡Completa primero el screening para determinar tu nivel!" },
+  "dashboard.generate.success_message": { it: "✅ Programma {{level}} per {{goal}} generato e salvato su cloud!", en: "✅ {{level}} program for {{goal}} generated and saved to cloud!", fr: "✅ Programme {{level}} pour {{goal}} généré et sauvegardé sur le cloud!", es: "✅ ¡Programa {{level}} para {{goal}} generado y guardado en la nube!" },
+  "dashboard.generate.error_message": { it: "Errore nella generazione del programma", en: "Error generating program", fr: "Erreur lors de la génération du programme", es: "Error al generar el programa" },
+  "dashboard.regenerate.confirm_message": { it: "Vuoi rigenerare il programma?", en: "Do you want to regenerate the program?", fr: "Voulez-vous régénérer le programme?", es: "¿Quieres regenerar el programa?" },
+
+  // Dashboard - Location Switch
+  "dashboard.location_switch.success_message": { it: "✅ Location cambiata!\n\nNuovo programma per {{location}} generato con successo!", en: "✅ Location changed!\n\nNew program for {{location}} generated successfully!", fr: "✅ Lieu changé!\n\nNouveau programme pour {{location}} généré avec succès!", es: "✅ ¡Ubicación cambiada!\n\n¡Nuevo programa para {{location}} generado exitosamente!" },
+  "dashboard.location_switch.error_message": { it: "Errore durante il cambio di location", en: "Error changing location", fr: "Erreur lors du changement de lieu", es: "Error al cambiar ubicación" },
+
+  // Paywall Modal
+  "paywall.congrats_title": { it: "🎉 Complimenti! Hai finito la settimana 1", en: "🎉 Congratulations! You finished week 1", fr: "🎉 Félicitations! Vous avez terminé la semaine 1", es: "🎉 ¡Felicidades! Has terminado la semana 1" },
+  "paywall.unlock_subtitle": { it: "Sblocca le prossime 5 settimane e raggiungi i tuoi obiettivi", en: "Unlock the next 5 weeks and reach your goals", fr: "Débloquez les 5 prochaines semaines et atteignez vos objectifs", es: "Desbloquea las próximas 5 semanas y alcanza tus metas" },
+  "paywall.workouts_completed": { it: "Workout Completati", en: "Workouts Completed", fr: "Entraînements Terminés", es: "Entrenamientos Completados" },
+  "paywall.baseline_improvements": { it: "Miglioramenti Baseline", en: "Baseline Improvements", fr: "Améliorations de Base", es: "Mejoras de Línea Base" },
+  "paywall.injuries_avoided": { it: "Esercizi Sostituiti (dolore evitato)", en: "Exercises Replaced (pain avoided)", fr: "Exercices Remplacés (douleur évitée)", es: "Ejercicios Reemplazados (dolor evitado)" },
+  "paywall.most_chosen": { it: "⭐ PIÙ SCELTO", en: "⭐ MOST CHOSEN", fr: "⭐ PLUS CHOISI", es: "⭐ MÁS ELEGIDO" },
+  "paywall.maximum": { it: "👑 MASSIMO", en: "👑 MAXIMUM", fr: "👑 MAXIMUM", es: "👑 MÁXIMO" },
+  "paywall.per_6_weeks": { it: "per 6 settimane", en: "for 6 weeks", fr: "pour 6 semaines", es: "por 6 semanas" },
+  "paywall.monthly_equivalent": { it: "(€{{price}}/mese equivalente)", en: "(€{{price}}/month equivalent)", fr: "(€{{price}}/mois équivalent)", es: "(€{{price}}/mes equivalente)" },
+  "paywall.selected": { it: "✓ Selezionato", en: "✓ Selected", fr: "✓ Sélectionné", es: "✓ Seleccionado" },
+  "paywall.select": { it: "Seleziona", en: "Select", fr: "Sélectionner", es: "Seleccionar" },
+  "paywall.plan_selected_alert": { it: "Hai selezionato il piano {{plan}}! Integrazione Stripe in arrivo...", en: "You selected the {{plan}} plan! Stripe integration coming soon...", fr: "Vous avez sélectionné le plan {{plan}}! Intégration Stripe bientôt...", es: "¡Has seleccionado el plan {{plan}}! Integración de Stripe próximamente..." },
+
+  // Paywall - Plan Features
+  "paywall.feature.complete_program": { it: "Programma completo 6 settimane", en: "Complete 6-week program", fr: "Programme complet de 6 semaines", es: "Programa completo de 6 semanas" },
+  "paywall.feature.progressive_overload": { it: "Progressive overload su misura", en: "Customized progressive overload", fr: "Surcharge progressive personnalisée", es: "Sobrecarga progresiva personalizada" },
+  "paywall.feature.pain_management": { it: "Pain management system", en: "Pain management system", fr: "Système de gestion de la douleur", es: "Sistema de manejo del dolor" },
+  "paywall.feature.workout_logger": { it: "Workout logger + tracking", en: "Workout logger + tracking", fr: "Journal d'entraînement + suivi", es: "Registro de entrenamiento + seguimiento" },
+  "paywall.feature.deload_week": { it: "Deload week + retest", en: "Deload week + retest", fr: "Semaine de décharge + retest", es: "Semana de descarga + retest" },
+  "paywall.feature.video_corrections": { it: "Video correzioni AI", en: "AI video corrections", fr: "Corrections vidéo IA", es: "Correcciones de video IA" },
+  "paywall.feature.videos_included": { it: "{{count}} video inclusi", en: "{{count}} videos included", fr: "{{count}} vidéos incluses", es: "{{count}} videos incluidos" },
+  "paywall.feature.all_base": { it: "Tutto del BASE", en: "Everything in BASE", fr: "Tout du BASE", es: "Todo del BASE" },
+  "paywall.feature.12_videos": { it: "12 video correzioni AI", en: "12 AI video corrections", fr: "12 corrections vidéo IA", es: "12 correcciones de video IA" },
+  "paywall.feature.per_week": { it: "{{count}}/settimana", en: "{{count}}/week", fr: "{{count}}/semaine", es: "{{count}}/semana" },
+  "paywall.feature.technique_history": { it: "Storico progressi tecnica", en: "Technique progress history", fr: "Historique des progrès techniques", es: "Historial de progreso técnico" },
+  "paywall.feature.hd_tutorials": { it: "Video tutorial HD", en: "HD video tutorials", fr: "Tutoriels vidéo HD", es: "Tutoriales de video HD" },
+  "paywall.feature.exercise_library": { it: "Biblioteca 100+ esercizi", en: "100+ exercises library", fr: "Bibliothèque 100+ exercices", es: "Biblioteca de 100+ ejercicios" },
+  "paywall.feature.pdf_export": { it: "Export PDF programma", en: "Program PDF export", fr: "Export PDF du programme", es: "Exportar programa en PDF" },
+  "paywall.feature.all_pro": { it: "Tutto del PRO", en: "Everything in PRO", fr: "Tout du PRO", es: "Todo del PRO" },
+  "paywall.feature.unlimited_videos": { it: "Video correzioni ILLIMITATE", en: "UNLIMITED video corrections", fr: "Corrections vidéo ILLIMITÉES", es: "Correcciones de video ILIMITADAS" },
+  "paywall.feature.priority_support": { it: "Priority support <24h", en: "Priority support <24h", fr: "Support prioritaire <24h", es: "Soporte prioritario <24h" },
+  "paywall.feature.early_access": { it: "Early access nuove features", en: "Early access to new features", fr: "Accès anticipé aux nouvelles fonctionnalités", es: "Acceso anticipado a nuevas funciones" },
+
+  // Paywall - Why Different Section
+  "paywall.why_different": { it: "Perché FitnessFlow è diverso?", en: "Why is FitnessFlow different?", fr: "Pourquoi FitnessFlow est différent?", es: "¿Por qué FitnessFlow es diferente?" },
+  "paywall.benefit.pain_title": { it: "Pain Management Intelligente", en: "Intelligent Pain Management", fr: "Gestion Intelligente de la Douleur", es: "Gestión Inteligente del Dolor" },
+  "paywall.benefit.pain_desc": { it: "L'app sostituisce automaticamente esercizi se hai dolore. Mai più fermi per infortuni.", en: "The app automatically replaces exercises if you have pain. Never stop for injuries again.", fr: "L'application remplace automatiquement les exercices si vous avez mal. Plus jamais d'arrêt pour blessures.", es: "La app reemplaza automáticamente ejercicios si tienes dolor. Nunca más paradas por lesiones." },
+  "paywall.benefit.progressive_title": { it: "Progressive Overload su Misura", en: "Customized Progressive Overload", fr: "Surcharge Progressive Personnalisée", es: "Sobrecarga Progresiva Personalizada" },
+  "paywall.benefit.progressive_desc": { it: "I carichi aumentano settimana per settimana basati sui TUOI risultati reali.", en: "Weights increase week by week based on YOUR actual results.", fr: "Les charges augmentent semaine après semaine selon VOS résultats réels.", es: "Los pesos aumentan semana a semana basados en TUS resultados reales." },
+  "paywall.benefit.ai_title": { it: "AI Video Correction (PRO/PREMIUM)", en: "AI Video Correction (PRO/PREMIUM)", fr: "Correction Vidéo IA (PRO/PREMIUM)", es: "Corrección de Video IA (PRO/PREMIUM)" },
+  "paywall.benefit.ai_desc": { it: "Il sistema analizza la tua tecnica e ti dice esattamente come migliorare con esercizi specifici.", en: "The system analyzes your technique and tells you exactly how to improve with specific exercises.", fr: "Le système analyse votre technique et vous dit exactement comment améliorer avec des exercices spécifiques.", es: "El sistema analiza tu técnica y te dice exactamente cómo mejorar con ejercicios específicos." },
+  "paywall.benefit.no_commitment_title": { it: "Nessun Vincolo Mensile", en: "No Monthly Commitment", fr: "Aucun Engagement Mensuel", es: "Sin Compromiso Mensual" },
+  "paywall.benefit.no_commitment_desc": { it: "Paghi per 6 settimane, vedi i risultati, decidi TU se continuare. Zero rinnovi nascosti.", en: "Pay for 6 weeks, see the results, YOU decide if to continue. Zero hidden renewals.", fr: "Payez pour 6 semaines, voyez les résultats, VOUS décidez de continuer. Zéro renouvellements cachés.", es: "Pagas por 6 semanas, ves los resultados, TÚ decides si continuar. Cero renovaciones ocultas." },
+
+  // Paywall - Comparison Table
+  "paywall.comparison_title": { it: "FitnessFlow vs Alternative", en: "FitnessFlow vs Alternatives", fr: "FitnessFlow vs Alternatives", es: "FitnessFlow vs Alternativas" },
+  "paywall.comparison.pdf_sheets": { it: "Schede PDF", en: "PDF Sheets", fr: "Fiches PDF", es: "Fichas PDF" },
+  "paywall.comparison.generic_apps": { it: "App Generiche", en: "Generic Apps", fr: "Apps Génériques", es: "Apps Genéricas" },
+  "paywall.comparison.custom_weights": { it: "Carichi personalizzati", en: "Custom weights", fr: "Charges personnalisées", es: "Pesos personalizados" },
+  "paywall.comparison.auto_progression": { it: "Progressione automatica", en: "Automatic progression", fr: "Progression automatique", es: "Progresión automática" },
+  "paywall.comparison.pain_management": { it: "Pain management", en: "Pain management", fr: "Gestion de la douleur", es: "Manejo del dolor" },
+  "paywall.comparison.video_correction": { it: "Video correzione AI", en: "AI video correction", fr: "Correction vidéo IA", es: "Corrección de video IA" },
+  "paywall.comparison.12_videos": { it: "12 video", en: "12 videos", fr: "12 vidéos", es: "12 videos" },
+  "paywall.comparison.price_6_weeks": { it: "Prezzo 6 settimane", en: "Price for 6 weeks", fr: "Prix pour 6 semaines", es: "Precio por 6 semanas" },
+
+  // Paywall - Coach CTA
+  "paywall.coach_title": { it: "🏋️ Vuoi un check personalizzato con un coach?", en: "🏋️ Want a personalized check with a coach?", fr: "🏋️ Vous voulez un check personnalisé avec un coach?", es: "🏋️ ¿Quieres una revisión personalizada con un coach?" },
+  "paywall.coach_desc": { it: "Prenota una sessione individuale per analisi tecnica approfondita e programmazione su misura", en: "Book an individual session for in-depth technical analysis and custom programming", fr: "Réservez une session individuelle pour une analyse technique approfondie et une programmation sur mesure", es: "Reserva una sesión individual para análisis técnico profundo y programación personalizada" },
+  "paywall.coach_button": { it: "📅 Prenota il tuo appuntamento", en: "📅 Book your appointment", fr: "📅 Réservez votre rendez-vous", es: "📅 Reserva tu cita" },
+
+  // Paywall - Guarantee
+  "paywall.guarantee": { it: "🔒 Garanzia 14 giorni soddisfatto o rimborsato", en: "🔒 14-day satisfaction guarantee or money back", fr: "🔒 Garantie satisfait ou remboursé de 14 jours", es: "🔒 Garantía de 14 días satisfecho o reembolso" },
+  "paywall.no_auto_renewal": { it: "Nessun rinnovo automatico • Cancellazione in qualsiasi momento • Dati sicuri", en: "No automatic renewal • Cancel anytime • Secure data", fr: "Pas de renouvellement automatique • Annulation à tout moment • Données sécurisées", es: "Sin renovación automática • Cancelación en cualquier momento • Datos seguros" },
+
+  // Exercise Dislike Modal
+  "exercise_dislike.title": { it: "Problema con l'esercizio?", en: "Problem with the exercise?", fr: "Problème avec l'exercice?", es: "¿Problema con el ejercicio?" },
+  "exercise_dislike.current_weight": { it: "Peso attuale", en: "Current weight", fr: "Poids actuel", es: "Peso actual" },
+  "exercise_dislike.why_not_like": { it: "Cosa non va?", en: "What's wrong?", fr: "Qu'est-ce qui ne va pas?", es: "¿Qué está mal?" },
+  "exercise_dislike.too_heavy": { it: "È troppo pesante", en: "It's too heavy", fr: "C'est trop lourd", es: "Es demasiado pesado" },
+  "exercise_dislike.too_heavy_desc": { it: "Ridurremo automaticamente il carico del 15%", en: "We'll automatically reduce the weight by 15%", fr: "Nous réduirons automatiquement le poids de 15%", es: "Reduciremos automáticamente el peso un 15%" },
+  "exercise_dislike.feel_pain": { it: "Sento dolore", en: "I feel pain", fr: "Je ressens une douleur", es: "Siento dolor" },
+  "exercise_dislike.feel_pain_desc": { it: "Ti aiuteremo a gestire il dolore in sicurezza", en: "We'll help you manage pain safely", fr: "Nous vous aiderons à gérer la douleur en toute sécurité", es: "Te ayudaremos a manejar el dolor de forma segura" },
+  "exercise_dislike.dont_like": { it: "Non mi piace", en: "I don't like it", fr: "Je n'aime pas", es: "No me gusta" },
+  "exercise_dislike.dont_like_desc": { it: "Proveremo prima con meno peso, altrimenti sostituiremo", en: "We'll try with less weight first, otherwise we'll replace", fr: "Nous essaierons d'abord avec moins de poids, sinon nous remplacerons", es: "Probaremos primero con menos peso, si no, reemplazaremos" },
+
+  "exercise_dislike.where_pain": { it: "Dove senti dolore?", en: "Where do you feel pain?", fr: "Où ressentez-vous la douleur?", es: "¿Dónde sientes dolor?" },
+  "exercise_dislike.pain_intensity": { it: "Quanto fa male? (1-10)", en: "How much does it hurt? (1-10)", fr: "À quel point ça fait mal? (1-10)", es: "¿Cuánto duele? (1-10)" },
+  "exercise_dislike.pain_mild": { it: "Lieve", en: "Mild", fr: "Léger", es: "Leve" },
+  "exercise_dislike.pain_moderate": { it: "Moderato", en: "Moderate", fr: "Modéré", es: "Moderado" },
+  "exercise_dislike.pain_severe": { it: "Forte", en: "Severe", fr: "Fort", es: "Fuerte" },
+  "exercise_dislike.pain_will_replace": { it: "Dolore alto - Sostituiremo l'esercizio con uno più sicuro", en: "High pain - We'll replace the exercise with a safer one", fr: "Douleur élevée - Nous remplacerons l'exercice par un plus sûr", es: "Dolor alto - Reemplazaremos el ejercicio por uno más seguro" },
+  "exercise_dislike.pain_will_reduce": { it: "Dolore moderato - Ridurremo il carico del 20%", en: "Moderate pain - We'll reduce the weight by 20%", fr: "Douleur modérée - Nous réduirons le poids de 20%", es: "Dolor moderado - Reduciremos el peso un 20%" },
+  "exercise_dislike.pain_will_adjust": { it: "Dolore lieve - Piccolo aggiustamento del 10%", en: "Mild pain - Small 10% adjustment", fr: "Douleur légère - Petit ajustement de 10%", es: "Dolor leve - Pequeño ajuste del 10%" },
+
+  "exercise_dislike.dislike_try_lighter": { it: "Vuoi provare con meno peso prima di sostituire?", en: "Want to try with less weight before replacing?", fr: "Voulez-vous essayer avec moins de poids avant de remplacer?", es: "¿Quieres probar con menos peso antes de reemplazar?" },
+  "exercise_dislike.dislike_lighter_suggestion": { it: "Spesso un esercizio non piace perché il carico è troppo alto. Prova con il 15% in meno!", en: "Often an exercise doesn't feel right because the weight is too high. Try with 15% less!", fr: "Souvent un exercice ne convient pas car le poids est trop élevé. Essayez avec 15% de moins!", es: "A menudo un ejercicio no gusta porque el peso es demasiado alto. ¡Prueba con 15% menos!" },
+  "exercise_dislike.try_lighter": { it: "Provo con meno peso", en: "I'll try with less weight", fr: "J'essaie avec moins de poids", es: "Probaré con menos peso" },
+  "exercise_dislike.replace_exercise": { it: "Sostituisci comunque", en: "Replace anyway", fr: "Remplacer quand même", es: "Reemplazar de todos modos" },
+
+  "exercise_dislike.weight_reduced": { it: "Peso ridotto del 15%! Riprova con il nuovo carico.", en: "Weight reduced by 15%! Try again with the new weight.", fr: "Poids réduit de 15%! Réessayez avec le nouveau poids.", es: "¡Peso reducido un 15%! Inténtalo de nuevo con el nuevo peso." },
+  "exercise_dislike.replaced_for_pain": { it: "Esercizio sostituito per proteggere la zona dolorante.", en: "Exercise replaced to protect the painful area.", fr: "Exercice remplacé pour protéger la zone douloureuse.", es: "Ejercicio reemplazado para proteger la zona dolorida." },
+  "exercise_dislike.weight_reduced_for_pain": { it: "Peso ridotto del 20% per il dolore. Se persiste, segnalalo di nuovo.", en: "Weight reduced by 20% for pain. If it persists, report again.", fr: "Poids réduit de 20% pour la douleur. Si elle persiste, signalez-la à nouveau.", es: "Peso reducido un 20% por el dolor. Si persiste, repórtalo de nuevo." },
+  "exercise_dislike.mild_pain_adjusted": { it: "Piccolo aggiustamento fatto. Continua con attenzione!", en: "Small adjustment made. Continue carefully!", fr: "Petit ajustement effectué. Continuez prudemment!", es: "¡Pequeño ajuste hecho. Continúa con cuidado!" },
+  "exercise_dislike.weight_reduced_dislike": { it: "Peso ridotto! Vediamo se così va meglio.", en: "Weight reduced! Let's see if it's better now.", fr: "Poids réduit! Voyons si c'est mieux maintenant.", es: "¡Peso reducido! Veamos si ahora va mejor." },
+  "exercise_dislike.replaced_for_dislike": { it: "Esercizio sostituito con variante equivalente.", en: "Exercise replaced with equivalent variant.", fr: "Exercice remplacé par une variante équivalente.", es: "Ejercicio reemplazado con variante equivalente." },
 };
+
 
 
 interface LanguageContextType {

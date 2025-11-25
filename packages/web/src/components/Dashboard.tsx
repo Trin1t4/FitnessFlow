@@ -161,7 +161,7 @@ export default function Dashboard() {
         totalVolume: 0,
         weeklyVolume: 0,
         progression: 0,
-        lastWorkout: null as string | null
+        lastWorkoutDays: null as number | null
       };
     }
 
@@ -248,15 +248,11 @@ export default function Dashboard() {
     }
 
     // 5. LAST WORKOUT (usa updated_at o last_accessed_at)
-    let lastWorkout: string | null = null;
+    let lastWorkoutDays: number | null = null;
     if (program.last_accessed_at || program.updated_at) {
       const lastDate = new Date(program.last_accessed_at || program.updated_at);
       const today = new Date();
-      const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 0) lastWorkout = 'Oggi';
-      else if (diffDays === 1) lastWorkout = 'Ieri';
-      else lastWorkout = `${diffDays} giorni fa`;
+      lastWorkoutDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
     }
 
     const result = {
@@ -264,7 +260,7 @@ export default function Dashboard() {
       totalVolume,
       weeklyVolume,
       progression: Math.max(0, progression), // Non negativo
-      lastWorkout
+      lastWorkoutDays
     };
 
     console.log('✅ Analytics calculated:', result);
@@ -394,7 +390,7 @@ export default function Dashboard() {
       });
 
       console.log('✅ DEEP RESET COMPLETE!');
-      alert('✅ Reset completo! Tutti i dati sono stati eliminati.\n\nVerrai reindirizzato all\'onboarding.');
+      alert(t('dashboard.reset.complete_message'));
 
       // 4. REDIRECT
       setTimeout(() => {
@@ -403,7 +399,7 @@ export default function Dashboard() {
 
     } catch (error) {
       console.error('❌ Reset error:', error);
-      alert('Errore durante il reset. Alcuni dati potrebbero non essere stati eliminati.');
+      alert(t('dashboard.reset.error_message'));
     } finally {
       setResetting(false);
       setShowResetModal(false);
@@ -611,28 +607,28 @@ export default function Dashboard() {
 
         // ✅ VERIFICATION: Check if program is now available
         if (refetchResult.data) {
-          alert(`✅ Programma ${userLevel.toUpperCase()} per ${mappedGoal.toUpperCase()} generato e salvato su cloud!`);
+          alert(t('dashboard.generate.success_message').replace('{{level}}', userLevel.toUpperCase()).replace('{{goal}}', mappedGoal.toUpperCase()));
 
           // ✅ Scroll to top to show the new program (now guaranteed to be rendered)
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
           console.error('❌ CRITICAL: Refetch succeeded but no program data returned');
-          alert('⚠️ Errore: Programma salvato ma non recuperato. Ricarica la pagina.');
+          alert(t('dashboard.error.program_not_recovered'));
         }
       } else {
         console.warn('⚠️ Failed to save to Supabase, using localStorage:', saveResult.error);
         // Fallback to localStorage
         localStorage.setItem('currentProgram', JSON.stringify(generatedProgram));
-        alert(`⚠️ Programma generato (salvato localmente)\n\n${saveResult.error || 'Errore sincronizzazione cloud'}`);
+        alert(`${t('dashboard.error.saved_locally')}\n\n${saveResult.error || t('dashboard.error.cloud_sync')}`);
       }
 
     } catch (error) {
       console.error('❌ Error:', error);
-      alert('Errore nella generazione del programma');
+      alert(t('dashboard.generate.error_message'));
     } finally {
       setGeneratingProgram(false);
     }
-  }, [dataStatus, navigate, queryClient]);
+  }, [dataStatus, navigate, queryClient, t]);
 
   // ===== PROGRAM GENERATION (uses extracted utils) =====
 
@@ -834,14 +830,14 @@ export default function Dashboard() {
       } else {
         console.warn('⚠️ Failed to save:', saveResult.error);
         localStorage.setItem('currentProgram', JSON.stringify(generatedProgram));
-        alert(`⚠️ Programma generato (salvato localmente)\n\n${saveResult.error || 'Errore sincronizzazione cloud'}`);
+        alert(`${t('dashboard.error.saved_locally')}\n\n${saveResult.error || t('dashboard.error.cloud_sync')}`);
         setShowLocationSwitch(false);
         console.groupEnd();
       }
 
     } catch (error) {
       console.error('❌ Error switching location:', error);
-      alert('Errore durante il cambio di location');
+      alert(t('dashboard.location_switch.error_message'));
       console.groupEnd();
     } finally {
       setSwitchingLocation(false);
@@ -902,15 +898,15 @@ export default function Dashboard() {
           modifiedAdjustment.adjustment_type === 'decrease_volume' ? 'Riduzione volume' :
           'Aumento volume';
 
-        alert(`✅ ${adjustmentLabel} applicato con successo!\n\nIl programma è stato aggiornato.`);
+        alert(`✅ ${adjustmentLabel} ${t('common.success').toLowerCase()}!\n\n${t('dashboard.program.your_program_title').replace('✅ ', '')}`);
       } else {
         throw new Error(result.error);
       }
     } catch (error) {
       console.error('[Dashboard] Error applying deload:', error);
-      alert('Errore nell\'applicare l\'adjustment. Riprova.');
+      alert(t('dashboard.error.adjustment'));
     }
-  }, [queryClient]);
+  }, [queryClient, t]);
 
   // ✅ Handle deload rejection
   async function handleDeloadReject() {
@@ -952,7 +948,7 @@ export default function Dashboard() {
             transition={{ duration: 0.5 }}
             className="text-5xl font-display font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent"
           >
-            Dashboard Intelligente
+            {t('dashboard.title')}
           </motion.h1>
 
           <div className="flex items-center gap-3">
@@ -1143,10 +1139,18 @@ export default function Dashboard() {
               <CardContent>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-bold text-emerald-400">{analytics.daysActive}</span>
-                  <span className="text-sm text-emerald-300/60">giorni</span>
+                  <span className="text-sm text-emerald-300/60">{t('onboarding.activity.days')}</span>
                 </div>
                 <p className="text-xs text-emerald-300/50 mt-2">
-                  {analytics.lastWorkout ? `Ultimo accesso: ${analytics.lastWorkout}` : 'Programma appena creato'}
+                  {analytics.lastWorkoutDays !== null
+                    ? `${t('dashboard.analytics.last_workout')}: ${
+                        analytics.lastWorkoutDays === 0
+                          ? t('dashboard.analytics.today')
+                          : analytics.lastWorkoutDays === 1
+                            ? t('dashboard.analytics.yesterday')
+                            : t('dashboard.analytics.days_ago').replace('{{days}}', String(analytics.lastWorkoutDays))
+                      }`
+                    : t('dashboard.no_program_desc')}
                 </p>
               </CardContent>
             </Card>
@@ -1162,7 +1166,7 @@ export default function Dashboard() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg font-display flex items-center gap-2 text-blue-300">
                   <Target className="w-5 h-5" />
-                  Volume Totale
+                  {t('dashboard.analytics.total_volume')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1173,7 +1177,7 @@ export default function Dashboard() {
                   <span className="text-sm text-blue-300/60">reps</span>
                 </div>
                 <p className="text-xs text-blue-300/50 mt-2">
-                  Settimanale: {analytics.weeklyVolume > 0 ? analytics.weeklyVolume.toLocaleString() : '0'} reps/week
+                  {t('dashboard.analytics.weekly').replace('{{volume}}', analytics.weeklyVolume > 0 ? analytics.weeklyVolume.toLocaleString() : '0')}
                 </p>
               </CardContent>
             </Card>
@@ -1438,17 +1442,17 @@ export default function Dashboard() {
             exit={{ scale: 0.9, y: 20 }}
             className="bg-slate-800/90 backdrop-blur-xl rounded-2xl p-6 max-w-md w-full border border-slate-700/50 shadow-2xl"
           >
-            <h2 className="text-3xl font-display font-bold mb-6 text-white">🔄 Opzioni Reset</h2>
-            
+            <h2 className="text-3xl font-display font-bold mb-6 text-white">{t('dashboard.reset.modal_title')}</h2>
+
             <div className="space-y-4">
               {/* Reset Profondo */}
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-5 backdrop-blur-sm">
                 <h3 className="font-display font-semibold text-red-400 mb-2 flex items-center gap-2">
                   <Trash2 className="w-5 h-5" />
-                  Reset Profondo
+                  {t('dashboard.reset.deep_reset')}
                 </h3>
                 <p className="text-sm text-slate-300 mb-4">
-                  Elimina TUTTO: localStorage, Supabase, programmi, assessments. Ricomincia da zero.
+                  {t('dashboard.reset.deep_reset_desc')}
                 </p>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -1457,7 +1461,7 @@ export default function Dashboard() {
                   disabled={resetting}
                   className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-slate-600 disabled:to-slate-700 text-white font-bold py-3 rounded-lg shadow-lg shadow-red-500/20 transition-all duration-300"
                 >
-                  {resetting ? 'Reset in corso...' : 'Esegui Reset Profondo'}
+                  {resetting ? t('dashboard.reset.executing') : t('dashboard.reset.execute_deep')}
                 </motion.button>
               </div>
 
