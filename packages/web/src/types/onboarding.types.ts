@@ -63,7 +63,18 @@ export interface PainEntry {
   severity: PainSeverity;
 }
 
+export interface Anagrafica {
+  firstName: string;
+  lastName: string;
+  birthDate?: string; // ISO date string (optional)
+  privacyAccepted: boolean;
+  termsAccepted: boolean;
+}
+
 export interface OnboardingData {
+  // Step 0: Anagrafica (required for Stripe & GDPR)
+  anagrafica?: Anagrafica;
+
   // Step 1: Personal Info (include Navy Method measurements)
   personalInfo?: PersonalInfo;
 
@@ -80,7 +91,7 @@ export interface OnboardingData {
   goals?: string[]; // multi-goal support (max 2-3)
   sport?: string; // if goal includes sport_performance
   sportRole?: string;
-  muscularFocus?: string; // if goal includes ipertrofia or tonificazione
+  muscularFocus?: string | string[]; // Multi-select muscular focus (max 3 muscle groups)
 
   // Step 5: Pain/Injury
   painAreas?: PainEntry[];

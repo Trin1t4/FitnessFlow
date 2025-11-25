@@ -141,17 +141,22 @@ class PainManagementService {
   /**
    * Suggerisce adattamento basato su livello dolore
    *
-   * LOGICA:
-   * - Dolore 0-3: ✅ Continua normale
-   * - Dolore 4-6: ⚠️ Riduzione progressiva (peso → reps → ROM)
-   * - Dolore 7-10: ❌ Stop o riduzione ROM drastica
+   * NUOVA LOGICA INTELLIGENTE:
+   * - Dolore 0-3: ✅ Continua normale, considera progressione
+   * - Dolore 4-5: ⚠️ Riduzione carico, mantieni volume
+   *   - FORZA: -20% peso, +2-3 reps (compensi con volume)
+   *   - MASSA/ENDURANCE: -20% peso, mantieni reps
+   * - Dolore 5 persistente (2-3 set): 🔄 Mobility Protocol
+   * - Dolore 6+: 🔄 Exercise Substitution (variante meno stressante)
+   * - Dolore 7-10: ❌ Stop + consiglia fisioterapista
    */
   suggestAdaptation(
     painLevel: number,
     currentWeight: number,
     currentReps: number,
     currentRom: number,
-    previousAdaptations: Adaptation[]
+    previousAdaptations: Adaptation[],
+    goal?: string // 'forza', 'massa', 'endurance', etc.
   ): AdaptationSuggestion {
     // DOLORE 0-3: OK, continua
     if (painLevel <= 3) {
@@ -162,68 +167,76 @@ class PainManagementService {
       };
     }
 
-    // DOLORE 7-10: STOP o riduzione ROM drastica
+    // DOLORE 7-10: STOP immediato + fisioterapista
     if (painLevel >= 7) {
-      // Se già ridotto ROM, stop
-      if (currentRom < 100) {
-        return {
-          action: 'stop_exercise',
-          message: `❌ DOLORE ALTO (${painLevel}/10). Sospendi esercizio e contatta fisioterapista.`,
-          alert_level: 'error'
-        };
-      }
-
-      // Altrimenti riduci ROM al 50%
       return {
-        action: 'reduce_rom',
-        message: `⚠️ DOLORE ALTO (${painLevel}/10). Riduci ROM al 50% (es: half squat). Se persiste, sospendi.`,
-        new_rom: 50,
+        action: 'stop_exercise',
+        message: `❌ DOLORE ALTO (${painLevel}/10). SOSPENDI esercizio e contatta fisioterapista.`,
         alert_level: 'error'
       };
     }
 
-    // DOLORE 4-6: Riduzione progressiva
+    // DOLORE 6: Exercise substitution (variante meno stressante)
+    if (painLevel === 6) {
+      return {
+        action: 'stop_exercise', // Will be handled by LiveWorkout with substitution
+        message: `🔄 Dolore ${painLevel}/10. Passa a variante meno stressante (es: Leg Press invece Squat).`,
+        alert_level: 'warning'
+      };
+    }
+
+    // DOLORE 4-5: Riduzione carico, mantieni volume
     const hasReducedWeight = previousAdaptations.some(a => a.type === 'weight_reduced');
-    const hasReducedReps = previousAdaptations.some(a => a.type === 'reps_reduced');
-    const hasReducedRom = previousAdaptations.some(a => a.type === 'rom_reduced');
+    const isForza = goal?.toLowerCase().includes('forza') || goal?.toLowerCase().includes('strength');
 
     // Step 1: Riduci peso (-20%)
     if (!hasReducedWeight) {
       const newWeight = Math.max(0, currentWeight * 0.8);
+
+      if (isForza) {
+        // FORZA: Compensa con volume (+2-3 reps)
+        const newReps = currentReps + 3;
+        return {
+          action: 'reduce_weight',
+          message: `⚠️ Dolore ${painLevel}/10. Riduci carico -20%, aumenta reps a ${newReps} (mantieni volume).`,
+          new_weight: Math.round(newWeight * 10) / 10,
+          new_reps: newReps,
+          alert_level: 'warning'
+        };
+      } else {
+        // MASSA/ENDURANCE: Mantieni reps
+        return {
+          action: 'reduce_weight',
+          message: `⚠️ Dolore ${painLevel}/10. Riduci carico -20%, mantieni ripetizioni.`,
+          new_weight: Math.round(newWeight * 10) / 10,
+          alert_level: 'warning'
+        };
+      }
+    }
+
+    // Step 2: Dolore persiste a 5 → Mobility Protocol
+    if (painLevel === 5 && hasReducedWeight) {
       return {
-        action: 'reduce_weight',
-        message: `⚠️ Dolore moderato (${painLevel}/10). Riduci carico del 20%.`,
-        new_weight: Math.round(newWeight * 10) / 10, // Arrotonda a 0.1kg
+        action: 'stop_exercise', // Will trigger mobility protocol
+        message: `🔄 Dolore persiste a 5/10. Passa a MOBILITY PROTOCOL: mobilità + rinforzo zona specifica.`,
         alert_level: 'warning'
       };
     }
 
-    // Step 2: Riduci reps (-3)
-    if (!hasReducedReps) {
-      const newReps = Math.max(3, currentReps - 3);
+    // Step 3: Dolore scende (4) dopo riduzione → continua con progressione graduale
+    if (painLevel === 4 && hasReducedWeight) {
       return {
-        action: 'reduce_reps',
-        message: `⚠️ Dolore persiste (${painLevel}/10). Riduci ripetizioni a ${newReps}.`,
-        new_reps: newReps,
-        alert_level: 'warning'
+        action: 'continue',
+        message: `📈 Dolore in diminuzione (4/10). Continua con carichi ridotti. Prossima sessione: +5% peso.`,
+        alert_level: 'success'
       };
     }
 
-    // Step 3: Riduci ROM (50%)
-    if (!hasReducedRom) {
-      return {
-        action: 'reduce_rom',
-        message: `⚠️ Dolore persiste (${painLevel}/10). Riduci ROM al 50% (es: half range).`,
-        new_rom: 50,
-        alert_level: 'warning'
-      };
-    }
-
-    // Step 4: Tutto provato, stop
+    // Default: continua monitorando
     return {
-      action: 'stop_exercise',
-      message: `❌ Dolore persiste dopo tutte le riduzioni (${painLevel}/10). Sospendi esercizio e contatta fisioterapista.`,
-      alert_level: 'error'
+      action: 'continue',
+      message: `⚠️ Dolore ${painLevel}/10. Continua monitorando. Se persiste, passa a variante.`,
+      alert_level: 'warning'
     };
   }
 
@@ -416,6 +429,141 @@ class PainManagementService {
       console.error('Error checking hybrid recovery criteria:', error);
       return { shouldActivate: false, sessions: 0, avgPain: 0 };
     }
+  }
+
+  /**
+   * EXERCISE SUBSTITUTIONS - Varianti meno stressanti per dolore 6+
+   * Sostituisce esercizi ad alto carico con varianti biomeccanicamente più sicure
+   */
+  getExerciseSubstitution(exerciseName: string, painArea: string): { name: string; notes: string } | null {
+    const substitutions: Record<string, Record<string, { name: string; notes: string }>> = {
+      // LOWER BODY - Dolore schiena/ginocchio/anca
+      'Back Squat': {
+        lower_back: { name: 'Leg Press', notes: 'Riduce stress lombare, mantieni range controllato' },
+        knee: { name: 'Goblet Squat', notes: 'ROM ridotto, focus su controllo' },
+        hip: { name: 'Box Squat', notes: 'Profondità controllata, riduce stress anca' }
+      },
+      'Deadlift': {
+        lower_back: { name: 'Leg Extension + Leg Curl', notes: 'Isola quadricipiti e femorali, zero stress lombare' },
+        knee: { name: 'RDL leggero', notes: 'ROM parziale, focus su femorali' },
+        hip: { name: 'Hip Thrust', notes: 'Movimento più controllato, meno stress articolare' }
+      },
+      'Stacco': {
+        lower_back: { name: 'Leg Extension + Leg Curl', notes: 'Isola quadricipiti e femorali, zero stress lombare' },
+        knee: { name: 'RDL leggero', notes: 'ROM parziale, focus su femorali' }
+      },
+      'Squat (Bilanciere)': {
+        lower_back: { name: 'Leg Press', notes: 'Riduce stress lombare' },
+        knee: { name: 'Goblet Squat', notes: 'ROM controllato' }
+      },
+
+      // UPPER BODY - Dolore spalla/gomito
+      'Bench Press': {
+        shoulder: { name: 'Push-up su ginocchia', notes: 'Riduce carico, mantieni volume' },
+        elbow: { name: 'Chest Press Manubri', notes: 'ROM più naturale, meno stress articolare' }
+      },
+      'Panca Piana': {
+        shoulder: { name: 'Push-up', notes: 'Carico corporeo, più sicuro' },
+        elbow: { name: 'Chest Press Manubri', notes: 'ROM controllato' }
+      },
+      'Military Press': {
+        shoulder: { name: 'Lateral Raise leggero', notes: 'Isola deltoidi, riduce carico' },
+        elbow: { name: 'Arnold Press seduto', notes: 'ROM più naturale' }
+      },
+      'Pull-up': {
+        shoulder: { name: 'Lat Pulldown', notes: 'Carico controllato' },
+        elbow: { name: 'Band Pull-apart', notes: 'Focus su upper back, zero stress gomiti' }
+      },
+      'Trazioni': {
+        shoulder: { name: 'Lat Pulldown', notes: 'Carico controllato' },
+        elbow: { name: 'Inverted Row', notes: 'Angolo più favorevole' }
+      }
+    };
+
+    const exerciseSubs = substitutions[exerciseName];
+    if (!exerciseSubs) return null;
+
+    return exerciseSubs[painArea] || null;
+  }
+
+  /**
+   * MOBILITY PROTOCOLS - Per dolore persistente a 5/10
+   * Protocolli specifici per zona: mobilità → rinforzo
+   */
+  getMobilityProtocol(painArea: string): {
+    name: string;
+    mobility: { name: string; sets: number; duration: string }[];
+    reinforcement: { name: string; sets: number; reps: number | string }[];
+  } {
+    const protocols: Record<string, any> = {
+      lower_back: {
+        name: 'Mobility Protocol - Schiena Bassa',
+        mobility: [
+          { name: 'Cat-Cow', sets: 2, duration: '60 secondi' },
+          { name: 'Child Pose', sets: 2, duration: '45 secondi' },
+          { name: 'Antero-Retroversione Bacino', sets: 2, duration: '60 secondi' }
+        ],
+        reinforcement: [
+          { name: 'Dead Bug', sets: 3, reps: '8-10 per lato' },
+          { name: 'Bird Dog', sets: 3, reps: '6-8 per lato' },
+          { name: 'Plank', sets: 3, reps: '20-30 secondi' }
+        ]
+      },
+      shoulder: {
+        name: 'Mobility Protocol - Spalla',
+        mobility: [
+          { name: 'Circonduzione spalle', sets: 2, duration: '60 secondi' },
+          { name: 'Wall Slides', sets: 2, duration: '10 ripetizioni' },
+          { name: 'Band Pull-Apart', sets: 2, duration: '15 ripetizioni' }
+        ],
+        reinforcement: [
+          { name: 'Scapular Push-up', sets: 3, reps: '8-10' },
+          { name: 'Y-T-W', sets: 3, reps: '6 per lettera' },
+          { name: 'Face Pull leggero', sets: 3, reps: '12-15' }
+        ]
+      },
+      knee: {
+        name: 'Mobility Protocol - Ginocchio',
+        mobility: [
+          { name: 'Foam Roll Quadricipiti', sets: 2, duration: '60 secondi per lato' },
+          { name: 'Flessione/Estensione attiva', sets: 2, duration: '15 ripetizioni' },
+          { name: 'Squat ROM ridotto', sets: 2, duration: '10 ripetizioni controllate' }
+        ],
+        reinforcement: [
+          { name: 'Terminal Knee Extension (TKE)', sets: 3, reps: '12-15' },
+          { name: 'Single Leg Balance', sets: 3, reps: '30 secondi per lato' },
+          { name: 'Step-up controllato', sets: 3, reps: '8-10 per lato' }
+        ]
+      },
+      hip: {
+        name: 'Mobility Protocol - Anca',
+        mobility: [
+          { name: '90/90 Hip Stretch', sets: 2, duration: '60 secondi per lato' },
+          { name: 'Pigeon Pose', sets: 2, duration: '45 secondi per lato' },
+          { name: 'Hip Circle', sets: 2, duration: '10 cerchi per direzione' }
+        ],
+        reinforcement: [
+          { name: 'Clamshell', sets: 3, reps: '12-15 per lato' },
+          { name: 'Fire Hydrant', sets: 3, reps: '10-12 per lato' },
+          { name: 'Glute Bridge', sets: 3, reps: '12-15' }
+        ]
+      },
+      elbow: {
+        name: 'Mobility Protocol - Gomito',
+        mobility: [
+          { name: 'Stretching Bicipiti', sets: 2, duration: '45 secondi' },
+          { name: 'Stretching Tricipiti', sets: 2, duration: '45 secondi' },
+          { name: 'Pronazione/Supinazione', sets: 2, duration: '15 ripetizioni' }
+        ],
+        reinforcement: [
+          { name: 'Hammer Curl leggero', sets: 3, reps: '12-15' },
+          { name: 'Reverse Curl', sets: 3, reps: '10-12' },
+          { name: 'Wrist Curl', sets: 3, reps: '15-20' }
+        ]
+      }
+    };
+
+    return protocols[painArea] || protocols['lower_back']; // Default a lower_back
   }
 }
 

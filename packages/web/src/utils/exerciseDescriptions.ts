@@ -583,6 +583,98 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
       'Contrai in alto per 2 secondi',
       'Scendi lentamente per stretch completo'
     ]
+  },
+
+  // ============================================
+  // ALIAS ITALIANI E NOMI COMUNI
+  // ============================================
+
+  'Deadlift': {
+    description: 'Movimento fondamentale per catena posteriore. Stacchi da terra con bilanciere per massimo sviluppo forza.',
+    technique: [
+      'Piedi larghezza anca sotto il bilanciere',
+      'Presa poco oltre la larghezza spalle',
+      'Schiena neutra, petto in fuori',
+      'Spingi coi piedi, non tirare con la schiena',
+      'Lockout completando con anche, non iperestendendo'
+    ]
+  },
+
+  'Stacco': {
+    description: 'Movimento fondamentale per catena posteriore. Stacchi da terra con bilanciere per massimo sviluppo forza.',
+    technique: [
+      'Piedi larghezza anca sotto il bilanciere',
+      'Presa poco oltre la larghezza spalle',
+      'Schiena neutra, petto in fuori',
+      'Spingi coi piedi, non tirare con la schiena',
+      'Lockout completando con anche, non iperestendendo'
+    ]
+  },
+
+  'Bench Press': {
+    description: 'Fondamentale per petto, spalle e tricipiti. Panca piana con bilanciere per sviluppo forza upper body.',
+    technique: [
+      'Scapole retratte e depresse',
+      'Piedi piantati a terra',
+      'Arco lombare naturale',
+      'Barra tocca al centro del petto',
+      'Spingi esplosivamente mantenendo controllo'
+    ]
+  },
+
+  'Panca Piana': {
+    description: 'Fondamentale per petto, spalle e tricipiti. Panca piana con bilanciere per sviluppo forza upper body.',
+    technique: [
+      'Scapole retratte e depresse',
+      'Piedi piantati a terra',
+      'Arco lombare naturale',
+      'Barra tocca al centro del petto',
+      'Spingi esplosivamente mantenendo controllo'
+    ]
+  },
+
+  'Squat': {
+    description: 'Re degli esercizi per le gambe. Squat con bilanciere per massimo sviluppo quadricipiti, glutei e core.',
+    technique: [
+      'Bilanciere sulla trap, non sul collo',
+      'Piedi larghezza spalle',
+      'Peso su tripode del piede',
+      'Scendi sotto il parallelo se mobilità lo permette',
+      'Spingi esplosivamente mantenendo il busto verticale'
+    ]
+  },
+
+  'Military Press': {
+    description: 'Overhead press verticale per deltoidi. Movimento fondamentale per sviluppo spalle e stabilità core.',
+    technique: [
+      'Piedi larghezza anca, core attivo',
+      'Barra parte dalle clavicole',
+      'Spingi verso l\'alto e leggermente indietro',
+      'Testa passa attraverso nella fase finale',
+      'Lockout completo con bicipiti vicino alle orecchie'
+    ]
+  },
+
+  'Lat Pulldown': {
+    description: 'Lat machine per sviluppo dorsali. Movimento verticale per schiena larga e spessa.',
+    technique: [
+      'Presa poco oltre larghezza spalle',
+      'Scapole depresse, petto in fuori',
+      'Tira verso lo sterno, non verso il mento',
+      'Gomiti verso il basso e indietro',
+      'Contrai dorsali in basso per 1 secondo'
+    ]
+  },
+
+  'Crunch ai Cavi': {
+    description: 'Crunch con resistenza progressiva. Isola addominali superiori con tensione costante.',
+    technique: [
+      'Inginocchiato con corda dietro la testa',
+      'Piega il busto contraendo gli addominali',
+      'Gomiti verso le ginocchia',
+      'Mantieni tensione costante',
+      'Non tirare con le braccia, usa gli addominali'
+    ]
   }
 };
 

@@ -354,7 +354,7 @@ export interface ProgramGeneratorOptions {
   baselines: PatternBaselines;
   painAreas: NormalizedPainArea[];
   equipment?: any;
-  muscularFocus?: string; // glutei, addome, petto, dorso, spalle, gambe, braccia, polpacci
+  muscularFocus?: string | string[]; // Multi-select muscular focus (max 3 muscle groups)
 }
 
 /**
@@ -525,12 +525,17 @@ export function generateProgramWithSplit(options: ProgramGeneratorOptions): any 
     console.log('📊 Distribuzione volume:', options.goals.length === 2 ? '70-30' : '40-30-30');
   }
 
-  // 💪 Muscular Focus System
+  // 💪 Muscular Focus System (Multi-select support)
   if (options.muscularFocus) {
-    console.log('💪 Focus Muscolare:', options.muscularFocus.toUpperCase());
-    console.log('   → Volume aumentato per esercizi target');
-    console.log('   → Esercizi di isolamento aggiunti');
-    console.log('   → Focus esercizi posizionati all\'inizio');
+    const focusDisplay = Array.isArray(options.muscularFocus)
+      ? options.muscularFocus.map(f => f.toUpperCase()).join(', ')
+      : options.muscularFocus.toUpperCase();
+    const focusCount = Array.isArray(options.muscularFocus) ? options.muscularFocus.length : 1;
+
+    console.log(`💪 Focus Muscolare (${focusCount}x):`, focusDisplay);
+    console.log('   → Volume aumentato per esercizi target (+1 set)');
+    console.log('   → Esercizi di isolamento aggiunti per ogni focus');
+    console.log('   → Focus esercizi posizionati all\'inizio (quando fresco)');
   }
 
   // Genera split settimanale con muscular focus e multi-goal

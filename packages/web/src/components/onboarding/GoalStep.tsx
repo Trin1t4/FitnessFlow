@@ -55,7 +55,14 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
   );
   const [sport, setSport] = useState(data.sport || '');
   const [sportRole, setSportRole] = useState(data.sportRole || '');
-  const [muscularFocus, setMuscularFocus] = useState(data.muscularFocus || '');
+  // Multi-select muscular focus (array instead of string)
+  const [muscularFocus, setMuscularFocus] = useState<string[]>(
+    Array.isArray(data.muscularFocus)
+      ? data.muscularFocus
+      : data.muscularFocus
+        ? [data.muscularFocus]
+        : []
+  );
 
   const GOAL_OPTIONS = getGoalOptions(t);
   const SPORTS_OPTIONS = getSportsOptions(t);
@@ -85,6 +92,28 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
     });
   };
 
+  // Toggle muscular focus selection (multi-select)
+  const toggleMuscularFocus = (focusValue: string) => {
+    // Empty string = "Nessun focus specifico" → deselect all
+    if (focusValue === '') {
+      setMuscularFocus([]);
+      return;
+    }
+
+    setMuscularFocus(prev => {
+      if (prev.includes(focusValue)) {
+        // Deselect
+        return prev.filter(f => f !== focusValue);
+      } else {
+        // Select (max 3 muscle groups)
+        if (prev.length >= 3) {
+          return prev; // Don't allow more than 3
+        }
+        return [...prev, focusValue];
+      }
+    });
+  };
+
   const handleSubmit = () => {
     if (goals.length === 0) return;
     if (goals.includes('prestazioni_sportive') && !sport) return;
@@ -94,7 +123,8 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
       goals, // multi-goal array
       sport: goals.includes('prestazioni_sportive') ? sport : '',
       sportRole: goals.includes('prestazioni_sportive') ? sportRole : '',
-      muscularFocus: (goals.includes('ipertrofia') || goals.includes('tonificazione')) ? muscularFocus : ''
+      // Multi-select muscular focus (array)
+      muscularFocus: (goals.includes('ipertrofia') || goals.includes('tonificazione')) ? muscularFocus : []
     });
   };
 
@@ -222,33 +252,63 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
         </div>
       )}
 
-      {/* MUSCULAR FOCUS - Condizionale per ipertrofia/tonificazione */}
+      {/* MUSCULAR FOCUS - Condizionale per ipertrofia/tonificazione (MULTI-SELECT) */}
       {showMuscularFocus && (
         <div className="space-y-4 bg-slate-700/30 rounded-lg p-5 border border-slate-600 animate-in fade-in duration-300">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-3">
               {t('onboarding.goal.muscularFocus')}
             </label>
-            <p className="text-xs text-slate-400 mb-4">
+            <p className="text-xs text-slate-400 mb-2">
               {t('onboarding.goal.muscularFocusDesc')}
             </p>
+            <p className="text-xs text-emerald-400 font-medium">
+              💪 Seleziona fino a 3 distretti - riceveranno serie extra o superset
+            </p>
+            {muscularFocus.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {muscularFocus.map((f) => {
+                  const focusOpt = MUSCULAR_FOCUS_OPTIONS.find(o => o.value === f);
+                  return (
+                    <span key={f} className="bg-emerald-500/30 text-emerald-300 px-3 py-1 rounded-full text-xs font-medium">
+                      {focusOpt?.label || f}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {MUSCULAR_FOCUS_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setMuscularFocus(opt.value)}
-                className={`p-3 rounded-lg border text-left transition-all ${
-                  muscularFocus === opt.value
-                    ? 'border-emerald-500 bg-emerald-500/20 text-white'
-                    : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
-                }`}
-              >
-                <div className="font-bold text-sm mb-0.5">{opt.label}</div>
-                <div className="text-xs text-slate-400">{opt.desc}</div>
-              </button>
-            ))}
+            {MUSCULAR_FOCUS_OPTIONS.map((opt) => {
+              const isSelected = muscularFocus.includes(opt.value);
+              const isDisabled = !isSelected && muscularFocus.length >= 3 && opt.value !== '';
+
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => toggleMuscularFocus(opt.value)}
+                  disabled={isDisabled}
+                  className={`p-3 rounded-lg border text-left transition-all relative ${
+                    isSelected
+                      ? 'border-emerald-500 bg-emerald-500/20 text-white'
+                      : isDisabled
+                      ? 'border-slate-700 bg-slate-800/50 text-slate-500 cursor-not-allowed opacity-50'
+                      : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
+                  }`}
+                >
+                  {isSelected && opt.value !== '' && (
+                    <div className="absolute top-2 right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="font-bold text-sm mb-0.5">{opt.label}</div>
+                  <div className="text-xs text-slate-400">{opt.desc}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

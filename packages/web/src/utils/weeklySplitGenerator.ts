@@ -103,7 +103,7 @@ interface SplitGeneratorOptions {
   frequency: number;
   baselines: PatternBaselines;
   painAreas: NormalizedPainArea[];
-  muscularFocus?: string; // glutei, addome, petto, dorso, spalle, gambe, braccia, polpacci
+  muscularFocus?: string | string[]; // Multi-select: glutei, addome, petto, dorso, spalle, gambe, braccia, polpacci
 }
 
 /**
@@ -506,39 +506,72 @@ const ISOLATION_EXERCISES: Record<string, { name: string; sets: number; reps: st
 };
 
 /**
- * APPLICA MUSCULAR FOCUS
- * Modifica un workout day per enfatizzare un distretto muscolare
+ * APPLICA MUSCULAR FOCUS (MULTI-SELECT)
+ * Modifica un workout day per enfatizzare uno o più distretti muscolari
+ * Supporta sia singolo focus (string) che multipli (string[])
  */
 function applyMuscularFocus(
   day: DayWorkout,
-  focus: string,
+  focus: string | string[],
   options: SplitGeneratorOptions
 ): void {
-  if (!focus || focus === '') return;
+  if (!focus) return;
 
-  console.log(`🎯 Applicando focus muscolare: ${focus} su ${day.dayName}`);
+  // Normalizza input a array
+  const focusArray = Array.isArray(focus) ? focus : [focus];
+  const validFoci = focusArray.filter(f => f && f !== '');
 
-  const targetPatterns = MUSCULAR_FOCUS_PATTERNS[focus] || [];
-  const isolationExercises = ISOLATION_EXERCISES[focus] || [];
+  if (validFoci.length === 0) return;
 
-  // 1. AUMENTA VOLUME per esercizi che matchano il focus (+1 set)
+  console.log(`🎯 Applicando focus muscolare su ${day.dayName}:`, validFoci.join(', '));
+
+  // Raccogli tutti i pattern e isolation exercises per tutti i foci
+  const allTargetPatterns: string[] = [];
+  const allIsolationExercises: any[] = [];
+
+  validFoci.forEach(f => {
+    const patterns = MUSCULAR_FOCUS_PATTERNS[f] || [];
+    const isolations = ISOLATION_EXERCISES[f] || [];
+
+    allTargetPatterns.push(...patterns);
+    // Per multi-focus, aggiungi solo 1 esercizio di isolamento per focus (invece di 2)
+    if (validFoci.length > 1) {
+      allIsolationExercises.push(...isolations.slice(0, 1));
+    } else {
+      allIsolationExercises.push(...isolations.slice(0, 2));
+    }
+  });
+
+  // 1. AUMENTA VOLUME per esercizi che matchano i focus (+1 set)
+  const boostedExercises = new Set<string>(); // Track per evitare boost duplicati
+
   day.exercises.forEach(exercise => {
-    if (targetPatterns.includes(exercise.pattern)) {
+    if (allTargetPatterns.includes(exercise.pattern) && !boostedExercises.has(exercise.name)) {
       const originalSets = exercise.sets;
       exercise.sets = Math.min(exercise.sets + 1, 5); // Max 5 sets
+      boostedExercises.add(exercise.name);
+
       console.log(`   ↑ ${exercise.name}: ${originalSets} → ${exercise.sets} sets (focus boost)`);
 
-      // Aggiungi nota
-      const focusNote = `💪 Focus ${focus}: volume aumentato`;
+      // Aggiungi nota con tutti i foci applicati
+      const focusNote = validFoci.length > 1
+        ? `💪 Focus multiplo (${validFoci.join(', ')}): volume aumentato`
+        : `💪 Focus ${validFoci[0]}: volume aumentato`;
+
       exercise.notes = exercise.notes
         ? `${exercise.notes} | ${focusNote}`
         : focusNote;
     }
   });
 
-  // 2. AGGIUNGI ESERCIZI DI ISOLAMENTO (1-2 esercizi)
-  const exercisesToAdd = isolationExercises.slice(0, 2); // Max 2 isolation
-  exercisesToAdd.forEach(iso => {
+  // 2. AGGIUNGI ESERCIZI DI ISOLAMENTO
+  allIsolationExercises.forEach((iso, index) => {
+    // Aggiungi solo se non supera il limite totale di esercizi
+    if (day.exercises.length >= 8) {
+      console.log(`   ⚠️ Limite esercizi raggiunto (8), skip isolamento ${iso.name}`);
+      return;
+    }
+
     const isolationExercise: Exercise = {
       pattern: 'accessory' as any,
       name: iso.name,
@@ -546,7 +579,9 @@ function applyMuscularFocus(
       reps: iso.reps,
       rest: '60s',
       intensity: '60-70%',
-      notes: `🎯 Isolamento ${focus} (focus muscolare)`
+      notes: validFoci.length > 1
+        ? `🎯 Isolamento focus multiplo`
+        : `🎯 Isolamento ${validFoci[0]}`
     };
     day.exercises.push(isolationExercise);
     console.log(`   + Aggiunto: ${iso.name} (${iso.sets}x${iso.reps})`);
@@ -554,15 +589,15 @@ function applyMuscularFocus(
 
   // 3. RIORDINA: Esercizi focus all'inizio (quando fresco)
   day.exercises.sort((a, b) => {
-    const aIsFocus = targetPatterns.includes(a.pattern);
-    const bIsFocus = targetPatterns.includes(b.pattern);
+    const aIsFocus = allTargetPatterns.includes(a.pattern);
+    const bIsFocus = allTargetPatterns.includes(b.pattern);
 
     if (aIsFocus && !bIsFocus) return -1; // a prima
     if (!aIsFocus && bIsFocus) return 1;  // b prima
     return 0; // mantieni ordine originale
   });
 
-  console.log(`   ✅ Focus ${focus} applicato: ${day.exercises.length} esercizi totali`);
+  console.log(`   ✅ Focus applicati (${validFoci.join(', ')}): ${day.exercises.length} esercizi totali`);
 }
 
 /**
