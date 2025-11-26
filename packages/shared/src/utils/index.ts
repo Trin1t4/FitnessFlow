@@ -153,3 +153,12 @@ export {
   interpretBodyFatCategory,
   validateMeasurements
 } from './bodyComposition';
+
+// Exercise Form Cues
+export type { FormCue, ExerciseFormCues } from './exerciseFormCues';
+export {
+  EXERCISE_FORM_DATABASE,
+  getFormCues,
+  getCuesByCategory,
+  getCriticalCues
+} from './exerciseFormCues';
