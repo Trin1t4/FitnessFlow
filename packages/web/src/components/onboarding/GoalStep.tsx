@@ -7,18 +7,22 @@ interface GoalStepProps {
   onNext: (data: Partial<OnboardingData>) => void;
 }
 
+// Goal organizzati per categoria
 const getGoalOptions = (t: (key: string) => string) => [
-  { value: 'forza', label: t('onboarding.goal.strength'), desc: t('onboarding.goal.strengthDesc') },
-  { value: 'ipertrofia', label: t('onboarding.goal.hypertrophy'), desc: t('onboarding.goal.hypertrophyDesc') },
-  { value: 'tonificazione', label: t('onboarding.goal.toning'), desc: t('onboarding.goal.toningDesc') },
-  { value: 'dimagrimento', label: t('onboarding.goal.weight_loss'), desc: t('onboarding.goal.weightLossDesc') },
-  { value: 'prestazioni_sportive', label: t('onboarding.goal.sport'), desc: t('onboarding.goal.sportsDesc') },
-  { value: 'benessere', label: t('onboarding.goal.wellness'), desc: t('onboarding.goal.wellnessDesc') },
-  { value: 'resistenza', label: t('onboarding.goal.endurance'), desc: t('onboarding.goal.enduranceDesc') },
-  { value: 'motor_recovery', label: t('onboarding.goal.motorRecovery'), desc: t('onboarding.goal.motorRecoveryDesc'), disclaimer: 'recovery' },
-  { value: 'pre_partum', label: t('onboarding.goal.prePartum'), desc: t('onboarding.goal.prePartumDesc'), disclaimer: 'pregnancy' },
-  { value: 'post_partum', label: t('onboarding.goal.postPartum'), desc: t('onboarding.goal.postPartumDesc'), disclaimer: 'pregnancy' },
-  { value: 'disabilita', label: t('onboarding.goal.disability'), desc: t('onboarding.goal.disabilityDesc'), disclaimer: 'disability' }
+  // FITNESS GOALS
+  { value: 'forza', label: t('onboarding.goal.strength'), desc: t('onboarding.goal.strengthDesc'), category: 'fitness' },
+  { value: 'ipertrofia', label: t('onboarding.goal.hypertrophy'), desc: t('onboarding.goal.hypertrophyDesc'), category: 'fitness' },
+  { value: 'tonificazione', label: t('onboarding.goal.toning'), desc: t('onboarding.goal.toningDesc'), category: 'fitness' },
+  { value: 'dimagrimento', label: t('onboarding.goal.weight_loss'), desc: t('onboarding.goal.weightLossDesc'), category: 'fitness' },
+  { value: 'resistenza', label: t('onboarding.goal.endurance'), desc: t('onboarding.goal.enduranceDesc'), category: 'fitness' },
+  // SPORT & WELLNESS
+  { value: 'prestazioni_sportive', label: t('onboarding.goal.sport'), desc: t('onboarding.goal.sportsDesc'), category: 'sport' },
+  { value: 'benessere', label: t('onboarding.goal.wellness'), desc: t('onboarding.goal.wellnessDesc'), category: 'wellness' },
+  // SPECIAL NEEDS
+  { value: 'motor_recovery', label: t('onboarding.goal.motorRecovery'), desc: t('onboarding.goal.motorRecoveryDesc'), category: 'health', disclaimer: 'recovery' },
+  { value: 'pre_partum', label: t('onboarding.goal.prePartum'), desc: t('onboarding.goal.prePartumDesc'), category: 'health', disclaimer: 'pregnancy' },
+  { value: 'post_partum', label: t('onboarding.goal.postPartum'), desc: t('onboarding.goal.postPartumDesc'), category: 'health', disclaimer: 'pregnancy' },
+  { value: 'disabilita', label: t('onboarding.goal.disability'), desc: t('onboarding.goal.disabilityDesc'), category: 'health', disclaimer: 'disability' }
 ];
 
 const getSportsOptions = (t: (key: string) => string) => [
@@ -139,19 +143,72 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
   const showPregnancyDisclaimer = goals.includes('pre_partum') || goals.includes('post_partum');
   const showDisabilityDisclaimer = goals.includes('disabilita');
 
+  // Separa goal per categoria
+  const fitnessGoals = GOAL_OPTIONS.filter(g => g.category === 'fitness');
+  const sportWellnessGoals = GOAL_OPTIONS.filter(g => g.category === 'sport' || g.category === 'wellness');
+  const healthGoals = GOAL_OPTIONS.filter(g => g.category === 'health');
+
+  // Componente card riutilizzabile
+  const GoalCard = ({ opt, colorScheme = 'emerald' }: { opt: typeof GOAL_OPTIONS[0], colorScheme?: 'emerald' | 'cyan' }) => {
+    const isSelected = goals.includes(opt.value);
+    const isDisabled = !isSelected && goals.length >= 3;
+    const colors = colorScheme === 'cyan'
+      ? { border: 'border-cyan-500', bg: 'from-cyan-500/20 to-cyan-600/10', shadow: 'shadow-cyan-500/10', check: 'bg-cyan-500' }
+      : { border: 'border-emerald-500', bg: 'from-emerald-500/20 to-emerald-600/10', shadow: 'shadow-emerald-500/10', check: 'bg-emerald-500' };
+
+    return (
+      <button
+        onClick={() => toggleGoal(opt.value)}
+        disabled={isDisabled}
+        className={`group p-4 rounded-xl border-2 text-left transition-all relative ${
+          isSelected
+            ? `${colors.border} bg-gradient-to-br ${colors.bg} text-white shadow-lg ${colors.shadow}`
+            : isDisabled
+            ? 'border-slate-700 bg-slate-800/30 text-slate-500 cursor-not-allowed opacity-40'
+            : 'border-slate-600 bg-slate-800/50 text-slate-300 hover:border-slate-500 hover:bg-slate-700/50'
+        }`}
+      >
+        {isSelected && (
+          <div className={`absolute top-2 right-2 w-6 h-6 ${colors.check} rounded-full flex items-center justify-center shadow-lg`}>
+            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+        )}
+        <div className="font-bold mb-1">{opt.label}</div>
+        <p className="text-xs text-slate-400 leading-relaxed">{opt.desc}</p>
+      </button>
+    );
+  };
+
   return (
     <div className="space-y-6">
+      {/* Header con contatore */}
       <div>
-        <h2 className="text-2xl font-bold text-white mb-2">{t('onboarding.goal.title')}</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-2xl font-bold text-white">{t('onboarding.goal.title')}</h2>
+          <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+            goals.length === 3
+              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+              : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+          }`}>
+            {goals.length}/3
+          </span>
+        </div>
         <p className="text-slate-400">
           {t('onboarding.goal.subtitle')}
         </p>
+
+        {/* Selected goals pills */}
         {goals.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             {goals.map((g) => {
               const goalOpt = GOAL_OPTIONS.find(o => o.value === g);
               return (
-                <span key={g} className="bg-emerald-500/30 text-emerald-300 px-3 py-1 rounded-full text-sm font-medium">
+                <span
+                  key={g}
+                  className="bg-emerald-500/20 text-emerald-300 px-3 py-1.5 rounded-full text-sm font-medium border border-emerald-500/30"
+                >
                   {goalOpt?.label || g}
                 </span>
               );
@@ -160,36 +217,34 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {GOAL_OPTIONS.map((opt) => {
-          const isSelected = goals.includes(opt.value);
-          const isDisabled = !isSelected && goals.length >= 3;
+      {/* FITNESS GOALS Section */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-blue-300 uppercase tracking-wide">Fitness</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {fitnessGoals.map((opt) => (
+            <GoalCard key={opt.value} opt={opt} />
+          ))}
+        </div>
+      </div>
 
-          return (
-            <button
-              key={opt.value}
-              onClick={() => toggleGoal(opt.value)}
-              disabled={isDisabled}
-              className={`p-4 rounded-lg border-2 text-left transition-all relative ${
-                isSelected
-                  ? 'border-emerald-500 bg-emerald-500/20 text-white'
-                  : isDisabled
-                  ? 'border-slate-700 bg-slate-800/50 text-slate-500 cursor-not-allowed opacity-50'
-                  : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
-              }`}
-            >
-              {isSelected && (
-                <div className="absolute top-2 right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              )}
-              <div className="font-bold text-lg mb-1">{opt.label}</div>
-              <div className="text-sm text-slate-400">{opt.desc}</div>
-            </button>
-          );
-        })}
+      {/* SPORT & WELLNESS Section */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-emerald-300 uppercase tracking-wide">Sport & Benessere</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {sportWellnessGoals.map((opt) => (
+            <GoalCard key={opt.value} opt={opt} />
+          ))}
+        </div>
+      </div>
+
+      {/* HEALTH & SPECIAL NEEDS Section */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-cyan-300 uppercase tracking-wide">Salute & Esigenze Speciali</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {healthGoals.map((opt) => (
+            <GoalCard key={opt.value} opt={opt} colorScheme="cyan" />
+          ))}
+        </div>
       </div>
 
       {/* DISCLAIMER RECUPERO MOTORIO */}

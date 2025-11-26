@@ -100,6 +100,10 @@ const translations: Translations = {
   "onboarding.location.gymDesc": { it: "Accesso a macchinari e pesi liberi", en: "Access to machines and free weights", fr: "Accès aux machines et poids libres", es: "Acceso a máquinas y pesos libres" },
   "onboarding.location.home": { it: "Casa", en: "Home", fr: "Maison", es: "Casa" },
   "onboarding.location.homeDesc": { it: "Allenamento a corpo libero o con piccola attrezzatura", en: "Bodyweight or small equipment training", fr: "Entraînement au poids du corps ou petit équipement", es: "Entrenamiento con peso corporal o equipamiento pequeño" },
+  "onboarding.location.homeGym": { it: "Home Gym", en: "Home Gym", fr: "Home Gym", es: "Home Gym" },
+  "onboarding.location.homeGymDesc": { it: "Garage o cantina attrezzata con bilanciere e rack", en: "Equipped garage or basement with barbell and rack", fr: "Garage ou sous-sol équipé avec barre et rack", es: "Garaje o sótano equipado con barra y rack" },
+  "onboarding.location.homeGymEquipment": { it: "Attrezzatura Home Gym", en: "Home Gym Equipment", fr: "Équipement Home Gym", es: "Equipamiento Home Gym" },
+  "onboarding.location.homeGymEquipmentDesc": { it: "Seleziona l'attrezzatura disponibile nella tua home gym", en: "Select available equipment in your home gym", fr: "Sélectionnez l'équipement disponible dans votre home gym", es: "Selecciona el equipamiento disponible en tu home gym" },
   "onboarding.location.equipment_type": { it: "Tipo di allenamento", en: "Training type", fr: "Type d'entraînement", es: "Tipo de entrenamiento" },
   "onboarding.location.bodyweight": { it: "Corpo libero", en: "Bodyweight", fr: "Poids du corps", es: "Peso corporal" },
   "onboarding.location.bodyweightDesc": { it: "Nessuna attrezzatura necessaria", en: "No equipment needed", fr: "Aucun équipement nécessaire", es: "Sin equipamiento necesario" },
@@ -141,6 +145,8 @@ const translations: Translations = {
   "equipment.max_kg": { it: "Peso massimo (kg)", en: "Max weight (kg)", fr: "Poids max (kg)", es: "Peso máximo (kg)" },
   "equipment.maxWeight": { it: "Peso massimo (kg)", en: "Max weight (kg)", fr: "Poids max (kg)", es: "Peso máximo (kg)" },
   "equipment.weight": { it: "Peso (kg)", en: "Weight (kg)", fr: "Poids (kg)", es: "Peso (kg)" },
+  "equipment.rack": { it: "Squat Rack", en: "Squat Rack", fr: "Rack de Squat", es: "Rack de Sentadillas" },
+  "equipment.cables": { it: "Cavi / Pulley", en: "Cables / Pulley", fr: "Câbles / Poulie", es: "Cables / Polea" },
 
   // Onboarding - Activity
   "onboarding.activity.title": { it: "Frequenza Allenamento", en: "Training Frequency", fr: "Fréquence d'entraînement", es: "Frecuencia de entrenamiento" },
