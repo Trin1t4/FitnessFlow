@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Home, Dumbbell, CheckCircle, Circle } from 'lucide-react';
+import { Home, Dumbbell, Warehouse, CheckCircle, Circle } from 'lucide-react';
 import { useTranslation } from '../../lib/i18n';
 
 interface OnboardingData {
-  trainingLocation?: 'gym' | 'home';
+  trainingLocation?: 'gym' | 'home' | 'home_gym';
   trainingType?: 'bodyweight' | 'equipment' | 'machines';
   equipment?: {
     pullupBar?: boolean;
@@ -26,7 +26,7 @@ interface LocationStepProps {
 
 export default function LocationStep({ data, onNext }: LocationStepProps) {
   const { t } = useTranslation();
-  const [selectedLocation, setSelectedLocation] = useState<'gym' | 'home'>(
+  const [selectedLocation, setSelectedLocation] = useState<'gym' | 'home' | 'home_gym'>(
     data.trainingLocation || 'home'
   );
   const [trainingType, setTrainingType] = useState<'bodyweight' | 'equipment' | 'machines'>(
@@ -42,7 +42,9 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
     kettlebellKg: data.equipment?.kettlebellKg || 0,
     bench: data.equipment?.bench || false,
     rings: data.equipment?.rings || false,
-    parallelBars: data.equipment?.parallelBars || false
+    parallelBars: data.equipment?.parallelBars || false,
+    rack: (data.equipment as any)?.rack || false,
+    cables: (data.equipment as any)?.cables || false
   });
 
   const toggleEquipment = (key: string) => {
@@ -79,7 +81,7 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
       </div>
 
       {/* Selezione Location */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <button
           onClick={() => setSelectedLocation('home')}
           className={`p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${
@@ -93,6 +95,25 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
           <div className="text-center">
             <p className="font-bold text-lg text-white">{t('onboarding.location.home')}</p>
             <p className="text-xs text-slate-400 mt-1">{t('onboarding.location.homeDesc')}</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => {
+            setSelectedLocation('home_gym');
+            setTrainingType('equipment');
+          }}
+          className={`p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${
+            selectedLocation === 'home_gym'
+              ? 'border-amber-500 bg-amber-500/10'
+              : 'border-slate-600 hover:border-slate-500 bg-slate-800/50'
+          }`}
+          data-testid="button-location-home-gym"
+        >
+          <Warehouse className={`w-12 h-12 ${selectedLocation === 'home_gym' ? 'text-amber-400' : 'text-slate-400'}`} />
+          <div className="text-center">
+            <p className="font-bold text-lg text-white">{t('onboarding.location.homeGym') || 'Home Gym'}</p>
+            <p className="text-xs text-slate-400 mt-1">{t('onboarding.location.homeGymDesc') || 'Garage o cantina attrezzata'}</p>
           </div>
         </button>
 
@@ -259,6 +280,214 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* HOME GYM - Selezione attrezzatura disponibile */}
+      {selectedLocation === 'home_gym' && (
+        <div className="space-y-4 p-6 bg-amber-900/20 rounded-xl border border-amber-500/50">
+          <div>
+            <h3 className="font-semibold text-white mb-2">
+              {t('onboarding.location.homeGymEquipment') || 'Attrezzatura disponibile'}
+            </h3>
+            <p className="text-xs text-amber-200 mb-4">
+              {t('onboarding.location.homeGymEquipmentDesc') || 'Seleziona cosa hai nella tua home gym'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Rack/Squat Stand */}
+            <button
+              onClick={() => toggleEquipment('rack')}
+              className={`p-4 rounded-lg border-2 transition-all text-left ${
+                (equipment as any).rack
+                  ? 'border-amber-500 bg-amber-500/10'
+                  : 'border-slate-600 hover:border-slate-500'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {(equipment as any).rack ? (
+                  <CheckCircle className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Circle className="w-5 h-5 text-slate-500" />
+                )}
+                <span className="text-white font-medium">{t('equipment.rack') || 'Rack / Squat Stand'}</span>
+              </div>
+            </button>
+
+            {/* Bilanciere */}
+            <button
+              onClick={() => toggleEquipment('barbell')}
+              className={`p-4 rounded-lg border-2 transition-all text-left ${
+                equipment.barbell
+                  ? 'border-amber-500 bg-amber-500/10'
+                  : 'border-slate-600 hover:border-slate-500'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {equipment.barbell ? (
+                  <CheckCircle className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Circle className="w-5 h-5 text-slate-500" />
+                )}
+                <span className="text-white font-medium">{t('equipment.barbell')}</span>
+              </div>
+            </button>
+
+            {/* Manubri */}
+            <div className={`p-4 rounded-lg border-2 ${
+              equipment.dumbbells
+                ? 'border-amber-500 bg-amber-500/10'
+                : 'border-slate-600'
+            }`}>
+              <button
+                onClick={() => toggleEquipment('dumbbells')}
+                className="w-full text-left"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  {equipment.dumbbells ? (
+                    <CheckCircle className="w-5 h-5 text-amber-400" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-slate-500" />
+                  )}
+                  <span className="text-white font-medium">{t('equipment.dumbbells')}</span>
+                </div>
+              </button>
+              {equipment.dumbbells && (
+                <div className="mt-2 ml-8">
+                  <label className="text-xs text-slate-400 block mb-1">{t('equipment.maxWeight')}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={equipment.dumbbellMaxKg}
+                    onChange={(e) => updateEquipmentWeight('dumbbellMaxKg', parseInt(e.target.value) || 0)}
+                    className="w-24 px-3 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Panca */}
+            <button
+              onClick={() => toggleEquipment('bench')}
+              className={`p-4 rounded-lg border-2 transition-all text-left ${
+                equipment.bench
+                  ? 'border-amber-500 bg-amber-500/10'
+                  : 'border-slate-600 hover:border-slate-500'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {equipment.bench ? (
+                  <CheckCircle className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Circle className="w-5 h-5 text-slate-500" />
+                )}
+                <span className="text-white font-medium">{t('equipment.bench')}</span>
+              </div>
+            </button>
+
+            {/* Barra Trazioni */}
+            <button
+              onClick={() => toggleEquipment('pullupBar')}
+              className={`p-4 rounded-lg border-2 transition-all text-left ${
+                equipment.pullupBar
+                  ? 'border-amber-500 bg-amber-500/10'
+                  : 'border-slate-600 hover:border-slate-500'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {equipment.pullupBar ? (
+                  <CheckCircle className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Circle className="w-5 h-5 text-slate-500" />
+                )}
+                <span className="text-white font-medium">{t('equipment.pullupBar')}</span>
+              </div>
+            </button>
+
+            {/* Kettlebell */}
+            <div className={`p-4 rounded-lg border-2 ${
+              equipment.kettlebell
+                ? 'border-amber-500 bg-amber-500/10'
+                : 'border-slate-600'
+            }`}>
+              <button
+                onClick={() => toggleEquipment('kettlebell')}
+                className="w-full text-left"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  {equipment.kettlebell ? (
+                    <CheckCircle className="w-5 h-5 text-amber-400" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-slate-500" />
+                  )}
+                  <span className="text-white font-medium">{t('equipment.kettlebell')}</span>
+                </div>
+              </button>
+              {equipment.kettlebell && (
+                <div className="mt-2 ml-8">
+                  <label className="text-xs text-slate-400 block mb-1">{t('equipment.weight')}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={equipment.kettlebellKg}
+                    onChange={(e) => updateEquipmentWeight('kettlebellKg', parseInt(e.target.value) || 0)}
+                    className="w-24 px-3 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Cavi / Cable Machine */}
+            <button
+              onClick={() => toggleEquipment('cables')}
+              className={`p-4 rounded-lg border-2 transition-all text-left ${
+                (equipment as any).cables
+                  ? 'border-amber-500 bg-amber-500/10'
+                  : 'border-slate-600 hover:border-slate-500'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {(equipment as any).cables ? (
+                  <CheckCircle className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Circle className="w-5 h-5 text-slate-500" />
+                )}
+                <span className="text-white font-medium">{t('equipment.cables') || 'Cavi / Pulley'}</span>
+              </div>
+            </button>
+
+            {/* Elastici */}
+            <button
+              onClick={() => toggleEquipment('loopBands')}
+              className={`p-4 rounded-lg border-2 transition-all text-left ${
+                equipment.loopBands
+                  ? 'border-amber-500 bg-amber-500/10'
+                  : 'border-slate-600 hover:border-slate-500'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {equipment.loopBands ? (
+                  <CheckCircle className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Circle className="w-5 h-5 text-slate-500" />
+                )}
+                <span className="text-white font-medium">{t('equipment.loopBands')}</span>
+              </div>
+            </button>
+          </div>
+
+          {/* Summary */}
+          <div className="bg-amber-900/30 border border-amber-500/30 rounded-lg p-4 mt-4">
+            <p className="text-sm text-amber-300 font-medium mb-1">
+              {t('onboarding.location.homeGymSummary') || 'Il programma sarà ottimizzato per la tua attrezzatura'}
+            </p>
+            <p className="text-xs text-amber-200/70">
+              {t('onboarding.location.homeGymNote') || 'Esercizi alternativi verranno suggeriti se manca qualcosa'}
+            </p>
+          </div>
         </div>
       )}
 

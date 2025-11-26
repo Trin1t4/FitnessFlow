@@ -3,7 +3,7 @@
  * Definizioni complete per il flow di onboarding
  */
 
-export type TrainingLocation = 'gym' | 'home';
+export type TrainingLocation = 'gym' | 'home' | 'home_gym';
 
 export type TrainingType = 'bodyweight' | 'equipment' | 'machines';
 
@@ -47,6 +47,8 @@ export interface Equipment {
   bench?: boolean;
   rings?: boolean;
   parallelBars?: boolean;
+  rack?: boolean; // Home gym: squat rack/stand
+  cables?: boolean; // Home gym: cable machine/pulley
 }
 
 export interface ActivityLevel {
