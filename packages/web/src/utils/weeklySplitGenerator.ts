@@ -114,7 +114,7 @@ interface SplitGeneratorOptions {
   baselines: PatternBaselines;
   painAreas: NormalizedPainArea[];
   muscularFocus?: string | string[]; // Multi-select: glutei, addome, petto, dorso, spalle, gambe, braccia, polpacci
-  // Sport-specific (Rubini philosophy)
+  // Sport-specific training
   sport?: string;      // Sport selezionato (calcio, basket, etc.)
   sportRole?: string;  // Ruolo specifico (attaccante, portiere, etc.)
   seasonPhase?: 'off_season' | 'pre_season' | 'in_season'; // Fase della stagione
@@ -625,13 +625,13 @@ function applyMuscularFocus(
  */
 
 // ============================================
-// 🏆 SPORT-SPECIFIC SPLIT - Filosofia Nicholas Rubini
+// 🏆 SPORT-SPECIFIC SPLIT
 // ============================================
 
 /**
  * SPORT-SPECIFIC SPLIT GENERATOR
  *
- * Filosofia Rubini:
+ * Principi scientifici:
  * 1. Forza è la madre di tutte le qualità atletiche
  * 2. Fondamentali sempre (Squat, Panca, Stacco) come base
  * 3. Accessori per prevenzione infortuni sport-specifici
@@ -1523,7 +1523,7 @@ export function generateWeeklySplit(options: SplitGeneratorOptions): WeeklySplit
     console.log(`📊 Volume distribution: ${goals.length === 2 ? '70-30' : '40-30-30'}`);
   }
 
-  // ✅ SPORT-SPECIFIC PATH (Rubini Philosophy)
+  // ✅ SPORT-SPECIFIC PATH
   const isSportGoal =
     goal === 'prestazioni_sportive' ||
     goal === 'sport_performance' ||

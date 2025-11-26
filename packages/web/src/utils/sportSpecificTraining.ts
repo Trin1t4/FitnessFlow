@@ -1,5 +1,5 @@
 /**
- * Sport-Specific Training - Filosofia Nicholas Rubini
+ * Sport-Specific Training System
  *
  * PRINCIPI FONDAMENTALI:
  * 1. Forza è la madre di tutte le qualità atletiche
@@ -76,7 +76,7 @@ export interface PhaseConfig {
 }
 
 // ============================================
-// DATABASE SPORT PROFILES - Filosofia Rubini
+// DATABASE SPORT PROFILES
 // ============================================
 
 export const SPORT_PROFILES: Record<SportType, SportProfile> = {
@@ -113,7 +113,7 @@ export const SPORT_PROFILES: Record<SportType, SportProfile> = {
       ]
     },
     preventionExercises: [
-      'Nordic Curl',            // Hamstring eccentrico - Rubini lo raccomanda sempre
+      'Nordic Curl',            // Hamstring eccentrico - essenziale per prevenzione
       'Copenhagen Adductor',    // Adduttori - infortuni frequenti
       'Single Leg RDL',         // Stabilità + hamstring
       'Calf Raise',             // Spesso trascurati
@@ -1029,4 +1029,4 @@ export function mapToDbExercise(sportExercise: string): string {
   return SPORT_TO_DB_EXERCISE_MAP[sportExercise] || sportExercise;
 }
 
-console.log('✅ Sport-Specific Training module loaded (Rubini philosophy)');
+console.log('✅ Sport-Specific Training module loaded');

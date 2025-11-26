@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Utility classes */
+.glass-card {
+  @apply bg-team-card/80 backdrop-blur-sm border border-team-border rounded-xl;
+}
+
+.status-badge {
+  @apply px-2 py-1 rounded-full text-xs font-semibold;
+}
+
+.status-ready {
+  @apply bg-status-ready/20 text-status-ready;
+}
+
+.status-caution {
+  @apply bg-status-caution/20 text-status-caution;
+}
+
+.status-risk {
+  @apply bg-status-risk/20 text-status-risk;
+}
+
+.status-injured {
+  @apply bg-status-injured/20 text-status-injured;
+}

@@ -355,7 +355,7 @@ export interface ProgramGeneratorOptions {
   painAreas: NormalizedPainArea[];
   equipment?: any;
   muscularFocus?: string | string[]; // Multi-select muscular focus (max 3 muscle groups)
-  // Sport-specific (Rubini philosophy)
+  // Sport-specific training
   sport?: string;      // Sport selezionato (calcio, basket, etc.)
   sportRole?: string;  // Ruolo specifico (attaccante, portiere, etc.)
   sessionDuration?: number; // Durata sessione in minuti
@@ -542,7 +542,7 @@ export function generateProgramWithSplit(options: ProgramGeneratorOptions): any 
     console.log('   → Focus esercizi posizionati all\'inizio (quando fresco)');
   }
 
-  // 🏆 Sport-Specific logging (Rubini philosophy)
+  // 🏆 Sport-Specific logging
   if (options.sport) {
     console.log(`🏆 Sport-Specific: ${options.sport.toUpperCase()}`);
     if (options.sportRole) {
@@ -564,7 +564,7 @@ export function generateProgramWithSplit(options: ProgramGeneratorOptions): any 
     baselines: options.baselines,
     painAreas: options.painAreas,
     muscularFocus: options.muscularFocus, // ✅ Pass muscular focus to generator
-    sport: options.sport, // ✅ Sport-specific (Rubini philosophy)
+    sport: options.sport, // ✅ Sport-specific training
     sportRole: options.sportRole // ✅ Sport role for position-specific training
   });
 

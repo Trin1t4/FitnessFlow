@@ -645,7 +645,7 @@ export default function Dashboard() {
     const baselines = dataStatus.screening?.patternBaselines || {};
     const muscularFocus = onboarding?.muscularFocus || ''; // ✅ Get muscular focus from onboarding
     const goals = onboarding?.goals || [goal]; // ✅ Multi-goal support (fallback to single goal)
-    const sport = onboarding?.sport || ''; // ✅ Sport-specific (Rubini)
+    const sport = onboarding?.sport || ''; // ✅ Sport-specific training
     const sportRole = onboarding?.sportRole || ''; // ✅ Sport role (attaccante, portiere, etc.)
 
     // ⚠️ VALIDAZIONE: Avvisa se location mancante
@@ -675,7 +675,7 @@ export default function Dashboard() {
       equipment,
       muscularFocus, // ✅ Pass muscular focus to generator
       sessionDuration, // ✅ Pass session duration for time adaptation
-      sport, // ✅ Sport-specific (Rubini philosophy)
+      sport, // ✅ Sport-specific training
       sportRole // ✅ Sport role for position-specific training
     });
 
