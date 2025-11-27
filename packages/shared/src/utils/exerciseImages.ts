@@ -120,6 +120,21 @@ export const EXERCISE_IMAGES: Record<string, {
     source: 'Dreamstime',
     type: 'photo'
   },
+  'Full L-sit': {
+    url: `${SUPABASE_STORAGE_URL}/l-sit.jpg`,
+    source: 'Dreamstime',
+    type: 'photo'
+  },
+  'Tuck L-sit': {
+    url: `${SUPABASE_STORAGE_URL}/l-sit.jpg`,
+    source: 'Dreamstime',
+    type: 'photo'
+  },
+  'One Leg L-sit': {
+    url: `${SUPABASE_STORAGE_URL}/l-sit.jpg`,
+    source: 'Dreamstime',
+    type: 'photo'
+  },
 
   // === HIP STRETCHING ===
   'Hip Stretch': {
