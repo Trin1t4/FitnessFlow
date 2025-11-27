@@ -104,6 +104,8 @@ const translations: Translations = {
   "onboarding.location.homeGymDesc": { it: "Garage o cantina attrezzata con bilanciere e rack", en: "Equipped garage or basement with barbell and rack", fr: "Garage ou sous-sol équipé avec barre et rack", es: "Garaje o sótano equipado con barra y rack" },
   "onboarding.location.homeGymEquipment": { it: "Attrezzatura Home Gym", en: "Home Gym Equipment", fr: "Équipement Home Gym", es: "Equipamiento Home Gym" },
   "onboarding.location.homeGymEquipmentDesc": { it: "Seleziona l'attrezzatura disponibile nella tua home gym", en: "Select available equipment in your home gym", fr: "Sélectionnez l'équipement disponible dans votre home gym", es: "Selecciona el equipamiento disponible en tu home gym" },
+  "onboarding.location.homeGymSummary": { it: "Il programma sarà ottimizzato per la tua attrezzatura", en: "The program will be optimized for your equipment", fr: "Le programme sera optimisé pour votre équipement", es: "El programa será optimizado para tu equipamiento" },
+  "onboarding.location.homeGymNote": { it: "Esercizi alternativi verranno suggeriti se manca qualcosa", en: "Alternative exercises will be suggested if something is missing", fr: "Des exercices alternatifs seront suggérés si quelque chose manque", es: "Se sugerirán ejercicios alternativos si falta algo" },
   "onboarding.location.equipment_type": { it: "Tipo di allenamento", en: "Training type", fr: "Type d'entraînement", es: "Tipo de entrenamiento" },
   "onboarding.location.bodyweight": { it: "Corpo libero", en: "Bodyweight", fr: "Poids du corps", es: "Peso corporal" },
   "onboarding.location.bodyweightDesc": { it: "Nessuna attrezzatura necessaria", en: "No equipment needed", fr: "Aucun équipement nécessaire", es: "Sin equipamiento necesario" },
