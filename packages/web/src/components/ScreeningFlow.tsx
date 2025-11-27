@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { CheckCircle, Circle, ArrowRight, ArrowLeft, Info } from 'lucide-react';
+import { CheckCircle, Circle, ArrowRight, ArrowLeft, Info, Check } from 'lucide-react';
 import { useTranslation } from '../lib/i18n';
+import { getExerciseImageWithFallback } from '@fitnessflow/shared';
 
 /**
  * Formula di Brzycki per calcolare 1RM da peso e reps
@@ -589,36 +590,98 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
                 )}
               </div>
             ) : (
-              /* CALISTHENICS MODE: Dropdown variante + input reps */
+              /* CALISTHENICS MODE: Lista visuale con immagini */
               <>
-                <div className="space-y-2">
-                  <label className="text-white font-medium">Variante</label>
-                  <select
-                    value={selectedVariant}
-                    onChange={(e) => setSelectedVariant(e.target.value)}
-                    className="w-full p-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-emerald-500 focus:outline-none"
-                  >
-                    <option value="">-- Seleziona la variante più difficile --</option>
-                    {pattern.progressions.map((prog) => (
-                      <option key={prog.id} value={prog.id}>
-                        {prog.name} (Difficoltà {prog.difficulty}/10)
-                      </option>
-                    ))}
-                  </select>
+                <div className="space-y-3">
+                  <label className="text-white font-medium">Seleziona la variante più difficile che riesci a fare:</label>
+                  <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2">
+                    {pattern.progressions.map((prog) => {
+                      const imageUrl = getExerciseImageWithFallback(prog.name);
+                      const isSelected = selectedVariant === prog.id;
+
+                      return (
+                        <button
+                          key={prog.id}
+                          onClick={() => setSelectedVariant(prog.id)}
+                          className={`w-full flex items-center gap-4 p-3 rounded-xl border-2 transition-all ${
+                            isSelected
+                              ? 'border-emerald-500 bg-emerald-500/20 shadow-lg shadow-emerald-500/10'
+                              : 'border-slate-600 bg-slate-700/50 hover:border-slate-500 hover:bg-slate-700'
+                          }`}
+                        >
+                          {/* Immagine esercizio */}
+                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
+                            {imageUrl ? (
+                              <img
+                                src={imageUrl}
+                                alt={prog.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect fill="%23374151" width="64" height="64"/><text x="32" y="36" text-anchor="middle" fill="%239ca3af" font-size="24">🏋️</text></svg>';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-2xl">
+                                🏋️
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Info esercizio */}
+                          <div className="flex-1 text-left">
+                            <p className={`font-semibold ${isSelected ? 'text-emerald-300' : 'text-white'}`}>
+                              {prog.name}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="flex gap-0.5">
+                                {[...Array(10)].map((_, i) => (
+                                  <div
+                                    key={i}
+                                    className={`w-2 h-2 rounded-full ${
+                                      i < prog.difficulty
+                                        ? 'bg-emerald-500'
+                                        : 'bg-slate-600'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-xs text-slate-400">
+                                {prog.difficulty}/10
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Checkmark */}
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            isSelected
+                              ? 'bg-emerald-500 text-white'
+                              : 'border-2 border-slate-500'
+                          }`}>
+                            {isSelected && <Check className="w-4 h-4" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-white font-medium">Ripetizioni pulite massime</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={reps}
-                    onChange={(e) => setReps(e.target.value)}
-                    placeholder="es. 10"
-                    className="w-full p-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-emerald-500 focus:outline-none"
-                  />
-                </div>
+                {/* Input ripetizioni - appare solo dopo selezione */}
+                {selectedVariant && (
+                  <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+                    <label className="text-white font-medium">
+                      Quante ripetizioni pulite riesci a fare di "{pattern.progressions.find(p => p.id === selectedVariant)?.name}"?
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={reps}
+                      onChange={(e) => setReps(e.target.value)}
+                      placeholder="es. 10"
+                      className="w-full p-4 rounded-xl bg-slate-700 border-2 border-slate-600 text-white text-lg focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                )}
               </>
             )}
 
