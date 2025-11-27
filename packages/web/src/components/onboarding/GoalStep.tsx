@@ -148,35 +148,102 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
   const sportWellnessGoals = GOAL_OPTIONS.filter(g => g.category === 'sport' || g.category === 'wellness');
   const healthGoals = GOAL_OPTIONS.filter(g => g.category === 'health');
 
+  // Goal icons mapping
+  const goalIcons: Record<string, string> = {
+    // Fitness goals
+    'forza': '💪',
+    'ipertrofia': '🏋️',
+    'tonificazione': '✨',
+    'dimagrimento': '🔥',
+    'resistenza': '🏃',
+    // Sport & Wellness
+    'prestazioni_sportive': '⚽',
+    'benessere': '🧘',
+    // Health
+    'motor_recovery': '⚕️',
+    'pre_partum': '🤰',
+    'post_partum': '👶',
+    'disabilita': '♿'
+  };
+
   // Componente card riutilizzabile
   const GoalCard = ({ opt, colorScheme = 'emerald' }: { opt: typeof GOAL_OPTIONS[0], colorScheme?: 'emerald' | 'cyan' }) => {
     const isSelected = goals.includes(opt.value);
     const isDisabled = !isSelected && goals.length >= 3;
     const colors = colorScheme === 'cyan'
-      ? { border: 'border-cyan-500', bg: 'from-cyan-500/20 to-cyan-600/10', shadow: 'shadow-cyan-500/10', check: 'bg-cyan-500' }
-      : { border: 'border-emerald-500', bg: 'from-emerald-500/20 to-emerald-600/10', shadow: 'shadow-emerald-500/10', check: 'bg-emerald-500' };
+      ? {
+          border: 'border-cyan-500',
+          bg: 'from-cyan-500/20 to-cyan-600/10',
+          shadow: 'shadow-cyan-500/10',
+          check: 'bg-cyan-500',
+          iconBg: 'bg-cyan-500/20',
+          titleHover: 'group-hover:text-cyan-300',
+          title: 'text-white'
+        }
+      : {
+          border: 'border-emerald-500',
+          bg: 'from-emerald-500/20 to-emerald-600/10',
+          shadow: 'shadow-emerald-500/10',
+          check: 'bg-emerald-500',
+          iconBg: 'bg-emerald-500/20',
+          titleHover: 'group-hover:text-emerald-300',
+          title: 'text-white'
+        };
+
+    const icon = goalIcons[opt.value] || '🎯';
 
     return (
       <button
         onClick={() => toggleGoal(opt.value)}
         disabled={isDisabled}
-        className={`group p-4 rounded-xl border-2 text-left transition-all relative ${
+        className={`group p-5 rounded-xl border-2 text-left transition-all duration-200 relative overflow-hidden ${
           isSelected
-            ? `${colors.border} bg-gradient-to-br ${colors.bg} text-white shadow-lg ${colors.shadow}`
+            ? `${colors.border} bg-gradient-to-br ${colors.bg} shadow-lg ${colors.shadow} scale-[1.02] hover:scale-[1.03]`
             : isDisabled
-            ? 'border-slate-700 bg-slate-800/30 text-slate-500 cursor-not-allowed opacity-40'
-            : 'border-slate-600 bg-slate-800/50 text-slate-300 hover:border-slate-500 hover:bg-slate-700/50'
+            ? 'border-slate-700 bg-slate-800/30 cursor-not-allowed opacity-40'
+            : 'border-slate-600 bg-slate-800/50 hover:border-slate-500 hover:bg-slate-700/60 hover:scale-[1.01] hover:shadow-md'
         }`}
       >
+        {/* Decorative gradient overlay */}
         {isSelected && (
-          <div className={`absolute top-2 right-2 w-6 h-6 ${colors.check} rounded-full flex items-center justify-center shadow-lg`}>
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+        )}
+
+        {/* Checkmark badge */}
+        {isSelected && (
+          <div className={`absolute top-3 right-3 w-6 h-6 ${colors.check} rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-200`}>
             <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
           </div>
         )}
-        <div className="font-bold mb-1">{opt.label}</div>
-        <p className="text-xs text-slate-400 leading-relaxed">{opt.desc}</p>
+
+        {/* Icon */}
+        <div className={`inline-flex items-center justify-center w-11 h-11 rounded-lg mb-3 text-2xl transition-all ${
+          isSelected
+            ? `${colors.iconBg} ring-2 ring-white/20`
+            : 'bg-slate-700/50 group-hover:bg-slate-600/50'
+        }`}>
+          {icon}
+        </div>
+
+        {/* Title - INCREASED SIZE & CONTRAST */}
+        <div className={`font-bold text-base mb-2 leading-tight transition-colors ${
+          isSelected
+            ? colors.title
+            : `text-slate-200 ${!isDisabled ? colors.titleHover : ''}`
+        }`}>
+          {opt.label}
+        </div>
+
+        {/* Description - SMALLER & MUTED */}
+        <p className={`text-xs leading-relaxed transition-colors ${
+          isSelected
+            ? 'text-slate-300/90'
+            : 'text-slate-500 group-hover:text-slate-400'
+        }`}>
+          {opt.desc}
+        </p>
       </button>
     );
   };
@@ -334,33 +401,76 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {MUSCULAR_FOCUS_OPTIONS.map((opt) => {
               const isSelected = muscularFocus.includes(opt.value);
               const isDisabled = !isSelected && muscularFocus.length >= 3 && opt.value !== '';
+
+              // Muscle group icons
+              const muscleIcons: Record<string, string> = {
+                '': '🚫',
+                'glutei': '🍑',
+                'addome': '💎',
+                'petto': '🦅',
+                'dorso': '🛡️',
+                'spalle': '⛰️',
+                'gambe': '🦵',
+                'braccia': '💪',
+                'polpacci': '🦿'
+              };
+
+              const muscleIcon = muscleIcons[opt.value] || '💪';
 
               return (
                 <button
                   key={opt.value}
                   onClick={() => toggleMuscularFocus(opt.value)}
                   disabled={isDisabled}
-                  className={`p-3 rounded-lg border text-left transition-all relative ${
+                  className={`group p-4 rounded-lg border-2 text-left transition-all duration-200 relative ${
                     isSelected
-                      ? 'border-emerald-500 bg-emerald-500/20 text-white'
+                      ? 'border-emerald-500 bg-emerald-500/20 shadow-md shadow-emerald-500/10 scale-[1.01]'
                       : isDisabled
-                      ? 'border-slate-700 bg-slate-800/50 text-slate-500 cursor-not-allowed opacity-50'
-                      : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
+                      ? 'border-slate-700 bg-slate-800/50 cursor-not-allowed opacity-50'
+                      : 'border-slate-600 bg-slate-700/50 hover:border-slate-500 hover:bg-slate-700/70 hover:scale-[1.01]'
                   }`}
                 >
                   {isSelected && opt.value !== '' && (
-                    <div className="absolute top-2 right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <div className="absolute top-2 right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-200">
                       <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </div>
                   )}
-                  <div className="font-bold text-sm mb-0.5">{opt.label}</div>
-                  <div className="text-xs text-slate-400">{opt.desc}</div>
+
+                  <div className="flex items-start gap-3">
+                    {/* Icon */}
+                    <div className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${
+                      isSelected
+                        ? 'bg-emerald-500/20 ring-2 ring-white/20'
+                        : 'bg-slate-600/50 group-hover:bg-slate-600/70'
+                    }`}>
+                      {muscleIcon}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      {/* Title - BOLD & LARGER */}
+                      <div className={`font-bold text-sm mb-1 transition-colors ${
+                        isSelected
+                          ? 'text-white'
+                          : 'text-slate-200 group-hover:text-slate-100'
+                      }`}>
+                        {opt.label}
+                      </div>
+                      {/* Description - MUTED */}
+                      <div className={`text-xs transition-colors ${
+                        isSelected
+                          ? 'text-slate-300/90'
+                          : 'text-slate-500 group-hover:text-slate-400'
+                      }`}>
+                        {opt.desc}
+                      </div>
+                    </div>
+                  </div>
                 </button>
               );
             })}
