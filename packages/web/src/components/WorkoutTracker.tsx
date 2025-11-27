@@ -522,6 +522,7 @@ export default function WorkoutTracker({ programDay, preWorkoutData, onComplete 
         programId={programDay.programId}
         dayName={programDay.name}
         currentLocation={programDay.location || "gym"}
+        currentExercises={currentExercises}
         onAdapt={handleAdapt}
       />
     </div>

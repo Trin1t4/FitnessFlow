@@ -41,8 +41,9 @@ interface Exercise {
   targetRir?: number; // RIR target programmato (0-4)
 }
 
-// Helper: Extract target RIR from exercise notes (e.g., "RIR 2" or "RIR 0")
-const extractTargetRIR = (notes?: string, intensity?: string): number => {
+// Helper: Extract BASE target RIR from exercise notes (e.g., "RIR 2" or "RIR 0")
+// This is the target for the LAST set - earlier sets will have higher RIR
+const extractBaseTargetRIR = (notes?: string, intensity?: string): number => {
   // First check notes for explicit RIR
   if (notes) {
     const rirMatch = notes.match(/RIR\s*(\d)/i);
@@ -71,6 +72,9 @@ const extractTargetRIR = (notes?: string, intensity?: string): number => {
   // Default: RIR 2 (common hypertrophy target)
   return 2;
 };
+
+// Legacy compatibility
+const extractTargetRIR = extractBaseTargetRIR;
 
 interface SetLog {
   set_number: number;
@@ -917,129 +921,123 @@ export default function LiveWorkoutSession({
   };
 
   // Analyze RIR feedback and provide suggestions
-  // Compares perceived RIR vs TARGET RIR from the program
+  // LOGIC: Only evaluate on LAST SET - intermediate sets just collect data
+  // The system understands that RIR naturally decreases across sets at same weight
   const analyzeRPEAndSuggest = (rpe: number) => {
     const exerciseName = currentExercise.name;
     const currentSetNumber = currentSet;
     const totalSetsPlanned = currentTargetSets;
+    const isLastSet = currentSetNumber === totalSetsPlanned;
 
-    // Get the TARGET RIR from exercise (from notes/intensity, or explicit field)
-    const programmedRIR = currentExercise.targetRir ?? extractTargetRIR(currentExercise.notes, currentExercise.intensity);
+    // Target RIR is for the LAST set
+    const targetRIR = currentExercise.targetRir ?? extractBaseTargetRIR(currentExercise.notes, currentExercise.intensity);
     const perceivedRIR = currentRIR;
 
-    // Delta: positive = easier than programmed, negative = harder than programmed
-    const rirDelta = perceivedRIR - programmedRIR;
-
-    console.log(`[RIR Analysis] ${exerciseName} Set ${currentSetNumber}:`, {
+    console.log(`[RIR Analysis] ${exerciseName} Set ${currentSetNumber}/${totalSetsPlanned}:`, {
       rpe,
-      programmedRIR,
       perceivedRIR,
-      rirDelta,
-      interpretation: rirDelta > 0 ? `EASIER than target (should be RIR ${programmedRIR})` :
-                      rirDelta < 0 ? `HARDER than target (went beyond RIR ${programmedRIR})` :
-                      'PERFECT - hit target RIR'
+      targetRIR,
+      isLastSet,
+      action: isLastSet ? 'EVALUATE' : 'TRACK ONLY'
     });
 
     // ========================================
-    // CASE 1: User went BEYOND target (harder than planned)
-    // e.g., Target RIR 2, user did RIR 0-1
-    // e.g., Target RIR 0 (failure), user did RIR 0 but failed reps
+    // SET INTERMEDI: Solo tracking, no giudizio
+    // Il sistema sa che RIR cala naturalmente tra i set
     // ========================================
+    if (!isLastSet) {
+      const setsRemaining = totalSetsPlanned - currentSetNumber;
+
+      // Avviso solo se RIR è già molto basso (rischio di non completare)
+      if (perceivedRIR <= 1 && setsRemaining >= 2) {
+        setSuggestion({
+          type: 'reduce',
+          message: `⚠️ Set ${currentSetNumber}/${totalSetsPlanned}: RIR ${perceivedRIR} - Attenzione! Mancano ${setsRemaining} set. Considera di ridurre il carico per completarli.`,
+          newRest: increaseRest(currentExercise.rest),
+          weightAdjustment: 0 // Non modificare il programma, solo avviso
+        });
+      } else {
+        // Feedback positivo - il sistema tiene traccia
+        setSuggestion({
+          type: 'maintain',
+          message: `📊 Set ${currentSetNumber}/${totalSetsPlanned}: RIR ${perceivedRIR} registrato. Il sistema valuterà il carico sull'ultimo set (target: RIR ${targetRIR}).`,
+        });
+      }
+      return;
+    }
+
+    // ========================================
+    // ULTIMO SET: Valutazione e adattamento carico
+    // Questo è il momento della verità
+    // ========================================
+    const rirDelta = perceivedRIR - targetRIR;
+
+    // CASO 1: Troppo duro (RIR inferiore al target)
     if (rirDelta < 0) {
       const wentTooHard = Math.abs(rirDelta);
 
       if (wentTooHard >= 2) {
-        // Went WAY beyond target (e.g., RIR 2 target but did RIR 0)
-        if (currentSetNumber < totalSetsPlanned) {
-          const remainingSets = totalSetsPlanned - currentSetNumber;
-          setSuggestion({
-            type: 'reduce',
-            message: `⚠️ RIR ${perceivedRIR} vs target ${programmedRIR}: Sei andato ${wentTooHard} RIR oltre il target! Riduci il carico per i prossimi ${remainingSets} set.`,
-            newSets: totalSetsPlanned - 1,
-            newReps: Math.max(targetReps - 2, Math.round(targetReps * 0.8)),
-            newRest: increaseRest(currentExercise.rest),
-            weightAdjustment: -5
-          });
-        } else {
-          setSuggestion({
-            type: 'reduce',
-            message: `⚠️ RIR ${perceivedRIR} vs target ${programmedRIR}: Hai spinto troppo! Riduci il peso del 5% nella prossima sessione.`,
-            newRest: increaseRest(currentExercise.rest),
-            weightAdjustment: -5
-          });
-        }
+        // Significativamente oltre il target
+        setSuggestion({
+          type: 'reduce',
+          message: `⚠️ Ultimo set: RIR ${perceivedRIR} vs target ${targetRIR} - Hai spinto ${wentTooHard} RIR oltre il programmato. Riduci peso 5% per la prossima sessione.`,
+          newRest: increaseRest(currentExercise.rest),
+          weightAdjustment: -5
+        });
       } else {
-        // Slightly beyond target (1 RIR difference) - acceptable for RIR 0-1 targets
-        if (programmedRIR <= 1) {
-          // Target was already close to failure, small overshoot is OK
+        // Leggermente oltre (1 RIR) - accettabile se target era già vicino al cedimento
+        if (targetRIR <= 1) {
           setSuggestion({
             type: 'maintain',
-            message: `✅ RIR ${perceivedRIR} (target ${programmedRIR}): Hai raggiunto il cedimento come programmato. Ben fatto!`,
+            message: `✅ Ultimo set: RIR ${perceivedRIR} - Target ${targetRIR} raggiunto! Il sistema ha considerato tutti i set precedenti.`,
           });
         } else {
-          // Target was conservative but user went harder
           setSuggestion({
             type: 'maintain',
-            message: `⚡ RIR ${perceivedRIR} (target ${programmedRIR}): Leggermente oltre il target, monitora il recupero.`,
+            message: `⚡ Ultimo set: RIR ${perceivedRIR} (target ${targetRIR}) - Leggermente più intenso, monitora il recupero.`,
             weightAdjustment: 0
           });
         }
       }
     }
-    // ========================================
-    // CASE 2: User stayed TOO EASY (didn't reach target intensity)
-    // e.g., Target RIR 0 (failure), user did RIR 2-3
-    // e.g., Target RIR 2, user did RIR 4-5
-    // ========================================
+    // CASO 2: Troppo facile (RIR superiore al target)
     else if (rirDelta > 0) {
       const tooEasy = rirDelta;
 
       if (tooEasy >= 2) {
-        // Way too easy - significant weight increase needed
-        if (currentSetNumber === totalSetsPlanned) {
-          // Last set - suggest increase for next session
+        // Significativamente sotto il target - aumentare carico
+        setSuggestion({
+          type: 'increase',
+          message: `💪 Ultimo set: RIR ${perceivedRIR} vs target ${targetRIR} - Avevi ancora ${tooEasy} rep in più! Aumenta peso 5% per la prossima sessione.`,
+          weightAdjustment: targetRIR === 0 ? 7.5 : 5
+        });
+      } else {
+        // Leggermente sotto (1 RIR)
+        if (targetRIR <= 1) {
           setSuggestion({
-            type: 'increase',
-            message: `💪 RIR ${perceivedRIR} vs target ${programmedRIR}: Troppo facile! Aumenta il peso del 5-7.5% nella prossima sessione.`,
-            newSets: totalSetsPlanned + 1,
-            weightAdjustment: programmedRIR === 0 ? 7.5 : 5 // More aggressive if target was failure
+            type: 'maintain',
+            message: `⚡ Ultimo set: RIR ${perceivedRIR} (target ${targetRIR}) - Quasi! Prova a spingere 1 rep in più la prossima volta.`,
+            weightAdjustment: 0
           });
         } else {
-          // Mid-workout - can still push harder
           setSuggestion({
-            type: 'increase',
-            message: `💪 RIR ${perceivedRIR} vs target ${programmedRIR}: Hai ${tooEasy} RIR di margine! Puoi spingere di più nei prossimi set.`,
-            weightAdjustment: 2.5
+            type: 'maintain',
+            message: `✅ Ultimo set: RIR ${perceivedRIR} - Vicino al target ${targetRIR}. Carico adeguato.`,
           });
         }
-      } else if (tooEasy === 1 && programmedRIR <= 1) {
-        // Target was near-failure but user left 1 extra rep
-        setSuggestion({
-          type: 'maintain',
-          message: `⚡ RIR ${perceivedRIR} (target ${programmedRIR}): Quasi al target! Prova a spingere 1 rep in più nel prossimo set.`,
-          weightAdjustment: 0
-        });
-      } else {
-        // Small difference, acceptable
-        setSuggestion({
-          type: 'maintain',
-          message: `✅ RIR ${perceivedRIR} (target ${programmedRIR}): Buon lavoro, sei vicino al target.`,
-        });
       }
     }
-    // ========================================
-    // CASE 3: PERFECT - Hit the target RIR exactly
-    // ========================================
+    // CASO 3: Perfetto!
     else {
-      if (programmedRIR === 0) {
+      if (targetRIR === 0) {
         setSuggestion({
           type: 'maintain',
-          message: `🔥 PERFETTO! RIR 0 raggiunto come programmato. Cedimento completato!`,
+          message: `🔥 PERFETTO! Ultimo set a cedimento (RIR 0) come programmato. Il sistema ha analizzato l'intera serie.`,
         });
       } else {
         setSuggestion({
           type: 'maintain',
-          message: `✅ PERFETTO! RIR ${perceivedRIR} come programmato. Carico calibrato correttamente!`,
+          message: `🔥 PERFETTO! RIR ${perceivedRIR} sull'ultimo set - Carico calibrato alla perfezione. Continua così!`,
         });
       }
     }
@@ -1284,35 +1282,90 @@ export default function LiveWorkoutSession({
         throw new Error('Failed to fetch program');
       }
 
-      // Update the exercise weight in weekly_schedule
       let updated = false;
-      const updatedSchedule = program.weekly_schedule?.map((day: any) => ({
-        ...day,
-        exercises: day.exercises?.map((ex: any) => {
+      const updatePayload: any = { updated_at: new Date().toISOString() };
+
+      // Check which structure the program uses: weekly_schedule or weekly_split
+      // Method 1: Try weekly_schedule (legacy/team structure)
+      if (program.weekly_schedule && Array.isArray(program.weekly_schedule)) {
+        const updatedSchedule = program.weekly_schedule.map((day: any) => ({
+          ...day,
+          exercises: day.exercises?.map((ex: any) => {
+            if (ex.name === exerciseName) {
+              updated = true;
+              return {
+                ...ex,
+                weight: newWeight,
+                notes: `${ex.notes || ''} | Auto-adjusted ${percentChange > 0 ? '+' : ''}${percentChange}% (RIR feedback)`.trim()
+              };
+            }
+            return ex;
+          })
+        }));
+
+        if (updated) {
+          updatePayload.weekly_schedule = updatedSchedule;
+        }
+      }
+
+      // Method 2: Try weekly_split.days (main app structure)
+      if (!updated && program.weekly_split?.days && Array.isArray(program.weekly_split.days)) {
+        const updatedSplit = {
+          ...program.weekly_split,
+          days: program.weekly_split.days.map((day: any) => ({
+            ...day,
+            exercises: day.exercises?.map((ex: any) => {
+              if (ex.name === exerciseName) {
+                updated = true;
+                return {
+                  ...ex,
+                  weight: typeof newWeight === 'number' ? `${newWeight}kg` : newWeight,
+                  notes: `${ex.notes || ''} | Auto-adjusted ${percentChange > 0 ? '+' : ''}${percentChange}% (RIR feedback)`.trim()
+                };
+              }
+              return ex;
+            })
+          }))
+        };
+
+        if (updated) {
+          updatePayload.weekly_split = updatedSplit;
+        }
+      }
+
+      // Method 3: Try exercises array directly (flat structure)
+      if (!updated && program.exercises && Array.isArray(program.exercises)) {
+        const updatedExercises = program.exercises.map((ex: any) => {
           if (ex.name === exerciseName) {
             updated = true;
             return {
               ...ex,
-              weight: newWeight,
+              weight: typeof newWeight === 'number' ? `${newWeight}kg` : newWeight,
               notes: `${ex.notes || ''} | Auto-adjusted ${percentChange > 0 ? '+' : ''}${percentChange}% (RIR feedback)`.trim()
             };
           }
           return ex;
-        })
-      }));
+        });
+
+        if (updated) {
+          updatePayload.exercises = updatedExercises;
+        }
+      }
 
       if (!updated) {
-        console.warn(`[RIR Adjustment] Exercise ${exerciseName} not found in weekly_schedule`);
+        console.warn(`[RIR Adjustment] Exercise ${exerciseName} not found in program structure`);
+        console.warn('[RIR Adjustment] Program structure:', {
+          hasWeeklySchedule: !!program.weekly_schedule,
+          hasWeeklySplit: !!program.weekly_split?.days,
+          hasExercises: !!program.exercises
+        });
         return;
       }
 
       // Save back to database
       const { error: updateError } = await supabase
         .from('training_programs')
-        .update({
-          weekly_schedule: updatedSchedule,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('id', programId);
 
       if (updateError) {

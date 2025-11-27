@@ -174,3 +174,16 @@ export {
   getExerciseImageWithFallback,
   generateImageUploadList
 } from './exerciseImages';
+
+// Location Adapter (gym/home switch)
+export type {
+  LocationType,
+  HomeType,
+  HomeEquipment,
+  LocationAdaptationOptions
+} from './locationAdapter';
+export {
+  adaptExercisesForLocation,
+  isExerciseCompatible,
+  getAvailableVariants
+} from './locationAdapter';

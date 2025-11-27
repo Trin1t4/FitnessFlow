@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X, Home, Dumbbell, HelpCircle } from "lucide-react";
+import { adaptExercisesForLocation, LocationAdaptationOptions, Exercise } from "@fitnessflow/shared";
 
 interface AdaptLocationDialogProps {
   isOpen: boolean;
@@ -7,7 +8,8 @@ interface AdaptLocationDialogProps {
   programId: string;
   dayName: string;
   currentLocation: string;
-  onAdapt: (exercises: any[], location: string) => void;
+  currentExercises: Exercise[];
+  onAdapt: (exercises: Exercise[], location: string) => void;
 }
 
 export default function AdaptLocationDialog({
@@ -16,6 +18,7 @@ export default function AdaptLocationDialog({
   programId,
   dayName,
   currentLocation,
+  currentExercises,
   onAdapt,
 }: AdaptLocationDialogProps) {
   const [selectedLocation, setSelectedLocation] = useState<"gym" | "home">(
@@ -36,63 +39,33 @@ export default function AdaptLocationDialog({
 
   if (!isOpen) return null;
 
-  const handleAdapt = async () => {
+  const handleAdapt = () => {
     setIsAdapting(true);
     try {
-      const payload: any = {
+      // Costruisci opzioni per l'adapter
+      const options: LocationAdaptationOptions = {
         location: selectedLocation,
+        homeType: selectedLocation === "home" ? homeType : undefined,
+        equipment: selectedLocation === "home" && homeType === "with_equipment"
+          ? equipment
+          : undefined,
       };
 
-      // Per casa, distingui tra bodyweight e con attrezzatura
-      if (selectedLocation === "home") {
-        if (homeType === "with_equipment") {
-          // Invia equipment solo se almeno un campo è valorizzato
-          const hasEquipment = 
-            equipment.barbell ||
-            equipment.bands ||
-            equipment.pullupBar ||
-            equipment.bench ||
-            (equipment.dumbbellMaxKg && equipment.dumbbellMaxKg > 0);
+      // Usa la logica client-side per adattare gli esercizi
+      const adaptedExercises = adaptExercisesForLocation(currentExercises, options);
 
-          if (hasEquipment) {
-            payload.equipment = equipment;
-          } else {
-            // Se selezionato "con attrezzatura" ma nessuna checkbox spuntata, usa bodyweight
-            payload.equipment = {
-              barbell: false,
-              dumbbellMaxKg: 0,
-              bands: false,
-              pullupBar: false,
-              bench: false,
-            };
-          }
-        } else {
-          // Bodyweight: equipment vuoto
-          payload.equipment = {
-            barbell: false,
-            dumbbellMaxKg: 0,
-            bands: false,
-            pullupBar: false,
-            bench: false,
-          };
+      console.log("[AdaptLocation] Location:", selectedLocation);
+      console.log("[AdaptLocation] Esercizi originali:", currentExercises.length);
+      console.log("[AdaptLocation] Esercizi adattati:", adaptedExercises.length);
+
+      // Log delle sostituzioni
+      adaptedExercises.forEach((ex, i) => {
+        if (ex.wasReplaced && ex.name !== currentExercises[i]?.name) {
+          console.log(`[AdaptLocation] Sostituito: ${currentExercises[i]?.name} -> ${ex.name}`);
         }
-      }
+      });
 
-      const res = await fetch(
-        `/api/program/${programId}/day/${encodeURIComponent(dayName)}/adapt`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!res.ok) {
-        throw new Error("Errore adattamento");
-      }
-
-      const data = await res.json();
-      onAdapt(data.exercises, data.location);
+      onAdapt(adaptedExercises, selectedLocation);
       onClose();
     } catch (error) {
       console.error("Errore adattamento:", error);
