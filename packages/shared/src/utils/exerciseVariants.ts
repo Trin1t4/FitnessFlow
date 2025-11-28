@@ -775,41 +775,62 @@ export interface ExerciseAlternative {
   equipment: 'bodyweight' | 'gym' | 'both';
   difficulty: number;
   notes?: string;
+  /** Fattore di conversione peso rispetto all'originale (1.0 = stesso peso) */
+  weightFactor?: number;
+  /** Fattore di conversione reps (1.0 = stesse reps, 1.2 = +20% reps) */
+  repsFactor?: number;
 }
+
+/**
+ * WEIGHT CONVERSION FACTORS
+ * Basati su biomeccanica e dati empirici
+ *
+ * Regole generali:
+ * - Bilanciere → Manubri: ~0.70-0.80 (meno carico per stabilizzazione)
+ * - Bilanciere → Macchina: ~1.10-1.20 (percorso guidato = più carico)
+ * - Unilaterale: peso per lato = ~45-50% del bilaterale
+ * - Bodyweight: weightFactor non applicabile
+ */
+export const WEIGHT_CONVERSION_NOTES = {
+  barbell_to_dumbbell: 0.75, // 100kg bilanciere ≈ 37.5kg per manubrio
+  barbell_to_machine: 1.15,  // Macchine permettono più carico (guidato)
+  dumbbell_to_machine: 1.30, // Manubri → Macchina
+  bilateral_to_unilateral: 0.45, // Per esercizi unilaterali
+};
 
 export const EXERCISE_ALTERNATIVES: Record<string, ExerciseAlternative[]> = {
   // ═══════════════════════════════════════════════════════════════
   // LOWER PUSH (Squat pattern)
   // ═══════════════════════════════════════════════════════════════
   'Back Squat': [
-    { name: 'Dumbbell Squat', equipment: 'gym', difficulty: 4, notes: 'Manubri sulle spalle' },
-    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Con kettlebell/manubrio' },
-    { name: 'Leg Press', equipment: 'gym', difficulty: 4, notes: 'Meno stress lombare' },
+    { name: 'Dumbbell Squat', equipment: 'gym', difficulty: 4, notes: 'Manubri sulle spalle', weightFactor: 0.38, repsFactor: 1.0 }, // 100kg → 38kg per mano
+    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Con kettlebell/manubrio', weightFactor: 0.40, repsFactor: 1.2 }, // Singolo peso, +reps
+    { name: 'Leg Press', equipment: 'gym', difficulty: 4, notes: 'Meno stress lombare', weightFactor: 1.50, repsFactor: 1.0 }, // Leg press carichi più alti
   ],
   'Front Squat': [
-    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Stessa enfasi su quadricipiti' },
-    { name: 'Dumbbell Front Squat', equipment: 'gym', difficulty: 4, notes: 'Manubri davanti' },
-    { name: 'Leg Press (piedi alti)', equipment: 'gym', difficulty: 4, notes: 'Focus quadricipiti' },
+    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Stessa enfasi su quadricipiti', weightFactor: 0.50, repsFactor: 1.0 },
+    { name: 'Dumbbell Front Squat', equipment: 'gym', difficulty: 4, notes: 'Manubri davanti', weightFactor: 0.40, repsFactor: 1.0 },
+    { name: 'Leg Press (piedi alti)', equipment: 'gym', difficulty: 4, notes: 'Focus quadricipiti', weightFactor: 1.80, repsFactor: 1.0 },
   ],
   'Squat': [
-    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Con manubrio/kettlebell' },
-    { name: 'Dumbbell Squat', equipment: 'gym', difficulty: 4, notes: 'Manubri ai lati' },
-    { name: 'Leg Press', equipment: 'gym', difficulty: 4, notes: 'Macchina, meno tecnica' },
+    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Con manubrio/kettlebell', weightFactor: 0.40, repsFactor: 1.2 },
+    { name: 'Dumbbell Squat', equipment: 'gym', difficulty: 4, notes: 'Manubri ai lati', weightFactor: 0.38, repsFactor: 1.0 },
+    { name: 'Leg Press', equipment: 'gym', difficulty: 4, notes: 'Macchina, meno tecnica', weightFactor: 1.50, repsFactor: 1.0 },
   ],
   'Squat con Bilanciere': [
-    { name: 'Dumbbell Squat', equipment: 'gym', difficulty: 4, notes: 'Manubri sulle spalle' },
-    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Con kettlebell/manubrio' },
-    { name: 'Hack Squat', equipment: 'gym', difficulty: 4, notes: 'Macchina guidata' },
+    { name: 'Dumbbell Squat', equipment: 'gym', difficulty: 4, notes: 'Manubri sulle spalle', weightFactor: 0.38, repsFactor: 1.0 },
+    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Con kettlebell/manubrio', weightFactor: 0.40, repsFactor: 1.2 },
+    { name: 'Hack Squat', equipment: 'gym', difficulty: 4, notes: 'Macchina guidata', weightFactor: 0.80, repsFactor: 1.0 },
   ],
   'Leg Press': [
-    { name: 'Hack Squat', equipment: 'gym', difficulty: 4, notes: 'Stessa meccanica' },
-    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Con manubrio pesante' },
-    { name: 'Smith Machine Squat', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato' },
+    { name: 'Hack Squat', equipment: 'gym', difficulty: 4, notes: 'Stessa meccanica', weightFactor: 0.60, repsFactor: 1.0 },
+    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Con manubrio pesante', weightFactor: 0.25, repsFactor: 1.2 },
+    { name: 'Smith Machine Squat', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato', weightFactor: 0.50, repsFactor: 1.0 },
   ],
   'Bulgarian Split Squat': [
-    { name: 'Lunges', equipment: 'both', difficulty: 4, notes: 'Walking o stazionari' },
-    { name: 'Step-up', equipment: 'both', difficulty: 4, notes: 'Con manubri' },
-    { name: 'Single Leg Press', equipment: 'gym', difficulty: 4, notes: 'Una gamba alla volta' },
+    { name: 'Lunges', equipment: 'both', difficulty: 4, notes: 'Walking o stazionari', weightFactor: 1.0, repsFactor: 1.0 },
+    { name: 'Step-up', equipment: 'both', difficulty: 4, notes: 'Con manubri', weightFactor: 1.0, repsFactor: 1.0 },
+    { name: 'Single Leg Press', equipment: 'gym', difficulty: 4, notes: 'Una gamba alla volta', weightFactor: 2.0, repsFactor: 1.0 },
   ],
   'Bodyweight Squat': [
     { name: 'Box Squat', equipment: 'bodyweight', difficulty: 3, notes: 'Squat su panca' },
@@ -826,44 +847,44 @@ export const EXERCISE_ALTERNATIVES: Record<string, ExerciseAlternative[]> = {
   // LOWER PULL (Hip Hinge)
   // ═══════════════════════════════════════════════════════════════
   'Conventional Deadlift': [
-    { name: 'Dumbbell Deadlift', equipment: 'gym', difficulty: 4, notes: 'Con manubri ai lati' },
-    { name: 'Trap Bar Deadlift', equipment: 'gym', difficulty: 4, notes: 'Meno stress lombare' },
-    { name: 'Romanian Deadlift', equipment: 'gym', difficulty: 5, notes: 'Focus hamstrings' },
+    { name: 'Dumbbell Deadlift', equipment: 'gym', difficulty: 4, notes: 'Con manubri ai lati', weightFactor: 0.35, repsFactor: 1.0 }, // 140kg → ~50kg tot manubri
+    { name: 'Trap Bar Deadlift', equipment: 'gym', difficulty: 4, notes: 'Meno stress lombare', weightFactor: 1.05, repsFactor: 1.0 },
+    { name: 'Romanian Deadlift', equipment: 'gym', difficulty: 5, notes: 'Focus hamstrings', weightFactor: 0.70, repsFactor: 1.0 },
   ],
   'Romanian Deadlift': [
-    { name: 'Dumbbell RDL', equipment: 'gym', difficulty: 4, notes: 'Con manubri, più ROM' },
-    { name: 'Single Leg RDL', equipment: 'both', difficulty: 5, notes: 'Unilaterale, equilibrio' },
-    { name: 'Cable Pull Through', equipment: 'gym', difficulty: 4, notes: 'Al cavo basso' },
+    { name: 'Dumbbell RDL', equipment: 'gym', difficulty: 4, notes: 'Con manubri, più ROM', weightFactor: 0.40, repsFactor: 1.0 }, // 80kg → ~32kg tot
+    { name: 'Single Leg RDL', equipment: 'both', difficulty: 5, notes: 'Unilaterale, equilibrio', weightFactor: 0.25, repsFactor: 1.0 },
+    { name: 'Cable Pull Through', equipment: 'gym', difficulty: 4, notes: 'Al cavo basso', weightFactor: 0.50, repsFactor: 1.2 },
   ],
   'Romanian Deadlift (RDL)': [
-    { name: 'Dumbbell RDL', equipment: 'gym', difficulty: 4, notes: 'Con manubri, più ROM' },
-    { name: 'Single Leg RDL', equipment: 'both', difficulty: 5, notes: 'Unilaterale, equilibrio' },
-    { name: 'Cable Pull Through', equipment: 'gym', difficulty: 4, notes: 'Al cavo basso' },
+    { name: 'Dumbbell RDL', equipment: 'gym', difficulty: 4, notes: 'Con manubri, più ROM', weightFactor: 0.40, repsFactor: 1.0 },
+    { name: 'Single Leg RDL', equipment: 'both', difficulty: 5, notes: 'Unilaterale, equilibrio', weightFactor: 0.25, repsFactor: 1.0 },
+    { name: 'Cable Pull Through', equipment: 'gym', difficulty: 4, notes: 'Al cavo basso', weightFactor: 0.50, repsFactor: 1.2 },
   ],
   'Sumo Deadlift': [
-    { name: 'Dumbbell Sumo Deadlift', equipment: 'gym', difficulty: 4, notes: 'Manubrio tra le gambe' },
-    { name: 'Wide Stance Leg Press', equipment: 'gym', difficulty: 4, notes: 'Piedi larghi' },
-    { name: 'Sumo Squat', equipment: 'both', difficulty: 4, notes: 'Con manubrio/kettlebell' },
+    { name: 'Dumbbell Sumo Deadlift', equipment: 'gym', difficulty: 4, notes: 'Manubrio tra le gambe', weightFactor: 0.30, repsFactor: 1.2 },
+    { name: 'Wide Stance Leg Press', equipment: 'gym', difficulty: 4, notes: 'Piedi larghi', weightFactor: 1.20, repsFactor: 1.0 },
+    { name: 'Sumo Squat', equipment: 'both', difficulty: 4, notes: 'Con manubrio/kettlebell', weightFactor: 0.25, repsFactor: 1.2 },
   ],
   'Trap Bar Deadlift': [
-    { name: 'Dumbbell Deadlift', equipment: 'gym', difficulty: 4, notes: 'Manubri ai lati, simile' },
-    { name: 'Conventional Deadlift', equipment: 'gym', difficulty: 5, notes: 'Con bilanciere' },
-    { name: 'Hack Squat', equipment: 'gym', difficulty: 4, notes: 'Focus gambe' },
+    { name: 'Dumbbell Deadlift', equipment: 'gym', difficulty: 4, notes: 'Manubri ai lati, simile', weightFactor: 0.35, repsFactor: 1.0 },
+    { name: 'Conventional Deadlift', equipment: 'gym', difficulty: 5, notes: 'Con bilanciere', weightFactor: 0.95, repsFactor: 1.0 },
+    { name: 'Hack Squat', equipment: 'gym', difficulty: 4, notes: 'Focus gambe', weightFactor: 0.70, repsFactor: 1.0 },
   ],
   'Stacco': [
-    { name: 'Stacco con Manubri', equipment: 'gym', difficulty: 4, notes: 'Manubri ai lati del corpo' },
-    { name: 'Trap Bar Deadlift', equipment: 'gym', difficulty: 4, notes: 'Meno stress lombare' },
-    { name: 'Stacco Rumeno', equipment: 'gym', difficulty: 5, notes: 'Focus posterior chain' },
+    { name: 'Stacco con Manubri', equipment: 'gym', difficulty: 4, notes: 'Manubri ai lati del corpo', weightFactor: 0.35, repsFactor: 1.0 },
+    { name: 'Trap Bar Deadlift', equipment: 'gym', difficulty: 4, notes: 'Meno stress lombare', weightFactor: 1.05, repsFactor: 1.0 },
+    { name: 'Stacco Rumeno', equipment: 'gym', difficulty: 5, notes: 'Focus posterior chain', weightFactor: 0.70, repsFactor: 1.0 },
   ],
   'Stacco da Terra': [
-    { name: 'Stacco con Manubri', equipment: 'gym', difficulty: 4, notes: 'Manubri ai lati del corpo' },
-    { name: 'Trap Bar Deadlift', equipment: 'gym', difficulty: 4, notes: 'Meno stress lombare' },
-    { name: 'Stacco Rumeno', equipment: 'gym', difficulty: 5, notes: 'Focus hamstrings' },
+    { name: 'Stacco con Manubri', equipment: 'gym', difficulty: 4, notes: 'Manubri ai lati del corpo', weightFactor: 0.35, repsFactor: 1.0 },
+    { name: 'Trap Bar Deadlift', equipment: 'gym', difficulty: 4, notes: 'Meno stress lombare', weightFactor: 1.05, repsFactor: 1.0 },
+    { name: 'Stacco Rumeno', equipment: 'gym', difficulty: 5, notes: 'Focus hamstrings', weightFactor: 0.70, repsFactor: 1.0 },
   ],
   'Stacco Rumeno': [
-    { name: 'Stacco Rumeno con Manubri', equipment: 'gym', difficulty: 4, notes: 'Con manubri, più ROM' },
-    { name: 'Single Leg RDL', equipment: 'both', difficulty: 5, notes: 'Unilaterale' },
-    { name: 'Good Morning', equipment: 'gym', difficulty: 5, notes: 'Bilanciere su spalle' },
+    { name: 'Stacco Rumeno con Manubri', equipment: 'gym', difficulty: 4, notes: 'Con manubri, più ROM', weightFactor: 0.40, repsFactor: 1.0 },
+    { name: 'Single Leg RDL', equipment: 'both', difficulty: 5, notes: 'Unilaterale', weightFactor: 0.25, repsFactor: 1.0 },
+    { name: 'Good Morning', equipment: 'gym', difficulty: 5, notes: 'Bilanciere su spalle', weightFactor: 0.50, repsFactor: 1.0 },
   ],
   'Nordic Hamstring Curl': [
     { name: 'Leg Curl (Machine)', equipment: 'gym', difficulty: 3, notes: 'Più facile ma efficace' },
@@ -880,38 +901,38 @@ export const EXERCISE_ALTERNATIVES: Record<string, ExerciseAlternative[]> = {
   // HORIZONTAL PUSH (Bench Press pattern)
   // ═══════════════════════════════════════════════════════════════
   'Flat Barbell Bench Press': [
-    { name: 'Dumbbell Bench Press', equipment: 'gym', difficulty: 5, notes: 'Maggior ROM' },
-    { name: 'Machine Chest Press', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato' },
-    { name: 'Floor Press', equipment: 'gym', difficulty: 5, notes: 'A terra con manubri' },
+    { name: 'Dumbbell Bench Press', equipment: 'gym', difficulty: 5, notes: 'Maggior ROM', weightFactor: 0.40, repsFactor: 1.0 }, // 100kg → 40kg per mano
+    { name: 'Machine Chest Press', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato', weightFactor: 0.80, repsFactor: 1.0 },
+    { name: 'Floor Press', equipment: 'gym', difficulty: 5, notes: 'A terra con manubri', weightFactor: 0.38, repsFactor: 1.0 },
   ],
   'Panca Piana': [
-    { name: 'Panca con Manubri', equipment: 'gym', difficulty: 5, notes: 'Maggior ROM e stabilità' },
-    { name: 'Chest Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato' },
+    { name: 'Panca con Manubri', equipment: 'gym', difficulty: 5, notes: 'Maggior ROM e stabilità', weightFactor: 0.40, repsFactor: 1.0 },
+    { name: 'Chest Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato', weightFactor: 0.80, repsFactor: 1.0 },
     { name: 'Push-up', equipment: 'bodyweight', difficulty: 4, notes: 'A corpo libero' },
   ],
   'Panca Piana con Bilanciere': [
-    { name: 'Panca con Manubri', equipment: 'gym', difficulty: 5, notes: 'Più ROM, meno carico' },
-    { name: 'Chest Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Più sicuro' },
-    { name: 'Floor Press con Manubri', equipment: 'gym', difficulty: 5, notes: 'A terra' },
+    { name: 'Panca con Manubri', equipment: 'gym', difficulty: 5, notes: 'Più ROM, meno carico', weightFactor: 0.40, repsFactor: 1.0 },
+    { name: 'Chest Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Più sicuro', weightFactor: 0.80, repsFactor: 1.0 },
+    { name: 'Floor Press con Manubri', equipment: 'gym', difficulty: 5, notes: 'A terra', weightFactor: 0.38, repsFactor: 1.0 },
   ],
   'Panca Inclinata': [
-    { name: 'Panca Inclinata con Manubri', equipment: 'gym', difficulty: 5, notes: 'Maggior ROM' },
-    { name: 'Landmine Press', equipment: 'gym', difficulty: 5, notes: 'Angolo simile' },
-    { name: 'Incline Chest Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Guidata' },
+    { name: 'Panca Inclinata con Manubri', equipment: 'gym', difficulty: 5, notes: 'Maggior ROM', weightFactor: 0.40, repsFactor: 1.0 },
+    { name: 'Landmine Press', equipment: 'gym', difficulty: 5, notes: 'Angolo simile', weightFactor: 0.50, repsFactor: 1.0 },
+    { name: 'Incline Chest Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Guidata', weightFactor: 0.80, repsFactor: 1.0 },
   ],
   'Incline Bench Press': [
-    { name: 'Incline Dumbbell Press', equipment: 'gym', difficulty: 5, notes: 'Con manubri' },
-    { name: 'Landmine Press', equipment: 'gym', difficulty: 5, notes: 'Angolo simile' },
-    { name: 'Low Cable Fly', equipment: 'gym', difficulty: 4, notes: 'Cavi dal basso' },
+    { name: 'Incline Dumbbell Press', equipment: 'gym', difficulty: 5, notes: 'Con manubri', weightFactor: 0.40, repsFactor: 1.0 },
+    { name: 'Landmine Press', equipment: 'gym', difficulty: 5, notes: 'Angolo simile', weightFactor: 0.50, repsFactor: 1.0 },
+    { name: 'Low Cable Fly', equipment: 'gym', difficulty: 4, notes: 'Cavi dal basso', weightFactor: 0.25, repsFactor: 1.5 },
   ],
   'Decline Bench Press': [
     { name: 'Dips', equipment: 'both', difficulty: 5, notes: 'Stesso target' },
-    { name: 'High Cable Fly', equipment: 'gym', difficulty: 4, notes: 'Cavi dall\'alto' },
-    { name: 'Decline Dumbbell Press', equipment: 'gym', difficulty: 4, notes: 'Con manubri' },
+    { name: 'High Cable Fly', equipment: 'gym', difficulty: 4, notes: 'Cavi dall\'alto', weightFactor: 0.25, repsFactor: 1.5 },
+    { name: 'Decline Dumbbell Press', equipment: 'gym', difficulty: 4, notes: 'Con manubri', weightFactor: 0.40, repsFactor: 1.0 },
   ],
   'Dumbbell Bench Press': [
-    { name: 'Flat Barbell Bench Press', equipment: 'gym', difficulty: 5, notes: 'Con bilanciere' },
-    { name: 'Machine Chest Press', equipment: 'gym', difficulty: 4, notes: 'Guidato' },
+    { name: 'Flat Barbell Bench Press', equipment: 'gym', difficulty: 5, notes: 'Con bilanciere', weightFactor: 2.20, repsFactor: 1.0 }, // Inverso: 40kg mano → ~90kg bil
+    { name: 'Machine Chest Press', equipment: 'gym', difficulty: 4, notes: 'Guidato', weightFactor: 1.80, repsFactor: 1.0 },
     { name: 'Push-up (weighted)', equipment: 'both', difficulty: 4, notes: 'Con peso su schiena' },
   ],
   'Standard Push-up': [
@@ -939,24 +960,24 @@ export const EXERCISE_ALTERNATIVES: Record<string, ExerciseAlternative[]> = {
   // VERTICAL PUSH (Shoulder Press pattern)
   // ═══════════════════════════════════════════════════════════════
   'Military Press (Barbell)': [
-    { name: 'Dumbbell Shoulder Press', equipment: 'gym', difficulty: 5, notes: 'Con manubri' },
-    { name: 'Machine Shoulder Press', equipment: 'gym', difficulty: 4, notes: 'Guidata' },
-    { name: 'Landmine Press', equipment: 'gym', difficulty: 5, notes: 'Con bilanciere a terra' },
+    { name: 'Dumbbell Shoulder Press', equipment: 'gym', difficulty: 5, notes: 'Con manubri', weightFactor: 0.38, repsFactor: 1.0 }, // 60kg → ~23kg per mano
+    { name: 'Machine Shoulder Press', equipment: 'gym', difficulty: 4, notes: 'Guidata', weightFactor: 0.75, repsFactor: 1.0 },
+    { name: 'Landmine Press', equipment: 'gym', difficulty: 5, notes: 'Con bilanciere a terra', weightFactor: 0.50, repsFactor: 1.0 },
   ],
   'Military Press': [
-    { name: 'Shoulder Press con Manubri', equipment: 'gym', difficulty: 5, notes: 'Con manubri' },
-    { name: 'Shoulder Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato' },
-    { name: 'Arnold Press', equipment: 'gym', difficulty: 5, notes: 'Con rotazione' },
+    { name: 'Shoulder Press con Manubri', equipment: 'gym', difficulty: 5, notes: 'Con manubri', weightFactor: 0.38, repsFactor: 1.0 },
+    { name: 'Shoulder Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato', weightFactor: 0.75, repsFactor: 1.0 },
+    { name: 'Arnold Press', equipment: 'gym', difficulty: 5, notes: 'Con rotazione', weightFactor: 0.35, repsFactor: 1.0 },
   ],
   'Lento Avanti': [
-    { name: 'Shoulder Press con Manubri', equipment: 'gym', difficulty: 5, notes: 'Manubri, più ROM' },
-    { name: 'Shoulder Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Guidata' },
-    { name: 'Landmine Press', equipment: 'gym', difficulty: 5, notes: 'Bilanciere a terra' },
+    { name: 'Shoulder Press con Manubri', equipment: 'gym', difficulty: 5, notes: 'Manubri, più ROM', weightFactor: 0.38, repsFactor: 1.0 },
+    { name: 'Shoulder Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Guidata', weightFactor: 0.75, repsFactor: 1.0 },
+    { name: 'Landmine Press', equipment: 'gym', difficulty: 5, notes: 'Bilanciere a terra', weightFactor: 0.50, repsFactor: 1.0 },
   ],
   'Dumbbell Shoulder Press': [
-    { name: 'Military Press', equipment: 'gym', difficulty: 6, notes: 'Con bilanciere' },
-    { name: 'Arnold Press', equipment: 'gym', difficulty: 5, notes: 'Con rotazione' },
-    { name: 'Machine Shoulder Press', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato' },
+    { name: 'Military Press', equipment: 'gym', difficulty: 6, notes: 'Con bilanciere', weightFactor: 2.30, repsFactor: 1.0 }, // 22kg mano → ~50kg bil
+    { name: 'Arnold Press', equipment: 'gym', difficulty: 5, notes: 'Con rotazione', weightFactor: 0.90, repsFactor: 1.0 },
+    { name: 'Machine Shoulder Press', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato', weightFactor: 1.70, repsFactor: 1.0 },
   ],
   'Arnold Press': [
     { name: 'Dumbbell Shoulder Press', equipment: 'gym', difficulty: 5, notes: 'Senza rotazione' },
@@ -1017,34 +1038,34 @@ export const EXERCISE_ALTERNATIVES: Record<string, ExerciseAlternative[]> = {
   // HORIZONTAL PULL (Row pattern)
   // ═══════════════════════════════════════════════════════════════
   'Barbell Row': [
-    { name: 'Dumbbell Row', equipment: 'gym', difficulty: 5, notes: 'Unilaterale' },
-    { name: 'T-Bar Row', equipment: 'gym', difficulty: 5, notes: 'Con landmine' },
-    { name: 'Seated Cable Row', equipment: 'gym', difficulty: 4, notes: 'Al cavo' },
+    { name: 'Dumbbell Row', equipment: 'gym', difficulty: 5, notes: 'Unilaterale', weightFactor: 0.45, repsFactor: 1.0 }, // 80kg → ~36kg per mano
+    { name: 'T-Bar Row', equipment: 'gym', difficulty: 5, notes: 'Con landmine', weightFactor: 0.80, repsFactor: 1.0 },
+    { name: 'Seated Cable Row', equipment: 'gym', difficulty: 4, notes: 'Al cavo', weightFactor: 0.75, repsFactor: 1.0 },
   ],
   'Rematore con Bilanciere': [
-    { name: 'Rematore con Manubrio', equipment: 'gym', difficulty: 5, notes: 'Unilaterale, più ROM' },
-    { name: 'Pulley Basso', equipment: 'gym', difficulty: 4, notes: 'Al cavo' },
-    { name: 'T-Bar Row', equipment: 'gym', difficulty: 5, notes: 'Con landmine' },
+    { name: 'Rematore con Manubrio', equipment: 'gym', difficulty: 5, notes: 'Unilaterale, più ROM', weightFactor: 0.45, repsFactor: 1.0 },
+    { name: 'Pulley Basso', equipment: 'gym', difficulty: 4, notes: 'Al cavo', weightFactor: 0.75, repsFactor: 1.0 },
+    { name: 'T-Bar Row', equipment: 'gym', difficulty: 5, notes: 'Con landmine', weightFactor: 0.80, repsFactor: 1.0 },
   ],
   'Rematore': [
-    { name: 'Rematore con Manubrio', equipment: 'gym', difficulty: 5, notes: 'Unilaterale' },
-    { name: 'Pulley Basso', equipment: 'gym', difficulty: 4, notes: 'Al cavo, seduto' },
-    { name: 'Chest Supported Row', equipment: 'gym', difficulty: 4, notes: 'Su panca inclinata' },
+    { name: 'Rematore con Manubrio', equipment: 'gym', difficulty: 5, notes: 'Unilaterale', weightFactor: 0.45, repsFactor: 1.0 },
+    { name: 'Pulley Basso', equipment: 'gym', difficulty: 4, notes: 'Al cavo, seduto', weightFactor: 0.75, repsFactor: 1.0 },
+    { name: 'Chest Supported Row', equipment: 'gym', difficulty: 4, notes: 'Su panca inclinata', weightFactor: 0.40, repsFactor: 1.0 },
   ],
   'Dumbbell Row': [
-    { name: 'Seated Cable Row', equipment: 'gym', difficulty: 4, notes: 'Bilaterale' },
-    { name: 'Machine Row', equipment: 'gym', difficulty: 4, notes: 'Chest supported' },
+    { name: 'Seated Cable Row', equipment: 'gym', difficulty: 4, notes: 'Bilaterale', weightFactor: 1.80, repsFactor: 1.0 }, // 30kg mano → ~55kg cavo
+    { name: 'Machine Row', equipment: 'gym', difficulty: 4, notes: 'Chest supported', weightFactor: 1.60, repsFactor: 1.0 },
     { name: 'Inverted Row', equipment: 'both', difficulty: 5, notes: 'A corpo libero' },
   ],
   'Seated Cable Row': [
-    { name: 'Machine Row', equipment: 'gym', difficulty: 4, notes: 'Chest supported' },
-    { name: 'Dumbbell Row', equipment: 'gym', difficulty: 5, notes: 'Unilaterale' },
+    { name: 'Machine Row', equipment: 'gym', difficulty: 4, notes: 'Chest supported', weightFactor: 1.0, repsFactor: 1.0 },
+    { name: 'Dumbbell Row', equipment: 'gym', difficulty: 5, notes: 'Unilaterale', weightFactor: 0.55, repsFactor: 1.0 },
     { name: 'Band Row', equipment: 'bodyweight', difficulty: 3, notes: 'Con elastico' },
   ],
   'T-Bar Row': [
-    { name: 'Barbell Row', equipment: 'gym', difficulty: 5, notes: 'Standard' },
-    { name: 'Landmine Row', equipment: 'gym', difficulty: 5, notes: 'Stesso setup' },
-    { name: 'Chest Supported Row', equipment: 'gym', difficulty: 4, notes: 'Su panca inclinata' },
+    { name: 'Barbell Row', equipment: 'gym', difficulty: 5, notes: 'Standard', weightFactor: 1.20, repsFactor: 1.0 },
+    { name: 'Landmine Row', equipment: 'gym', difficulty: 5, notes: 'Stesso setup', weightFactor: 1.0, repsFactor: 1.0 },
+    { name: 'Chest Supported Row', equipment: 'gym', difficulty: 4, notes: 'Su panca inclinata', weightFactor: 0.50, repsFactor: 1.0 },
   ],
   'Inverted Row': [
     { name: 'Dumbbell Row', equipment: 'gym', difficulty: 5, notes: 'Con manubrio' },
@@ -1151,4 +1172,119 @@ export function getQuickAlternative(
 ): ExerciseAlternative | null {
   const alternatives = getExerciseAlternatives(exerciseName, preferGym);
   return alternatives.length > 0 ? alternatives[0] : null;
+}
+
+/**
+ * Calcolo peso e reps suggerite per un'alternativa
+ *
+ * @param originalWeight - Peso originale in kg (es. "80" o "80kg")
+ * @param originalReps - Reps originali (es. 8 o "8-10")
+ * @param alternative - L'alternativa scelta
+ * @returns Oggetto con peso e reps suggerite, o null se non calcolabile
+ */
+export interface SuggestedParams {
+  weight: number;
+  weightDisplay: string; // Es. "~30kg per mano" o "~60kg"
+  reps: number;
+  repsDisplay: string;
+  isEstimate: boolean;
+  note?: string;
+}
+
+export function calculateSuggestedParams(
+  originalWeight: string | number | undefined,
+  originalReps: string | number | undefined,
+  alternative: ExerciseAlternative
+): SuggestedParams | null {
+  // Parse weight
+  let weight: number | null = null;
+  if (originalWeight !== undefined) {
+    if (typeof originalWeight === 'number') {
+      weight = originalWeight;
+    } else {
+      // Parse "80kg", "80", etc.
+      const match = originalWeight.match(/(\d+(?:\.\d+)?)/);
+      if (match) {
+        weight = parseFloat(match[1]);
+      }
+    }
+  }
+
+  // Parse reps
+  let reps: number | null = null;
+  if (originalReps !== undefined) {
+    if (typeof originalReps === 'number') {
+      reps = originalReps;
+    } else {
+      // Parse "8", "8-10" (prende il primo), "10 reps", etc.
+      const match = originalReps.toString().match(/(\d+)/);
+      if (match) {
+        reps = parseInt(match[1]);
+      }
+    }
+  }
+
+  // Se non abbiamo peso, non possiamo calcolare
+  if (weight === null || weight === 0) {
+    return null;
+  }
+
+  // Default factors se non specificati
+  const weightFactor = alternative.weightFactor ?? 1.0;
+  const repsFactor = alternative.repsFactor ?? 1.0;
+
+  // Calcola nuovi valori
+  const newWeight = Math.round(weight * weightFactor * 2) / 2; // Arrotonda a 0.5kg
+  const newReps = reps ? Math.round(reps * repsFactor) : null;
+
+  // Determina come mostrare il peso
+  let weightDisplay: string;
+  let note: string | undefined;
+
+  // Se è unilaterale (manubri), mostra "per mano"
+  const isUnilateral = alternative.name.toLowerCase().includes('dumbbell') ||
+                       alternative.name.toLowerCase().includes('manubr') ||
+                       alternative.name.toLowerCase().includes('single leg') ||
+                       alternative.name.toLowerCase().includes('unilateral');
+
+  // Se è esercizio con singolo peso davanti (goblet, sumo db)
+  const isSingleWeight = alternative.name.toLowerCase().includes('goblet') ||
+                         alternative.name.toLowerCase().includes('sumo') && alternative.name.toLowerCase().includes('dumbbell');
+
+  if (isUnilateral && !isSingleWeight) {
+    weightDisplay = `~${newWeight}kg per mano`;
+    note = 'Usa RIR 2-3 per calibrare';
+  } else {
+    weightDisplay = `~${newWeight}kg`;
+    note = 'Punto di partenza - regola con RIR';
+  }
+
+  // Reps display
+  const repsDisplay = newReps ? `${newReps} reps` : '-';
+
+  return {
+    weight: newWeight,
+    weightDisplay,
+    reps: newReps ?? 0,
+    repsDisplay,
+    isEstimate: true,
+    note
+  };
+}
+
+/**
+ * Ottiene alternative con parametri calcolati
+ */
+export function getAlternativesWithParams(
+  exerciseName: string,
+  originalWeight: string | number | undefined,
+  originalReps: string | number | undefined,
+  preferGym: boolean = true
+): Array<ExerciseAlternative & { suggested?: SuggestedParams }> {
+  const alternatives = getExerciseAlternatives(exerciseName, preferGym);
+
+  return alternatives.map(alt => ({
+    ...alt,
+    suggested: calculateSuggestedParams(originalWeight, originalReps, alt) ?? undefined
+  }));
 }

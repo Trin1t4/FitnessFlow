@@ -4,7 +4,7 @@
  */
 
 // Exercise Variants
-export type { ExerciseVariant, ExerciseAlternative } from './exerciseVariants';
+export type { ExerciseVariant, ExerciseAlternative, SuggestedParams } from './exerciseVariants';
 export {
   LOWER_PUSH_VARIANTS,
   LOWER_PULL_VARIANTS,
@@ -15,11 +15,14 @@ export {
   CORE_VARIANTS,
   ACCESSORY_VARIANTS,
   EXERCISE_ALTERNATIVES,
+  WEIGHT_CONVERSION_NOTES,
   getVariantForPattern,
   getEasierVariant,
   getExerciseAlternatives,
   hasAlternatives,
-  getQuickAlternative
+  getQuickAlternative,
+  calculateSuggestedParams,
+  getAlternativesWithParams
 } from './exerciseVariants';
 
 // Exercise Descriptions

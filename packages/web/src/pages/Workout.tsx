@@ -5,7 +5,7 @@ import { X, Info, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Dumbbell } fro
 import { RecoveryScreening } from '../pages/RecoveryScreening';
 import type { RecoveryData } from '../pages/RecoveryScreening';
 import { useTranslation } from '../lib/i18n';
-import { getExerciseAlternatives, hasAlternatives, type ExerciseAlternative } from '@fitnessflow/shared';
+import { getAlternativesWithParams, hasAlternatives, type ExerciseAlternative, type SuggestedParams } from '@fitnessflow/shared';
 
 export default function Workout() {
   const navigate = useNavigate();
@@ -17,7 +17,11 @@ export default function Workout() {
   const [recoveryData, setRecoveryData] = useState<RecoveryData | null>(null);
   // Exercise alternatives state
   const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
-  const [substitutions, setSubstitutions] = useState<Record<string, string>>({});
+  const [substitutions, setSubstitutions] = useState<Record<string, {
+    name: string;
+    suggestedWeight?: string;
+    suggestedReps?: number;
+  }>>({});
 
   useEffect(() => {
     loadProgram();
@@ -309,14 +313,40 @@ console.log("📊 MULTIPLIER:", { volumeMultiplier, intensityMultiplier });
 
   // Get the displayed exercise name (original or substituted)
   function getDisplayedExerciseName(originalName: string): string {
-    return substitutions[originalName] || originalName;
+    return substitutions[originalName]?.name || originalName;
   }
 
-  // Handle exercise substitution
-  function handleSubstitute(originalName: string, newName: string) {
+  // Get substituted weight if available
+  function getSubstitutedWeight(originalName: string, originalWeight?: string): string | undefined {
+    const sub = substitutions[originalName];
+    if (sub?.suggestedWeight) {
+      return sub.suggestedWeight;
+    }
+    return originalWeight;
+  }
+
+  // Get substituted reps if available
+  function getSubstitutedReps(originalName: string, originalReps: string | number): string | number {
+    const sub = substitutions[originalName];
+    if (sub?.suggestedReps) {
+      return sub.suggestedReps;
+    }
+    return originalReps;
+  }
+
+  // Handle exercise substitution with params
+  function handleSubstitute(
+    originalName: string,
+    newName: string,
+    suggested?: SuggestedParams
+  ) {
     setSubstitutions(prev => ({
       ...prev,
-      [originalName]: newName
+      [originalName]: {
+        name: newName,
+        suggestedWeight: suggested?.weightDisplay,
+        suggestedReps: suggested?.reps || undefined
+      }
     }));
     setExpandedExercise(null);
   }
@@ -505,21 +535,39 @@ console.log("📊 MULTIPLIER:", { volumeMultiplier, intensityMultiplier });
                         </span>
                       </div>
                       <div className="space-y-2">
-                        {getExerciseAlternatives(exercise.name, true).map((alt: ExerciseAlternative, altIdx: number) => (
+                        {getAlternativesWithParams(exercise.name, exercise.weight, exercise.reps, true).map((alt, altIdx: number) => (
                           <button
                             key={altIdx}
-                            onClick={() => handleSubstitute(exercise.name, alt.name)}
+                            onClick={() => handleSubstitute(exercise.name, alt.name, alt.suggested)}
                             className="w-full flex items-center justify-between p-3 bg-gray-800/80 hover:bg-gray-700/80 rounded-lg transition-all group"
                           >
-                            <div className="text-left">
+                            <div className="text-left flex-1">
                               <p className="text-white font-medium group-hover:text-emerald-400 transition-colors">
                                 {alt.name}
                               </p>
-                              {alt.notes && (
-                                <p className="text-gray-500 text-xs mt-0.5">{alt.notes}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                {alt.notes && (
+                                  <span className="text-gray-500 text-xs">{alt.notes}</span>
+                                )}
+                              </div>
+                              {/* Suggested weight/reps */}
+                              {alt.suggested && (
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <span className="text-emerald-400 text-sm font-medium">
+                                    {alt.suggested.weightDisplay}
+                                  </span>
+                                  {alt.suggested.reps > 0 && (
+                                    <span className="text-gray-400 text-sm">
+                                      × {alt.suggested.repsDisplay}
+                                    </span>
+                                  )}
+                                  <span className="text-gray-600 text-xs italic">
+                                    (RIR per calibrare)
+                                  </span>
+                                </div>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 ml-2">
                               <span className={`text-xs px-2 py-0.5 rounded ${
                                 alt.equipment === 'gym'
                                   ? 'bg-purple-500/20 text-purple-400'
@@ -554,13 +602,31 @@ console.log("📊 MULTIPLIER:", { volumeMultiplier, intensityMultiplier });
                     </div>
                     <div className="bg-gray-900/50 rounded-lg p-4 text-center">
                       <p className="text-gray-400 text-sm mb-1">Ripetizioni</p>
-                      <p className="text-white font-bold text-xl">{exercise.reps}</p>
+                      <p className="text-white font-bold text-xl">
+                        {getSubstitutedReps(exercise.name, exercise.reps)}
+                      </p>
                     </div>
                     <div className="bg-gray-900/50 rounded-lg p-4 text-center">
                       <p className="text-gray-400 text-sm mb-1">Recupero</p>
                       <p className="text-white font-bold text-xl">{exercise.rest}s</p>
                     </div>
                   </div>
+                  {/* Show suggested weight when substituted */}
+                  {substitutions[exercise.name]?.suggestedWeight && (
+                    <div className="mt-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Dumbbell className="w-4 h-4 text-emerald-400" />
+                          <span className="text-emerald-400 font-medium">
+                            Peso suggerito: {substitutions[exercise.name].suggestedWeight}
+                          </span>
+                        </div>
+                        <span className="text-gray-500 text-xs">
+                          Usa RIR 2-3 per calibrare
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
