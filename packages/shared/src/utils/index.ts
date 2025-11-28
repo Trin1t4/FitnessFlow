@@ -4,7 +4,7 @@
  */
 
 // Exercise Variants
-export type { ExerciseVariant } from './exerciseVariants';
+export type { ExerciseVariant, ExerciseAlternative } from './exerciseVariants';
 export {
   LOWER_PUSH_VARIANTS,
   LOWER_PULL_VARIANTS,
@@ -14,8 +14,12 @@ export {
   HORIZONTAL_PULL_VARIANTS,
   CORE_VARIANTS,
   ACCESSORY_VARIANTS,
+  EXERCISE_ALTERNATIVES,
   getVariantForPattern,
-  getEasierVariant
+  getEasierVariant,
+  getExerciseAlternatives,
+  hasAlternatives,
+  getQuickAlternative
 } from './exerciseVariants';
 
 // Exercise Descriptions

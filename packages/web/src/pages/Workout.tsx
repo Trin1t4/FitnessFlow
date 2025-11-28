@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { X, Info, AlertCircle } from 'lucide-react';
+import { X, Info, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Dumbbell } from 'lucide-react';
 import { RecoveryScreening } from '../pages/RecoveryScreening';
 import type { RecoveryData } from '../pages/RecoveryScreening';
 import { useTranslation } from '../lib/i18n';
+import { getExerciseAlternatives, hasAlternatives, type ExerciseAlternative } from '@fitnessflow/shared';
 
 export default function Workout() {
   const navigate = useNavigate();
@@ -14,6 +15,9 @@ export default function Workout() {
   const [currentDay, setCurrentDay] = useState(0);
   const [showRecoveryScreening, setShowRecoveryScreening] = useState(false);
   const [recoveryData, setRecoveryData] = useState<RecoveryData | null>(null);
+  // Exercise alternatives state
+  const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
+  const [substitutions, setSubstitutions] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadProgram();
@@ -303,6 +307,34 @@ console.log("📊 MULTIPLIER:", { volumeMultiplier, intensityMultiplier });
     return baseMsg;
   }
 
+  // Get the displayed exercise name (original or substituted)
+  function getDisplayedExerciseName(originalName: string): string {
+    return substitutions[originalName] || originalName;
+  }
+
+  // Handle exercise substitution
+  function handleSubstitute(originalName: string, newName: string) {
+    setSubstitutions(prev => ({
+      ...prev,
+      [originalName]: newName
+    }));
+    setExpandedExercise(null);
+  }
+
+  // Reset to original exercise
+  function handleResetExercise(originalName: string) {
+    setSubstitutions(prev => {
+      const updated = { ...prev };
+      delete updated[originalName];
+      return updated;
+    });
+  }
+
+  // Toggle alternatives panel
+  function toggleAlternatives(index: number) {
+    setExpandedExercise(expandedExercise === index ? null : index);
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -425,16 +457,95 @@ console.log("📊 MULTIPLIER:", { volumeMultiplier, intensityMultiplier });
               ) : (
                 <div className="bg-gray-800/50 border border-emerald-500/30 rounded-xl p-6 hover:border-emerald-500/60 transition-all">
                   <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-2xl font-bold text-white mb-2">{exercise.name}</h3>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-2xl font-bold text-white">
+                          {getDisplayedExerciseName(exercise.name)}
+                        </h3>
+                        {/* Show substituted badge */}
+                        {substitutions[exercise.name] && (
+                          <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                            <RefreshCw className="w-3 h-3" />
+                            Sostituito
+                          </span>
+                        )}
+                      </div>
                       {exercise.notes && <p className="text-gray-400 text-sm">{exercise.notes}</p>}
                     </div>
-                    {exercise.weight && (
-                      <div className="bg-emerald-500/20 px-4 py-2 rounded-lg">
-                        <span className="text-emerald-400 font-bold text-lg">{exercise.weight}kg</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {exercise.weight && (
+                        <div className="bg-emerald-500/20 px-4 py-2 rounded-lg">
+                          <span className="text-emerald-400 font-bold text-lg">{exercise.weight}kg</span>
+                        </div>
+                      )}
+                      {/* Switch button - only show if exercise has alternatives */}
+                      {hasAlternatives(exercise.name) && (
+                        <button
+                          onClick={() => toggleAlternatives(index)}
+                          className={`p-2 rounded-lg transition-all ${
+                            expandedExercise === index
+                              ? 'bg-orange-500/20 text-orange-400'
+                              : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600/50 hover:text-white'
+                          }`}
+                          title="Postazione occupata? Cambia esercizio"
+                        >
+                          <RefreshCw className={`w-5 h-5 ${expandedExercise === index ? 'animate-spin' : ''}`} />
+                        </button>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Alternatives panel */}
+                  {expandedExercise === index && (
+                    <div className="mb-4 bg-gray-900/70 rounded-lg p-4 border border-orange-500/30">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Dumbbell className="w-5 h-5 text-orange-400" />
+                        <span className="text-orange-400 font-semibold text-sm">
+                          Postazione occupata? Scegli un'alternativa:
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {getExerciseAlternatives(exercise.name, true).map((alt: ExerciseAlternative, altIdx: number) => (
+                          <button
+                            key={altIdx}
+                            onClick={() => handleSubstitute(exercise.name, alt.name)}
+                            className="w-full flex items-center justify-between p-3 bg-gray-800/80 hover:bg-gray-700/80 rounded-lg transition-all group"
+                          >
+                            <div className="text-left">
+                              <p className="text-white font-medium group-hover:text-emerald-400 transition-colors">
+                                {alt.name}
+                              </p>
+                              {alt.notes && (
+                                <p className="text-gray-500 text-xs mt-0.5">{alt.notes}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-0.5 rounded ${
+                                alt.equipment === 'gym'
+                                  ? 'bg-purple-500/20 text-purple-400'
+                                  : alt.equipment === 'bodyweight'
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : 'bg-blue-500/20 text-blue-400'
+                              }`}>
+                                {alt.equipment === 'gym' ? 'Attrezzi' : alt.equipment === 'bodyweight' ? 'Corpo libero' : 'Entrambi'}
+                              </span>
+                              <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-emerald-400 rotate-[-90deg]" />
+                            </div>
+                          </button>
+                        ))}
+                        {/* Reset to original */}
+                        {substitutions[exercise.name] && (
+                          <button
+                            onClick={() => handleResetExercise(exercise.name)}
+                            className="w-full flex items-center justify-center gap-2 p-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg text-gray-400 hover:text-white transition-all text-sm"
+                          >
+                            <X className="w-4 h-4" />
+                            Torna all'originale ({exercise.name})
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-3 gap-4">
                     <div className="bg-gray-900/50 rounded-lg p-4 text-center">

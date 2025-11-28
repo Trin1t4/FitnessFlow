@@ -763,3 +763,392 @@ export function getEasierVariant(
   validVariants.sort((a, b) => a.difficulty - b.difficulty);
   return validVariants[0].name;
 }
+
+/**
+ * EXERCISE ALTERNATIVES DATABASE
+ * Per switch rapido quando una postazione è affollata
+ * Ogni esercizio ha 2-3 varianti biomeccanicamente equivalenti
+ * Priorità: stesso pattern muscolare, stesso livello di difficoltà
+ */
+export interface ExerciseAlternative {
+  name: string;
+  equipment: 'bodyweight' | 'gym' | 'both';
+  difficulty: number;
+  notes?: string;
+}
+
+export const EXERCISE_ALTERNATIVES: Record<string, ExerciseAlternative[]> = {
+  // ═══════════════════════════════════════════════════════════════
+  // LOWER PUSH (Squat pattern)
+  // ═══════════════════════════════════════════════════════════════
+  'Back Squat': [
+    { name: 'Dumbbell Squat', equipment: 'gym', difficulty: 4, notes: 'Manubri sulle spalle' },
+    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Con kettlebell/manubrio' },
+    { name: 'Leg Press', equipment: 'gym', difficulty: 4, notes: 'Meno stress lombare' },
+  ],
+  'Front Squat': [
+    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Stessa enfasi su quadricipiti' },
+    { name: 'Dumbbell Front Squat', equipment: 'gym', difficulty: 4, notes: 'Manubri davanti' },
+    { name: 'Leg Press (piedi alti)', equipment: 'gym', difficulty: 4, notes: 'Focus quadricipiti' },
+  ],
+  'Squat': [
+    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Con manubrio/kettlebell' },
+    { name: 'Dumbbell Squat', equipment: 'gym', difficulty: 4, notes: 'Manubri ai lati' },
+    { name: 'Leg Press', equipment: 'gym', difficulty: 4, notes: 'Macchina, meno tecnica' },
+  ],
+  'Squat con Bilanciere': [
+    { name: 'Dumbbell Squat', equipment: 'gym', difficulty: 4, notes: 'Manubri sulle spalle' },
+    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Con kettlebell/manubrio' },
+    { name: 'Hack Squat', equipment: 'gym', difficulty: 4, notes: 'Macchina guidata' },
+  ],
+  'Leg Press': [
+    { name: 'Hack Squat', equipment: 'gym', difficulty: 4, notes: 'Stessa meccanica' },
+    { name: 'Goblet Squat', equipment: 'gym', difficulty: 4, notes: 'Con manubrio pesante' },
+    { name: 'Smith Machine Squat', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato' },
+  ],
+  'Bulgarian Split Squat': [
+    { name: 'Lunges', equipment: 'both', difficulty: 4, notes: 'Walking o stazionari' },
+    { name: 'Step-up', equipment: 'both', difficulty: 4, notes: 'Con manubri' },
+    { name: 'Single Leg Press', equipment: 'gym', difficulty: 4, notes: 'Una gamba alla volta' },
+  ],
+  'Bodyweight Squat': [
+    { name: 'Box Squat', equipment: 'bodyweight', difficulty: 3, notes: 'Squat su panca' },
+    { name: 'Goblet Squat (leggero)', equipment: 'gym', difficulty: 3, notes: 'Con peso leggero' },
+    { name: 'Wall Sit', equipment: 'bodyweight', difficulty: 3, notes: 'Isometrico' },
+  ],
+  'Pistol Squat': [
+    { name: 'Shrimp Squat', equipment: 'bodyweight', difficulty: 7, notes: 'Stessa difficoltà' },
+    { name: 'Assisted Pistol', equipment: 'bodyweight', difficulty: 6, notes: 'Con TRX/anelli' },
+    { name: 'Bulgarian Split Squat profondo', equipment: 'both', difficulty: 6, notes: 'Range completo' },
+  ],
+
+  // ═══════════════════════════════════════════════════════════════
+  // LOWER PULL (Hip Hinge)
+  // ═══════════════════════════════════════════════════════════════
+  'Conventional Deadlift': [
+    { name: 'Dumbbell Deadlift', equipment: 'gym', difficulty: 4, notes: 'Con manubri ai lati' },
+    { name: 'Trap Bar Deadlift', equipment: 'gym', difficulty: 4, notes: 'Meno stress lombare' },
+    { name: 'Romanian Deadlift', equipment: 'gym', difficulty: 5, notes: 'Focus hamstrings' },
+  ],
+  'Romanian Deadlift': [
+    { name: 'Dumbbell RDL', equipment: 'gym', difficulty: 4, notes: 'Con manubri, più ROM' },
+    { name: 'Single Leg RDL', equipment: 'both', difficulty: 5, notes: 'Unilaterale, equilibrio' },
+    { name: 'Cable Pull Through', equipment: 'gym', difficulty: 4, notes: 'Al cavo basso' },
+  ],
+  'Romanian Deadlift (RDL)': [
+    { name: 'Dumbbell RDL', equipment: 'gym', difficulty: 4, notes: 'Con manubri, più ROM' },
+    { name: 'Single Leg RDL', equipment: 'both', difficulty: 5, notes: 'Unilaterale, equilibrio' },
+    { name: 'Cable Pull Through', equipment: 'gym', difficulty: 4, notes: 'Al cavo basso' },
+  ],
+  'Sumo Deadlift': [
+    { name: 'Dumbbell Sumo Deadlift', equipment: 'gym', difficulty: 4, notes: 'Manubrio tra le gambe' },
+    { name: 'Wide Stance Leg Press', equipment: 'gym', difficulty: 4, notes: 'Piedi larghi' },
+    { name: 'Sumo Squat', equipment: 'both', difficulty: 4, notes: 'Con manubrio/kettlebell' },
+  ],
+  'Trap Bar Deadlift': [
+    { name: 'Dumbbell Deadlift', equipment: 'gym', difficulty: 4, notes: 'Manubri ai lati, simile' },
+    { name: 'Conventional Deadlift', equipment: 'gym', difficulty: 5, notes: 'Con bilanciere' },
+    { name: 'Hack Squat', equipment: 'gym', difficulty: 4, notes: 'Focus gambe' },
+  ],
+  'Stacco': [
+    { name: 'Stacco con Manubri', equipment: 'gym', difficulty: 4, notes: 'Manubri ai lati del corpo' },
+    { name: 'Trap Bar Deadlift', equipment: 'gym', difficulty: 4, notes: 'Meno stress lombare' },
+    { name: 'Stacco Rumeno', equipment: 'gym', difficulty: 5, notes: 'Focus posterior chain' },
+  ],
+  'Stacco da Terra': [
+    { name: 'Stacco con Manubri', equipment: 'gym', difficulty: 4, notes: 'Manubri ai lati del corpo' },
+    { name: 'Trap Bar Deadlift', equipment: 'gym', difficulty: 4, notes: 'Meno stress lombare' },
+    { name: 'Stacco Rumeno', equipment: 'gym', difficulty: 5, notes: 'Focus hamstrings' },
+  ],
+  'Stacco Rumeno': [
+    { name: 'Stacco Rumeno con Manubri', equipment: 'gym', difficulty: 4, notes: 'Con manubri, più ROM' },
+    { name: 'Single Leg RDL', equipment: 'both', difficulty: 5, notes: 'Unilaterale' },
+    { name: 'Good Morning', equipment: 'gym', difficulty: 5, notes: 'Bilanciere su spalle' },
+  ],
+  'Nordic Hamstring Curl': [
+    { name: 'Leg Curl (Machine)', equipment: 'gym', difficulty: 3, notes: 'Più facile ma efficace' },
+    { name: 'Slider Leg Curl', equipment: 'bodyweight', difficulty: 6, notes: 'Con slider/asciugamano' },
+    { name: 'GHD Raise', equipment: 'gym', difficulty: 6, notes: 'Se disponibile' },
+  ],
+  'Leg Curl (Machine)': [
+    { name: 'Nordic Curl (eccentrico)', equipment: 'bodyweight', difficulty: 5, notes: 'Solo fase negativa' },
+    { name: 'Slider Leg Curl', equipment: 'bodyweight', difficulty: 5, notes: 'A terra con slider' },
+    { name: 'Swiss Ball Leg Curl', equipment: 'gym', difficulty: 4, notes: 'Con palla fitness' },
+  ],
+
+  // ═══════════════════════════════════════════════════════════════
+  // HORIZONTAL PUSH (Bench Press pattern)
+  // ═══════════════════════════════════════════════════════════════
+  'Flat Barbell Bench Press': [
+    { name: 'Dumbbell Bench Press', equipment: 'gym', difficulty: 5, notes: 'Maggior ROM' },
+    { name: 'Machine Chest Press', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato' },
+    { name: 'Floor Press', equipment: 'gym', difficulty: 5, notes: 'A terra con manubri' },
+  ],
+  'Panca Piana': [
+    { name: 'Panca con Manubri', equipment: 'gym', difficulty: 5, notes: 'Maggior ROM e stabilità' },
+    { name: 'Chest Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato' },
+    { name: 'Push-up', equipment: 'bodyweight', difficulty: 4, notes: 'A corpo libero' },
+  ],
+  'Panca Piana con Bilanciere': [
+    { name: 'Panca con Manubri', equipment: 'gym', difficulty: 5, notes: 'Più ROM, meno carico' },
+    { name: 'Chest Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Più sicuro' },
+    { name: 'Floor Press con Manubri', equipment: 'gym', difficulty: 5, notes: 'A terra' },
+  ],
+  'Panca Inclinata': [
+    { name: 'Panca Inclinata con Manubri', equipment: 'gym', difficulty: 5, notes: 'Maggior ROM' },
+    { name: 'Landmine Press', equipment: 'gym', difficulty: 5, notes: 'Angolo simile' },
+    { name: 'Incline Chest Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Guidata' },
+  ],
+  'Incline Bench Press': [
+    { name: 'Incline Dumbbell Press', equipment: 'gym', difficulty: 5, notes: 'Con manubri' },
+    { name: 'Landmine Press', equipment: 'gym', difficulty: 5, notes: 'Angolo simile' },
+    { name: 'Low Cable Fly', equipment: 'gym', difficulty: 4, notes: 'Cavi dal basso' },
+  ],
+  'Decline Bench Press': [
+    { name: 'Dips', equipment: 'both', difficulty: 5, notes: 'Stesso target' },
+    { name: 'High Cable Fly', equipment: 'gym', difficulty: 4, notes: 'Cavi dall\'alto' },
+    { name: 'Decline Dumbbell Press', equipment: 'gym', difficulty: 4, notes: 'Con manubri' },
+  ],
+  'Dumbbell Bench Press': [
+    { name: 'Flat Barbell Bench Press', equipment: 'gym', difficulty: 5, notes: 'Con bilanciere' },
+    { name: 'Machine Chest Press', equipment: 'gym', difficulty: 4, notes: 'Guidato' },
+    { name: 'Push-up (weighted)', equipment: 'both', difficulty: 4, notes: 'Con peso su schiena' },
+  ],
+  'Standard Push-up': [
+    { name: 'Bench Press (leggero)', equipment: 'gym', difficulty: 4, notes: 'Se preferisci pesi' },
+    { name: 'Machine Chest Press', equipment: 'gym', difficulty: 3, notes: 'Più controllato' },
+    { name: 'Incline Push-up', equipment: 'bodyweight', difficulty: 3, notes: 'Mani rialzate' },
+  ],
+  'Diamond Push-up': [
+    { name: 'Close Grip Bench Press', equipment: 'gym', difficulty: 5, notes: 'Stesso focus tricipiti' },
+    { name: 'Tricep Dips', equipment: 'both', difficulty: 5, notes: 'Focus tricipiti' },
+    { name: 'Narrow Push-up', equipment: 'bodyweight', difficulty: 5, notes: 'Mani vicine' },
+  ],
+  'Archer Push-up': [
+    { name: 'Single Arm Dumbbell Press', equipment: 'gym', difficulty: 6, notes: 'Unilaterale' },
+    { name: 'Ring Push-up', equipment: 'bodyweight', difficulty: 6, notes: 'Agli anelli' },
+    { name: 'Typewriter Push-up', equipment: 'bodyweight', difficulty: 6, notes: 'Laterale' },
+  ],
+  'Chest Dips': [
+    { name: 'Decline Bench Press', equipment: 'gym', difficulty: 5, notes: 'Stesso target' },
+    { name: 'Dumbbell Fly', equipment: 'gym', difficulty: 4, notes: 'Focus petto basso' },
+    { name: 'Push-up (piedi rialzati)', equipment: 'bodyweight', difficulty: 5, notes: 'Declinati' },
+  ],
+
+  // ═══════════════════════════════════════════════════════════════
+  // VERTICAL PUSH (Shoulder Press pattern)
+  // ═══════════════════════════════════════════════════════════════
+  'Military Press (Barbell)': [
+    { name: 'Dumbbell Shoulder Press', equipment: 'gym', difficulty: 5, notes: 'Con manubri' },
+    { name: 'Machine Shoulder Press', equipment: 'gym', difficulty: 4, notes: 'Guidata' },
+    { name: 'Landmine Press', equipment: 'gym', difficulty: 5, notes: 'Con bilanciere a terra' },
+  ],
+  'Military Press': [
+    { name: 'Shoulder Press con Manubri', equipment: 'gym', difficulty: 5, notes: 'Con manubri' },
+    { name: 'Shoulder Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato' },
+    { name: 'Arnold Press', equipment: 'gym', difficulty: 5, notes: 'Con rotazione' },
+  ],
+  'Lento Avanti': [
+    { name: 'Shoulder Press con Manubri', equipment: 'gym', difficulty: 5, notes: 'Manubri, più ROM' },
+    { name: 'Shoulder Press (Macchina)', equipment: 'gym', difficulty: 4, notes: 'Guidata' },
+    { name: 'Landmine Press', equipment: 'gym', difficulty: 5, notes: 'Bilanciere a terra' },
+  ],
+  'Dumbbell Shoulder Press': [
+    { name: 'Military Press', equipment: 'gym', difficulty: 6, notes: 'Con bilanciere' },
+    { name: 'Arnold Press', equipment: 'gym', difficulty: 5, notes: 'Con rotazione' },
+    { name: 'Machine Shoulder Press', equipment: 'gym', difficulty: 4, notes: 'Percorso guidato' },
+  ],
+  'Arnold Press': [
+    { name: 'Dumbbell Shoulder Press', equipment: 'gym', difficulty: 5, notes: 'Senza rotazione' },
+    { name: 'Lateral Raise + Press', equipment: 'gym', difficulty: 5, notes: 'Combo movement' },
+    { name: 'Cable Lateral Raise', equipment: 'gym', difficulty: 4, notes: 'Al cavo' },
+  ],
+  'Push Press': [
+    { name: 'Military Press', equipment: 'gym', difficulty: 6, notes: 'Senza spinta gambe' },
+    { name: 'Dumbbell Push Press', equipment: 'gym', difficulty: 5, notes: 'Con manubri' },
+    { name: 'Thruster', equipment: 'gym', difficulty: 6, notes: 'Squat + Press' },
+  ],
+  'Pike Push-up': [
+    { name: 'Dumbbell Shoulder Press', equipment: 'gym', difficulty: 5, notes: 'Se preferisci pesi' },
+    { name: 'Machine Shoulder Press', equipment: 'gym', difficulty: 4, notes: 'Guidata' },
+    { name: 'Elevated Pike Push-up', equipment: 'bodyweight', difficulty: 6, notes: 'Piedi più alti' },
+  ],
+  'Wall Handstand Push-up': [
+    { name: 'Pike Push-up (elevato)', equipment: 'bodyweight', difficulty: 6, notes: 'Piedi su box' },
+    { name: 'Dumbbell Shoulder Press (pesante)', equipment: 'gym', difficulty: 6, notes: 'Carico alto' },
+    { name: 'Handstand Hold', equipment: 'bodyweight', difficulty: 7, notes: 'Solo tenuta' },
+  ],
+
+  // ═══════════════════════════════════════════════════════════════
+  // VERTICAL PULL (Pull-up pattern)
+  // ═══════════════════════════════════════════════════════════════
+  'Standard Pull-up': [
+    { name: 'Lat Pulldown', equipment: 'gym', difficulty: 4, notes: 'Stessa meccanica' },
+    { name: 'Assisted Pull-up', equipment: 'gym', difficulty: 5, notes: 'Con elastico o macchina' },
+    { name: 'Chin-up', equipment: 'both', difficulty: 6, notes: 'Presa supina' },
+  ],
+  'Wide Grip Pull-up': [
+    { name: 'Wide Grip Lat Pulldown', equipment: 'gym', difficulty: 5, notes: 'Al cavo alto' },
+    { name: 'Standard Pull-up', equipment: 'both', difficulty: 7, notes: 'Presa normale' },
+    { name: 'Straight Arm Pulldown', equipment: 'gym', difficulty: 4, notes: 'Braccia tese' },
+  ],
+  'Chin-up (Supinated)': [
+    { name: 'Supinated Lat Pulldown', equipment: 'gym', difficulty: 4, notes: 'Presa supina al cavo' },
+    { name: 'Standard Pull-up', equipment: 'both', difficulty: 7, notes: 'Presa prona' },
+    { name: 'Cable Curl + Pulldown', equipment: 'gym', difficulty: 4, notes: 'Superset' },
+  ],
+  'Neutral Grip Pull-up': [
+    { name: 'Neutral Grip Lat Pulldown', equipment: 'gym', difficulty: 4, notes: 'Con handle V' },
+    { name: 'Chin-up', equipment: 'both', difficulty: 6, notes: 'Presa supina' },
+    { name: 'Seated Cable Row (presa alta)', equipment: 'gym', difficulty: 4, notes: 'Tiro verso mento' },
+  ],
+  'Lat Pulldown (Machine)': [
+    { name: 'Assisted Pull-up', equipment: 'gym', difficulty: 5, notes: 'Con elastico' },
+    { name: 'Straight Arm Pulldown', equipment: 'gym', difficulty: 4, notes: 'Braccia tese' },
+    { name: 'Cable Pullover', equipment: 'gym', difficulty: 4, notes: 'Al cavo alto' },
+  ],
+  'Assisted Pull-up': [
+    { name: 'Lat Pulldown', equipment: 'gym', difficulty: 4, notes: 'Al cavo' },
+    { name: 'Band Pull-up', equipment: 'both', difficulty: 5, notes: 'Con elastico' },
+    { name: 'Negative Pull-up', equipment: 'both', difficulty: 5, notes: 'Solo fase eccentrica' },
+  ],
+
+  // ═══════════════════════════════════════════════════════════════
+  // HORIZONTAL PULL (Row pattern)
+  // ═══════════════════════════════════════════════════════════════
+  'Barbell Row': [
+    { name: 'Dumbbell Row', equipment: 'gym', difficulty: 5, notes: 'Unilaterale' },
+    { name: 'T-Bar Row', equipment: 'gym', difficulty: 5, notes: 'Con landmine' },
+    { name: 'Seated Cable Row', equipment: 'gym', difficulty: 4, notes: 'Al cavo' },
+  ],
+  'Rematore con Bilanciere': [
+    { name: 'Rematore con Manubrio', equipment: 'gym', difficulty: 5, notes: 'Unilaterale, più ROM' },
+    { name: 'Pulley Basso', equipment: 'gym', difficulty: 4, notes: 'Al cavo' },
+    { name: 'T-Bar Row', equipment: 'gym', difficulty: 5, notes: 'Con landmine' },
+  ],
+  'Rematore': [
+    { name: 'Rematore con Manubrio', equipment: 'gym', difficulty: 5, notes: 'Unilaterale' },
+    { name: 'Pulley Basso', equipment: 'gym', difficulty: 4, notes: 'Al cavo, seduto' },
+    { name: 'Chest Supported Row', equipment: 'gym', difficulty: 4, notes: 'Su panca inclinata' },
+  ],
+  'Dumbbell Row': [
+    { name: 'Seated Cable Row', equipment: 'gym', difficulty: 4, notes: 'Bilaterale' },
+    { name: 'Machine Row', equipment: 'gym', difficulty: 4, notes: 'Chest supported' },
+    { name: 'Inverted Row', equipment: 'both', difficulty: 5, notes: 'A corpo libero' },
+  ],
+  'Seated Cable Row': [
+    { name: 'Machine Row', equipment: 'gym', difficulty: 4, notes: 'Chest supported' },
+    { name: 'Dumbbell Row', equipment: 'gym', difficulty: 5, notes: 'Unilaterale' },
+    { name: 'Band Row', equipment: 'bodyweight', difficulty: 3, notes: 'Con elastico' },
+  ],
+  'T-Bar Row': [
+    { name: 'Barbell Row', equipment: 'gym', difficulty: 5, notes: 'Standard' },
+    { name: 'Landmine Row', equipment: 'gym', difficulty: 5, notes: 'Stesso setup' },
+    { name: 'Chest Supported Row', equipment: 'gym', difficulty: 4, notes: 'Su panca inclinata' },
+  ],
+  'Inverted Row': [
+    { name: 'Dumbbell Row', equipment: 'gym', difficulty: 5, notes: 'Con manubrio' },
+    { name: 'Seated Cable Row', equipment: 'gym', difficulty: 4, notes: 'Al cavo' },
+    { name: 'TRX Row', equipment: 'bodyweight', difficulty: 5, notes: 'Alle cinghie' },
+  ],
+
+  // ═══════════════════════════════════════════════════════════════
+  // CORE
+  // ═══════════════════════════════════════════════════════════════
+  'Plank': [
+    { name: 'Dead Bug', equipment: 'bodyweight', difficulty: 3, notes: 'Supino, anti-estensione' },
+    { name: 'Ab Wheel (in ginocchio)', equipment: 'gym', difficulty: 4, notes: 'Rollout' },
+    { name: 'Hollow Body Hold', equipment: 'bodyweight', difficulty: 4, notes: 'Supino' },
+  ],
+  'Side Plank': [
+    { name: 'Pallof Press', equipment: 'gym', difficulty: 4, notes: 'Anti-rotazione' },
+    { name: 'Suitcase Carry', equipment: 'gym', difficulty: 4, notes: 'Camminata con peso' },
+    { name: 'Copenhagen Plank', equipment: 'bodyweight', difficulty: 5, notes: 'Con adduttori' },
+  ],
+  'Hanging Leg Raise': [
+    { name: 'Captain Chair Leg Raise', equipment: 'gym', difficulty: 5, notes: 'Alla macchina' },
+    { name: 'Lying Leg Raise', equipment: 'bodyweight', difficulty: 4, notes: 'A terra' },
+    { name: 'Cable Crunch', equipment: 'gym', difficulty: 4, notes: 'Al cavo alto' },
+  ],
+  'Ab Wheel Rollout': [
+    { name: 'Barbell Rollout', equipment: 'gym', difficulty: 6, notes: 'Con bilanciere' },
+    { name: 'TRX Fallout', equipment: 'bodyweight', difficulty: 6, notes: 'Alle cinghie' },
+    { name: 'Stability Ball Rollout', equipment: 'gym', difficulty: 5, notes: 'Con palla' },
+  ],
+  'Cable Crunch': [
+    { name: 'Machine Crunch', equipment: 'gym', difficulty: 3, notes: 'Alla macchina' },
+    { name: 'Weighted Crunch', equipment: 'gym', difficulty: 4, notes: 'Con disco' },
+    { name: 'Hanging Knee Raise', equipment: 'both', difficulty: 5, notes: 'Alla sbarra' },
+  ],
+  'Pallof Press': [
+    { name: 'Cable Rotation', equipment: 'gym', difficulty: 4, notes: 'Rotazione controllata' },
+    { name: 'Side Plank', equipment: 'bodyweight', difficulty: 4, notes: 'Statico' },
+    { name: 'Bird Dog', equipment: 'bodyweight', difficulty: 3, notes: 'Anti-rotazione' },
+  ],
+};
+
+/**
+ * Ottiene le varianti alternative per un esercizio
+ * Per switch rapido quando la postazione è affollata
+ *
+ * @param exerciseName - Nome dell'esercizio corrente
+ * @param preferGym - Se true, preferisce varianti gym (default in palestra)
+ * @returns Array di max 3 alternative biomeccanicamente equivalenti
+ */
+export function getExerciseAlternatives(
+  exerciseName: string,
+  preferGym: boolean = true
+): ExerciseAlternative[] {
+  // Cerca corrispondenza esatta
+  let alternatives = EXERCISE_ALTERNATIVES[exerciseName];
+
+  // Se non trovato, cerca match parziale (es. "Back Squat" in "Barbell Back Squat")
+  if (!alternatives) {
+    const keys = Object.keys(EXERCISE_ALTERNATIVES);
+    const matchingKey = keys.find(key =>
+      exerciseName.toLowerCase().includes(key.toLowerCase()) ||
+      key.toLowerCase().includes(exerciseName.toLowerCase())
+    );
+    if (matchingKey) {
+      alternatives = EXERCISE_ALTERNATIVES[matchingKey];
+    }
+  }
+
+  if (!alternatives || alternatives.length === 0) {
+    return [];
+  }
+
+  // Ordina: prima preferenza equipment, poi per difficoltà simile
+  const sorted = [...alternatives].sort((a, b) => {
+    // Preferenza equipment
+    if (preferGym) {
+      if (a.equipment === 'gym' && b.equipment !== 'gym') return -1;
+      if (b.equipment === 'gym' && a.equipment !== 'gym') return 1;
+    } else {
+      if (a.equipment === 'bodyweight' && b.equipment !== 'bodyweight') return -1;
+      if (b.equipment === 'bodyweight' && a.equipment !== 'bodyweight') return 1;
+    }
+    return 0;
+  });
+
+  // Ritorna max 3 alternative
+  return sorted.slice(0, 3);
+}
+
+/**
+ * Verifica se un esercizio ha alternative disponibili
+ */
+export function hasAlternatives(exerciseName: string): boolean {
+  return getExerciseAlternatives(exerciseName).length > 0;
+}
+
+/**
+ * Ottiene una singola alternativa rapida (la migliore)
+ */
+export function getQuickAlternative(
+  exerciseName: string,
+  preferGym: boolean = true
+): ExerciseAlternative | null {
+  const alternatives = getExerciseAlternatives(exerciseName, preferGym);
+  return alternatives.length > 0 ? alternatives[0] : null;
+}
