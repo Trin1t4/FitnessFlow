@@ -19,6 +19,7 @@ const queryClient = new QueryClient({
 
 // Critical routes (eager loaded)
 import Landing from "./pages/Landing";
+import ModeSelection from "./pages/ModeSelection";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ResponsiveLayout from "./components/ResponsiveLayout";
@@ -26,6 +27,9 @@ import ResponsiveLayout from "./components/ResponsiveLayout";
 // Non-critical routes (lazy loaded for code splitting)
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
+const CoachSetup = lazy(() => import("./pages/CoachSetup"));
+const CoachDashboard = lazy(() => import("./pages/CoachDashboard"));
+const PlayerDetail = lazy(() => import("./pages/PlayerDetail"));
 const BodyCompositionScan = lazy(() => import("./pages/BodyCompositionScan"));
 const BiomechanicsQuiz = lazy(() => import("./pages/BiomechanicsQuiz"));
 const Screening = lazy(() => import("./pages/Screening"));
@@ -59,12 +63,18 @@ function App() {
             <Suspense fallback={<PageLoader />}>
               <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/get-started" element={<ModeSelection />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/pricing" element={<Pricing />} />
 
               {/* ONBOARDING - Senza auth per test */}
               <Route path="/onboarding" element={<Onboarding />} />
+
+              {/* COACH / TEAM ROUTES */}
+              <Route path="/coach/setup" element={<CoachSetup />} />
+              <Route path="/coach/team/:teamId" element={<CoachDashboard />} />
+              <Route path="/coach/team/:teamId/player/:playerId" element={<PlayerDetail />} />
 
               {/* PERCORSO PRINCIPALE - Senza auth per test */}
               <Route path="/body-scan" element={<BodyCompositionScan />} />

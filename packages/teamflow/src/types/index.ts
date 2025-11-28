@@ -31,3 +31,17 @@ export type {
   WorkoutExercise,
   VolumeCalculation,
 } from './program.types';
+
+// Team Management
+export type {
+  UserMode,
+  TeamRole,
+  Team,
+  TeamMember,
+  PlayerData,
+  TeamProgram,
+  TeamInvite,
+  CreateTeamForm,
+  AddPlayerForm,
+  ModeSelectionState,
+} from './team.types';
