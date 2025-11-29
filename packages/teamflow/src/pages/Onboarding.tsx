@@ -173,10 +173,8 @@ export default function Onboarding() {
     // Se step 2 (Role Selection) e ha scelto "team" (coach), vai a coach setup
     if (currentStep === 2 && stepData.userMode === 'team') {
       console.log('[ONBOARDING] 🏈 Coach mode selected → redirecting to /coach/setup');
-      // Salva la scelta nel profilo utente e i dati anagrafici
-      saveUserMode('team');
-      // Salva anche anagrafica prima di uscire
-      saveAnagraficaForCoach();
+      // Salva anagrafica + modalità prima di uscire
+      saveCoachData();
       navigate('/coach/setup');
       return;
     }
@@ -184,32 +182,11 @@ export default function Onboarding() {
     nextStep();
   };
 
-  // Salva la modalità utente nel profilo
-  const saveUserMode = async (mode: UserMode) => {
+  // Salva i dati del coach (anagrafica + modalità) prima di uscire dall'onboarding
+  const saveCoachData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
-      await supabase
-        .from('user_profiles')
-        .upsert({
-          user_id: user.id,
-          email: user.email || '',
-          user_mode: mode,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id',
-        });
-    } catch (error) {
-      console.error('[ONBOARDING] Error saving user mode:', error);
-    }
-  };
-
-  // Salva i dati anagrafici per il coach prima di uscire dall'onboarding
-  const saveAnagraficaForCoach = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !data.anagrafica) return;
 
       await supabase
         .from('user_profiles')
@@ -220,12 +197,15 @@ export default function Onboarding() {
             anagrafica: data.anagrafica,
             userMode: 'team',
           },
+          onboarding_completed: false, // Coach completerà dopo setup squadra
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id',
         });
+
+      console.log('[ONBOARDING] ✅ Coach data saved successfully');
     } catch (error) {
-      console.error('[ONBOARDING] Error saving coach anagrafica:', error);
+      console.error('[ONBOARDING] Error saving coach data:', error);
     }
   };
 
