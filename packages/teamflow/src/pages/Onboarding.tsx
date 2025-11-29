@@ -170,11 +170,13 @@ export default function Onboarding() {
     console.log(`[ONBOARDING] ✅ Step ${currentStep} completed with data:`, stepData);
     updateData(stepData);
 
-    // Se step 1 (Role Selection) e ha scelto "team" (coach), vai a coach setup
-    if (currentStep === 1 && stepData.userMode === 'team') {
+    // Se step 2 (Role Selection) e ha scelto "team" (coach), vai a coach setup
+    if (currentStep === 2 && stepData.userMode === 'team') {
       console.log('[ONBOARDING] 🏈 Coach mode selected → redirecting to /coach/setup');
-      // Salva la scelta nel profilo utente
+      // Salva la scelta nel profilo utente e i dati anagrafici
       saveUserMode('team');
+      // Salva anche anagrafica prima di uscire
+      saveAnagraficaForCoach();
       navigate('/coach/setup');
       return;
     }
@@ -203,12 +205,36 @@ export default function Onboarding() {
     }
   };
 
+  // Salva i dati anagrafici per il coach prima di uscire dall'onboarding
+  const saveAnagraficaForCoach = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !data.anagrafica) return;
+
+      await supabase
+        .from('user_profiles')
+        .upsert({
+          user_id: user.id,
+          email: user.email || '',
+          onboarding_data: {
+            anagrafica: data.anagrafica,
+            userMode: 'team',
+          },
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
+        });
+    } catch (error) {
+      console.error('[ONBOARDING] Error saving coach anagrafica:', error);
+    }
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
-        return <RoleSelectionStep data={data} onNext={handleStepComplete} />;
-      case 2:
         return <AnagraficaStep data={data} onNext={handleStepComplete} />;
+      case 2:
+        return <RoleSelectionStep data={data} onNext={handleStepComplete} />;
       case 3:
         return <PersonalInfoStep data={data} onNext={handleStepComplete} />;
       case 4:

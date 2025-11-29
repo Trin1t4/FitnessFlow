@@ -11,7 +11,6 @@ interface PersonalInfoStepProps {
 export default function PersonalInfoStep({ data, onNext }: PersonalInfoStepProps) {
   const { t } = useTranslation();
   const [gender, setGender] = useState(data.personalInfo?.gender || 'M');
-  const [age, setAge] = useState(data.personalInfo?.age || '');
   const [height, setHeight] = useState(data.personalInfo?.height || '');
   const [weight, setWeight] = useState(data.personalInfo?.weight || '');
 
@@ -19,6 +18,23 @@ export default function PersonalInfoStep({ data, onNext }: PersonalInfoStepProps
   const [neck, setNeck] = useState(data.personalInfo?.neck?.toString() || '');
   const [waist, setWaist] = useState(data.personalInfo?.waist?.toString() || '');
   const [hips, setHips] = useState(data.personalInfo?.hips?.toString() || '');
+
+  // Calcola età dalla data di nascita (se presente)
+  const calculatedAge = useMemo(() => {
+    const birthDate = data.anagrafica?.birthDate;
+    if (!birthDate) return null;
+
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+
+    return age;
+  }, [data.anagrafica?.birthDate]);
 
   // BMI calcolato dinamicamente
   const bmi = useMemo(() => {
@@ -31,11 +47,14 @@ export default function PersonalInfoStep({ data, onNext }: PersonalInfoStepProps
   }, [height, weight]);
 
   const handleSubmit = () => {
-    if (!age || !height || !weight) return;
+    if (!height || !weight) return;
+
+    // Usa età calcolata o default 30 se data nascita non fornita
+    const ageToUse = calculatedAge || 30;
 
     const personalInfo: any = {
       gender,
-      age: Number(age),
+      age: ageToUse,
       height: Number(height),
       weight: Number(weight),
       bmi: bmi ? Number(bmi) : 0,
@@ -49,7 +68,7 @@ export default function PersonalInfoStep({ data, onNext }: PersonalInfoStepProps
       try {
         const bodyComp = calculateBodyComposition({
           gender: gender as 'M' | 'F',
-          age: Number(age),
+          age: ageToUse,
           height: Number(height),
           weight: Number(weight),
           neck: Number(neck),
@@ -70,7 +89,7 @@ export default function PersonalInfoStep({ data, onNext }: PersonalInfoStepProps
     onNext({ personalInfo });
   };
 
-  const isValid = age && height && weight && Number(age) > 0 && Number(height) > 0 && Number(weight) > 0;
+  const isValid = height && weight && Number(height) > 0 && Number(weight) > 0;
 
   return (
     <div className="space-y-6">
@@ -81,7 +100,7 @@ export default function PersonalInfoStep({ data, onNext }: PersonalInfoStepProps
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Genere */}
-        <div>
+        <div className="md:col-span-2">
           <label className="block text-sm font-medium text-slate-300 mb-2">{t('onboarding.personal.gender')}</label>
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -111,19 +130,15 @@ export default function PersonalInfoStep({ data, onNext }: PersonalInfoStepProps
           </div>
         </div>
 
-        {/* Età */}
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">{t('onboarding.personal.age')}</label>
-          <input
-            type="number"
-            min="10"
-            max="100"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder={t('onboarding.personal.agePlaceholder')}
-            className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-          />
-        </div>
+        {/* Età calcolata (solo display se presente) */}
+        {calculatedAge && (
+          <div className="md:col-span-2">
+            <div className="bg-slate-700/50 rounded-lg px-4 py-3 flex items-center justify-between">
+              <span className="text-slate-400 text-sm">Età (dalla data di nascita)</span>
+              <span className="text-white font-semibold text-lg">{calculatedAge} anni</span>
+            </div>
+          </div>
+        )}
 
         {/* Altezza */}
         <div>
