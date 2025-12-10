@@ -1,6 +1,6 @@
 {
-  "name": "FitnessFlow - Smart Training",
-  "short_name": "FitnessFlow",
+  "name": "TrainSmart",
+  "short_name": "TrainSmart",
   "description": "Programmi di allenamento personalizzati basati sulla scienza",
   "start_url": "/dashboard",
   "display": "standalone",
