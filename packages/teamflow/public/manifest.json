@@ -1,6 +1,6 @@
 {
-  "name": "TeamFlow - Preparazione Atletica",
-  "short_name": "TeamFlow",
+  "name": "TrainSmart Team",
+  "short_name": "TrainSmart",
   "description": "Preparazione atletica scientifica per sport di squadra. Calcio, basket, pallavolo, rugby.",
   "start_url": "/dashboard",
   "display": "standalone",
