@@ -25,6 +25,8 @@ export type {
   PatternBaseline,
   PatternBaselines,
   ScreeningData,
+  WarmupSet,
+  SupersetConfig,
   Exercise,
   DayWorkout,
   WeeklySplit,

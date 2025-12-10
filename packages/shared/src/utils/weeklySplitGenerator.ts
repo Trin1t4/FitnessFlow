@@ -4,7 +4,7 @@
  * Split scientificamente validati con varianti per evitare ripetizioni
  */
 
-import { Level, Goal, PatternBaselines, Exercise } from '../types';
+import { Level, Goal, PatternBaselines, Exercise, WarmupSet, SupersetConfig } from '../types';
 import { NormalizedPainArea } from './validators';
 import { calculateVolume } from './programGenerator';
 import {
@@ -89,6 +89,342 @@ export interface WeeklySplit {
   averageDuration?: number; // Durata media workout in minuti
 }
 
+// ============================================
+// SISTEMA RISCALDAMENTO AUTOMATICO
+// ============================================
+
+/**
+ * Zona muscolare per il riscaldamento
+ * - upper: petto, spalle, dorso, braccia
+ * - lower: gambe, glutei, anche
+ * - core: addome (non richiede riscaldamento specifico con pesi)
+ */
+type MuscleZone = 'upper' | 'lower' | 'core';
+
+/**
+ * Mappa pattern -> zona muscolare
+ */
+const PATTERN_TO_ZONE: Record<string, MuscleZone> = {
+  // LOWER BODY
+  lower_push: 'lower',    // Squat, Leg Press, etc.
+  lower_pull: 'lower',    // Deadlift, RDL, etc.
+  // UPPER BODY - PUSH
+  horizontal_push: 'upper', // Bench Press, Push-up, etc.
+  vertical_push: 'upper',   // Military Press, etc.
+  // UPPER BODY - PULL
+  vertical_pull: 'upper',   // Lat Pulldown, Pull-up, etc.
+  horizontal_pull: 'upper', // Row, etc.
+  // CORE
+  core: 'core',
+  corrective: 'core', // Correttivi non richiedono warmup con pesi
+};
+
+/**
+ * Determina la zona muscolare di un esercizio
+ */
+function getExerciseZone(exercise: Exercise): MuscleZone {
+  const pattern = exercise.pattern;
+
+  // Prima controlla il pattern
+  if (pattern && PATTERN_TO_ZONE[pattern]) {
+    return PATTERN_TO_ZONE[pattern];
+  }
+
+  // Fallback: analizza il nome dell'esercizio
+  const nameLower = exercise.name.toLowerCase();
+
+  // Lower body keywords
+  if (
+    nameLower.includes('squat') ||
+    nameLower.includes('deadlift') ||
+    nameLower.includes('stacco') ||
+    nameLower.includes('leg') ||
+    nameLower.includes('lunge') ||
+    nameLower.includes('affondo') ||
+    nameLower.includes('hip thrust') ||
+    nameLower.includes('glute') ||
+    nameLower.includes('calf') ||
+    nameLower.includes('polpacci')
+  ) {
+    return 'lower';
+  }
+
+  // Core keywords
+  if (
+    nameLower.includes('plank') ||
+    nameLower.includes('crunch') ||
+    nameLower.includes('dead bug') ||
+    nameLower.includes('bird dog') ||
+    nameLower.includes('ab ') ||
+    nameLower.includes('core')
+  ) {
+    return 'core';
+  }
+
+  // Default: upper body
+  return 'upper';
+}
+
+/**
+ * Crea le serie di riscaldamento per un esercizio
+ *
+ * Standard: 2 serie x 6 ripetizioni @ 60% del peso di lavoro
+ */
+function createWarmupSets(zone: MuscleZone): WarmupSet {
+  return {
+    sets: 2,
+    reps: 6,
+    percentage: 60,
+    note: zone === 'upper'
+      ? 'Riscaldamento parte alta'
+      : 'Riscaldamento parte bassa'
+  };
+}
+
+/**
+ * Applica il riscaldamento agli esercizi di un giorno
+ *
+ * Logica:
+ * - Traccia quali zone sono già state "scaldate"
+ * - Aggiunge warmup solo al PRIMO esercizio di ogni zona
+ * - Core/correttivi non ricevono warmup con pesi
+ */
+function applyWarmupToExercises(exercises: Exercise[]): Exercise[] {
+  const warmedUpZones: Set<MuscleZone> = new Set();
+
+  return exercises.map(exercise => {
+    const zone = getExerciseZone(exercise);
+
+    // Core non richiede riscaldamento con pesi
+    if (zone === 'core') {
+      return exercise;
+    }
+
+    // Se questa zona è già stata scaldata, non aggiungere warmup
+    if (warmedUpZones.has(zone)) {
+      return exercise;
+    }
+
+    // Prima volta che incontriamo questa zona -> aggiungi warmup
+    warmedUpZones.add(zone);
+
+    console.log(`🔥 Warmup ${zone}: ${exercise.name} (2x6 @ 60%)`);
+
+    return {
+      ...exercise,
+      warmup: createWarmupSets(zone)
+    };
+  });
+}
+
+// ============================================
+// SISTEMA SUPERSET PER OTTIMIZZAZIONE TEMPO
+// ============================================
+
+/**
+ * Pattern antagonisti che possono essere combinati in superset
+ * Logica: muscoli opposti che non si affaticano a vicenda
+ */
+const ANTAGONIST_PAIRS: Array<[string, string]> = [
+  // Upper body push/pull
+  ['horizontal_push', 'horizontal_pull'],  // Panca + Row
+  ['vertical_push', 'vertical_pull'],      // Military + Lat Pulldown
+  ['horizontal_push', 'vertical_pull'],    // Panca + Lat Pulldown
+  // Upper + Core (core non affatica upper)
+  ['horizontal_push', 'core'],
+  ['vertical_push', 'core'],
+  ['horizontal_pull', 'core'],
+  ['vertical_pull', 'core'],
+  // Lower + Upper (diversi distretti)
+  ['lower_push', 'horizontal_pull'],       // Squat + Row
+  ['lower_push', 'vertical_pull'],         // Squat + Pulldown
+  ['lower_pull', 'horizontal_push'],       // Deadlift + Panca (ATTENZIONE: entrambi stressano lower back)
+];
+
+/**
+ * Verifica se due esercizi possono essere combinati in superset
+ */
+function canSuperset(ex1: Exercise, ex2: Exercise): boolean {
+  const pattern1 = ex1.pattern;
+  const pattern2 = ex2.pattern;
+
+  // Non supersettare correttivi
+  if (pattern1 === 'corrective' || pattern2 === 'corrective') {
+    return false;
+  }
+
+  // Verifica se sono antagonisti
+  return ANTAGONIST_PAIRS.some(([p1, p2]) =>
+    (pattern1 === p1 && pattern2 === p2) ||
+    (pattern1 === p2 && pattern2 === p1)
+  );
+}
+
+/**
+ * Calcola tempo risparmiato con un superset
+ * In un superset, il rest tra i due esercizi è eliminato
+ * Si riposa solo dopo aver completato entrambi
+ */
+function calculateSupersetTimeSaved(ex1: Exercise, ex2: Exercise): number {
+  // Tempo rest eliminato = rest del primo esercizio × (sets - 1)
+  // Perché nel superset facciamo: A1, B1, rest, A2, B2, rest, ...
+  const sets = Math.min(
+    typeof ex1.sets === 'number' ? ex1.sets : 3,
+    typeof ex2.sets === 'number' ? ex2.sets : 3
+  );
+
+  const rest1 = parseRestTime(ex1.rest || '60s');
+  const rest2 = parseRestTime(ex2.rest || '60s');
+
+  // Risparmio: eliminiamo i rest individuali, teniamo solo un rest condiviso
+  // Prima: A1-rest-A2-rest-A3, B1-rest-B2-rest-B3
+  // Dopo:  A1-B1-rest, A2-B2-rest, A3-B3-rest
+  // Risparmio = (sets - 1) × rest1 + (sets - 1) × rest2
+  const savedSeconds = (sets - 1) * rest1 + (sets - 1) * rest2;
+
+  return Math.round(savedSeconds / 60); // Converti in minuti
+}
+
+/**
+ * Applica superset agli esercizi per ridurre il tempo totale
+ *
+ * Strategia:
+ * 1. Trova coppie di esercizi antagonisti
+ * 2. Combina in superset partendo dai più lunghi (più tempo risparmiato)
+ * 3. Continua finché non raggiungiamo il target di tempo
+ */
+function applySupersets(
+  exercises: Exercise[],
+  targetMinutesToSave: number
+): { exercises: Exercise[]; totalTimeSaved: number; supersetsApplied: number } {
+  const result = [...exercises];
+  let totalTimeSaved = 0;
+  let supersetsApplied = 0;
+  const alreadyPaired: Set<number> = new Set();
+
+  console.log(`\n💪 Applicazione superset per risparmiare ~${targetMinutesToSave} min`);
+
+  // Trova tutte le possibili coppie di superset
+  const possiblePairs: Array<{ i: number; j: number; timeSaved: number }> = [];
+
+  for (let i = 0; i < result.length; i++) {
+    for (let j = i + 1; j < result.length; j++) {
+      if (canSuperset(result[i], result[j])) {
+        const timeSaved = calculateSupersetTimeSaved(result[i], result[j]);
+        possiblePairs.push({ i, j, timeSaved });
+      }
+    }
+  }
+
+  // Ordina per tempo risparmiato (decrescente)
+  possiblePairs.sort((a, b) => b.timeSaved - a.timeSaved);
+
+  // Applica superset finché non raggiungiamo il target
+  for (const pair of possiblePairs) {
+    if (totalTimeSaved >= targetMinutesToSave) break;
+    if (alreadyPaired.has(pair.i) || alreadyPaired.has(pair.j)) continue;
+
+    const ex1 = result[pair.i];
+    const ex2 = result[pair.j];
+
+    // Calcola rest condiviso (media dei due rest originali)
+    const rest1 = parseRestTime(ex1.rest || '60s');
+    const rest2 = parseRestTime(ex2.rest || '60s');
+    const sharedRest = Math.round((rest1 + rest2) / 2);
+    const sharedRestStr = sharedRest >= 60 ? `${Math.round(sharedRest / 60)}min` : `${sharedRest}s`;
+
+    // Configura superset
+    const supersetConfig1: SupersetConfig = {
+      pairedWith: ex2.name,
+      pairedExerciseIndex: pair.j,
+      restAfterSuperset: sharedRestStr,
+      timeSaved: pair.timeSaved
+    };
+
+    const supersetConfig2: SupersetConfig = {
+      pairedWith: ex1.name,
+      pairedExerciseIndex: pair.i,
+      restAfterSuperset: sharedRestStr,
+      timeSaved: pair.timeSaved
+    };
+
+    result[pair.i] = { ...ex1, superset: supersetConfig1 };
+    result[pair.j] = { ...ex2, superset: supersetConfig2 };
+
+    alreadyPaired.add(pair.i);
+    alreadyPaired.add(pair.j);
+
+    totalTimeSaved += pair.timeSaved;
+    supersetsApplied++;
+
+    console.log(`   🔗 Superset: ${ex1.name} + ${ex2.name} (risparmio: ${pair.timeSaved} min)`);
+  }
+
+  console.log(`   ✅ Totale risparmiato: ${totalTimeSaved} min con ${supersetsApplied} superset`);
+
+  return { exercises: result, totalTimeSaved, supersetsApplied };
+}
+
+/**
+ * Aggiorna la stima della durata considerando i superset
+ */
+function estimateWorkoutDurationWithSupersets(exercises: Exercise[]): number {
+  const GENERAL_WARMUP_MINUTES = 5;
+  const COOLDOWN_MINUTES = 3;
+  const WARMUP_SET_SECONDS = 25;
+  const WARMUP_REST_SECONDS = 45;
+
+  let totalSeconds = 0;
+  const processedSupersets: Set<number> = new Set();
+
+  for (let i = 0; i < exercises.length; i++) {
+    const exercise = exercises[i];
+
+    // Se fa parte di un superset e l'abbiamo già processato, skip
+    if (exercise.superset && processedSupersets.has(i)) {
+      continue;
+    }
+
+    // Warmup
+    if (exercise.warmup) {
+      const warmupSets = exercise.warmup.sets;
+      const warmupTime = (warmupSets * WARMUP_SET_SECONDS) + ((warmupSets - 1) * WARMUP_REST_SECONDS);
+      totalSeconds += warmupTime + 30;
+    }
+
+    const sets = typeof exercise.sets === 'number' ? exercise.sets : 3;
+    const reps = typeof exercise.reps === 'number' ? exercise.reps : 10;
+    const secondsPerSet = Math.max(20, Math.min(reps * 3.5, 60));
+
+    if (exercise.superset) {
+      // SUPERSET: calcola tempo combinato
+      const pairedIndex = exercise.superset.pairedExerciseIndex;
+      const pairedExercise = exercises[pairedIndex];
+
+      if (pairedExercise) {
+        const pairedSets = typeof pairedExercise.sets === 'number' ? pairedExercise.sets : 3;
+        const pairedReps = typeof pairedExercise.reps === 'number' ? pairedExercise.reps : 10;
+        const pairedSecondsPerSet = Math.max(20, Math.min(pairedReps * 3.5, 60));
+
+        // Tempo superset: A1 + B1 + rest, A2 + B2 + rest, ...
+        const restSeconds = parseRestTime(exercise.superset.restAfterSuperset);
+        const supersetTime = sets * (secondsPerSet + pairedSecondsPerSet + restSeconds);
+
+        totalSeconds += supersetTime + 30; // transizione
+        processedSupersets.add(pairedIndex);
+      }
+    } else {
+      // Esercizio normale
+      const restSeconds = parseRestTime(exercise.rest || '60s');
+      const exerciseTime = (sets * secondsPerSet) + ((sets - 1) * restSeconds);
+      totalSeconds += exerciseTime + 30;
+    }
+  }
+
+  const workoutMinutes = Math.ceil(totalSeconds / 60);
+  return GENERAL_WARMUP_MINUTES + workoutMinutes + COOLDOWN_MINUTES;
+}
+
 interface SplitGeneratorOptions {
   level: Level;
   goal: Goal;
@@ -162,17 +498,20 @@ function getGoalDistributionNote(goals: string[]): string {
  * Calcola durata stimata in minuti basandosi su esercizi/sets/rest
  *
  * Formula:
- * Duration = Warm-up + Sum(Sets x TimePerSet + RestBetweenSets) + Cool-down
+ * Duration = General Warm-up + Specific Warmup Sets + Work Sets + Cool-down
  *
  * Tempi medi:
- * - Warm-up: 5 min
- * - Time per set: 30-45s (basato su reps)
+ * - General Warm-up: 5 min (cardio leggero, mobilità)
+ * - Specific Warmup Sets: 2x6 reps @ 60% = ~90s per esercizio con warmup
+ * - Time per work set: 30-45s (basato su reps)
  * - Rest: estratto dall'esercizio (30s, 60s, 90s, 2min, 3min)
  * - Cool-down: 3 min
  */
 export function estimateWorkoutDuration(exercises: Exercise[]): number {
-  const WARMUP_MINUTES = 5;
+  const GENERAL_WARMUP_MINUTES = 5; // Cardio leggero + mobilità generale
   const COOLDOWN_MINUTES = 3;
+  const WARMUP_SET_SECONDS = 25; // ~25s per serie di riscaldamento (6 reps veloci)
+  const WARMUP_REST_SECONDS = 45; // Rest breve tra serie warmup
 
   let totalSeconds = 0;
 
@@ -180,6 +519,21 @@ export function estimateWorkoutDuration(exercises: Exercise[]): number {
     const sets = typeof exercise.sets === 'number' ? exercise.sets : 3;
     const reps = typeof exercise.reps === 'number' ? exercise.reps : 10;
 
+    // ============================================
+    // SERIE DI RISCALDAMENTO SPECIFICHE
+    // ============================================
+    if (exercise.warmup) {
+      const warmupSets = exercise.warmup.sets;
+      const warmupTime = (warmupSets * WARMUP_SET_SECONDS) + ((warmupSets - 1) * WARMUP_REST_SECONDS);
+      totalSeconds += warmupTime;
+
+      // Aggiungi transizione dopo warmup al peso di lavoro (~30s per caricare)
+      totalSeconds += 30;
+    }
+
+    // ============================================
+    // SERIE DI LAVORO
+    // ============================================
     // Tempo per set basato su reps (più reps = più tempo)
     // ~3-4 secondi per rep (incluso tempo sotto tensione)
     const secondsPerSet = Math.max(20, Math.min(reps * 3.5, 60));
@@ -195,9 +549,9 @@ export function estimateWorkoutDuration(exercises: Exercise[]): number {
     totalSeconds += exerciseTime + 30;
   }
 
-  // Converti in minuti e aggiungi warm-up/cool-down
+  // Converti in minuti e aggiungi warm-up generale/cool-down
   const workoutMinutes = Math.ceil(totalSeconds / 60);
-  const totalMinutes = WARMUP_MINUTES + workoutMinutes + COOLDOWN_MINUTES;
+  const totalMinutes = GENERAL_WARMUP_MINUTES + workoutMinutes + COOLDOWN_MINUTES;
 
   return totalMinutes;
 }
@@ -1162,9 +1516,10 @@ function adaptWorkoutToTimeLimit(
   exercises: Exercise[],
   targetDuration: number,
   goal?: string
-): { exercises: Exercise[]; warning?: string } {
+): { exercises: Exercise[]; warning?: string; usedSupersets?: boolean } {
   let adapted = [...exercises];
   let currentDuration = estimateWorkoutDuration(adapted);
+  let usedSupersets = false;
 
   // Se già entro il limite, nessun adattamento necessario
   if (currentDuration <= targetDuration) {
@@ -1173,6 +1528,29 @@ function adaptWorkoutToTimeLimit(
 
   console.log(`⚠️ Workout troppo lungo: ${currentDuration}min > ${targetDuration}min target`);
   console.log(`🎯 Goal: ${goal || 'non specificato'}`);
+
+  // ============================================
+  // STEP 0: PROVA CON SUPERSET (mantiene volume!)
+  // ============================================
+  const minutesToSave = currentDuration - targetDuration;
+  console.log(`\n🔗 STEP 0: Provo superset per risparmiare ${minutesToSave} min`);
+
+  const supersetResult = applySupersets(adapted, minutesToSave);
+  if (supersetResult.totalTimeSaved > 0) {
+    adapted = supersetResult.exercises;
+    currentDuration = estimateWorkoutDurationWithSupersets(adapted);
+    usedSupersets = true;
+
+    console.log(`   Durata dopo superset: ${currentDuration}min`);
+
+    if (currentDuration <= targetDuration) {
+      return {
+        exercises: adapted,
+        usedSupersets: true,
+        warning: `⏱️ WORKOUT OTTIMIZZATO: Ho creato ${supersetResult.supersetsApplied} superset per entrare nei ${targetDuration} minuti. Il volume è invariato - stesso numero di serie ed esercizi, solo organizzazione più efficiente.`
+      };
+    }
+  }
 
   const compoundPatterns = ['squat', 'deadlift', 'bench', 'row', 'pullup', 'dip', 'press'];
 
@@ -1232,6 +1610,10 @@ function adaptWorkoutToTimeLimit(
 
   let reducedSets = false;
 
+  // Helper per calcolare durata (considera superset se presenti)
+  const getDuration = (exs: Exercise[]) =>
+    usedSupersets ? estimateWorkoutDurationWithSupersets(exs) : estimateWorkoutDuration(exs);
+
   // STEP 1: Rimuovi esercizi NON allineati con il goal (priorità 3)
   console.log(`\n🔍 STEP 1: Rimozione esercizi NON allineati con goal`);
   while (currentDuration > targetDuration && adapted.length > 3) {
@@ -1250,7 +1632,7 @@ function adaptWorkoutToTimeLimit(
     if (removedIndex !== -1 && maxPriority === 3) {
       console.log(`   ✂️ Rimosso (non-goal): ${adapted[removedIndex].name}`);
       adapted.splice(removedIndex, 1);
-      currentDuration = estimateWorkoutDuration(adapted);
+      currentDuration = getDuration(adapted);
     } else {
       break; // Nessun esercizio non-aligned trovato
     }
@@ -1276,12 +1658,13 @@ function adaptWorkoutToTimeLimit(
     return ex;
   });
 
-  currentDuration = estimateWorkoutDuration(adapted);
+  currentDuration = getDuration(adapted);
   if (currentDuration <= targetDuration) {
     console.log(`   ✅ Target raggiunto: ${currentDuration}min`);
     return {
       exercises: adapted,
-      warning: `⚠️ WORKOUT ADATTATO: Con ${targetDuration} minuti disponibili, alcuni esercizi/serie non allineati con l'obiettivo "${goal}" sono stati ridotti.`
+      usedSupersets,
+      warning: `⚠️ WORKOUT ADATTATO: Con ${targetDuration} minuti disponibili, alcuni esercizi/serie non allineati con l'obiettivo "${goal}" sono stati ridotti.${usedSupersets ? ' Superset applicati per ottimizzare il tempo.' : ''}`
     };
   }
 
@@ -1302,7 +1685,7 @@ function adaptWorkoutToTimeLimit(
     if (removedIndex !== -1) {
       console.log(`   ✂️ Rimosso (accessorio): ${adapted[removedIndex].name}`);
       adapted.splice(removedIndex, 1);
-      currentDuration = estimateWorkoutDuration(adapted);
+      currentDuration = getDuration(adapted);
     } else {
       break;
     }
@@ -1312,7 +1695,8 @@ function adaptWorkoutToTimeLimit(
     console.log(`   ✅ Target raggiunto: ${currentDuration}min`);
     return {
       exercises: adapted,
-      warning: `⚠️ WORKOUT ADATTATO: Con ${targetDuration} minuti disponibili, alcuni esercizi accessori sono stati rimossi. Focus mantenuto su "${goal}".`
+      usedSupersets,
+      warning: `⚠️ WORKOUT ADATTATO: Con ${targetDuration} minuti disponibili, alcuni esercizi accessori sono stati rimossi. Focus mantenuto su "${goal}".${usedSupersets ? ' Superset applicati.' : ''}`
     };
   }
 
@@ -1327,12 +1711,12 @@ function adaptWorkoutToTimeLimit(
     return ex;
   });
 
-  currentDuration = estimateWorkoutDuration(adapted);
+  currentDuration = getDuration(adapted);
   console.log(`   ✅ Durata finale: ${currentDuration}min`);
 
-  const finalWarning = `⚠️ WORKOUT FORTEMENTE ADATTATO: Con ${targetDuration} minuti disponibili, anche gli esercizi principali per "${goal}" sono stati ridotti. L'efficacia del programma sarà significativamente inferiore. RACCOMANDAZIONE: aumenta il tempo disponibile (almeno ${Math.ceil(estimateWorkoutDuration(exercises) * 0.8)} minuti) o riduci la frequenza settimanale.`;
+  const finalWarning = `⚠️ WORKOUT FORTEMENTE ADATTATO: Con ${targetDuration} minuti disponibili, anche gli esercizi principali per "${goal}" sono stati ridotti.${usedSupersets ? ' Nonostante i superset applicati,' : ''} L'efficacia del programma sarà significativamente inferiore. RACCOMANDAZIONE: aumenta il tempo disponibile (almeno ${Math.ceil(estimateWorkoutDuration(exercises) * 0.8)} minuti) o riduci la frequenza settimanale.`;
 
-  return { exercises: adapted, warning: finalWarning };
+  return { exercises: adapted, usedSupersets, warning: finalWarning };
 }
 
 export function generateWeeklySplit(options: SplitGeneratorOptions): WeeklySplit {
@@ -1405,11 +1789,20 @@ export function generateWeeklySplit(options: SplitGeneratorOptions): WeeklySplit
     });
   }
 
-  // Calcola durata stimata per ogni giorno
+  // ============================================
+  // APPLICA RISCALDAMENTO SPECIFICO PER ZONA
+  // ============================================
+  // Riscaldamento: 2x6 @ 60% sul PRIMO esercizio di ogni zona (upper/lower)
+  console.log('\n🔥 Applicazione riscaldamento specifico per zona');
+  split.days.forEach(day => {
+    day.exercises = applyWarmupToExercises(day.exercises);
+  });
+
+  // Calcola durata stimata per ogni giorno (include warmup)
   split.days.forEach(day => {
     const duration = estimateWorkoutDuration(day.exercises);
     day.estimatedDuration = duration;
-    console.log(`Time: ${day.dayName}: ~${duration} min`);
+    console.log(`Time: ${day.dayName}: ~${duration} min (warmup incluso)`);
   });
 
   // Adatta workout al tempo disponibile se specificato

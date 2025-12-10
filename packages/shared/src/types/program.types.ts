@@ -40,6 +40,24 @@ export interface ScreeningData {
   timestamp: string;
 }
 
+export interface WarmupSet {
+  sets: number;       // Numero serie riscaldamento (es. 2)
+  reps: number;       // Ripetizioni per serie (es. 6)
+  percentage: number; // Percentuale del peso di lavoro (es. 60)
+  note?: string;      // Nota opzionale (es. "Riscaldamento lower body")
+}
+
+/**
+ * Configurazione superset per ottimizzazione tempo
+ * Un superset combina due esercizi antagonisti senza pausa tra loro
+ */
+export interface SupersetConfig {
+  pairedWith: string;      // Nome dell'esercizio abbinato
+  pairedExerciseIndex: number; // Indice dell'esercizio abbinato nella lista
+  restAfterSuperset: string;   // Rest dopo il superset completo (es. "90s")
+  timeSaved: number;       // Minuti risparmiati con questo superset
+}
+
 export interface Exercise {
   pattern: PatternId | 'corrective';
   name: string;
@@ -55,6 +73,8 @@ export interface Exercise {
   };
   wasReplaced?: boolean; // true se sostituito per dolore
   weight?: string; // per esercizi gym con carico
+  warmup?: WarmupSet; // Serie di riscaldamento specifiche per questo esercizio
+  superset?: SupersetConfig; // Configurazione superset (se abbinato ad altro esercizio)
 }
 
 export interface DayWorkout {
@@ -62,6 +82,7 @@ export interface DayWorkout {
   dayName: string;
   focus: string;
   exercises: Exercise[];
+  estimatedDuration?: number; // Durata stimata in minuti (incluso riscaldamento)
 }
 
 export interface WeeklySplit {
