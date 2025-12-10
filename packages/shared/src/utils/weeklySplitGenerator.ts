@@ -4,7 +4,7 @@
  * Split scientificamente validati con varianti per evitare ripetizioni
  */
 
-import { Level, Goal, PatternBaselines, Exercise, WarmupSet, SupersetConfig } from '../types';
+import { Level, Goal, PatternBaselines, Exercise, WarmupSet, WarmupSetDetail, SupersetConfig } from '../types';
 import { NormalizedPainArea } from './validators';
 import { calculateVolume } from './programGenerator';
 import {
@@ -166,18 +166,76 @@ function getExerciseZone(exercise: Exercise): MuscleZone {
 }
 
 /**
+ * Tipo di lavoro basato sulle ripetizioni target
+ */
+type WorkType = 'strength' | 'hypertrophy' | 'endurance';
+
+/**
+ * Determina il tipo di lavoro dalle ripetizioni
+ */
+function getWorkType(reps: number | string): WorkType {
+  const numReps = typeof reps === 'number' ? reps : parseInt(String(reps).split('-')[0] || '10');
+
+  if (numReps <= 5) return 'strength';      // 1-5 rep = forza
+  if (numReps <= 12) return 'hypertrophy';  // 6-12 rep = ipertrofia
+  return 'endurance';                        // 13+ rep = resistenza
+}
+
+/**
  * Crea le serie di riscaldamento per un esercizio
  *
- * Standard: 2 serie x 6 ripetizioni @ 60% del peso di lavoro
+ * Schema basato sul tipo di lavoro:
+ *
+ * FORZA (1-5 rep): Rampa progressiva per preparare il SNC
+ * - 8 rep @ 40% (leggero, attivazione)
+ * - 5 rep @ 55% (medio)
+ * - 3 rep @ 70% (avvicinamento al carico)
+ * - 1 rep @ 85% (singola pesante, opzionale)
+ *
+ * IPERTROFIA (6-12 rep): Riscaldamento moderato
+ * - 2x6 @ 60%
+ *
+ * RESISTENZA (13+ rep): Riscaldamento leggero
+ * - 1x8 @ 50%
  */
-function createWarmupSets(zone: MuscleZone): WarmupSet {
+function createWarmupSets(zone: MuscleZone, targetReps: number | string = 10): WarmupSet {
+  const workType = getWorkType(targetReps);
+  const zoneLabel = zone === 'upper' ? 'parte alta' : 'parte bassa';
+
+  if (workType === 'strength') {
+    // FORZA: Rampa progressiva (fondamentale per carichi pesanti)
+    const ramp: WarmupSetDetail[] = [
+      { reps: 8, percentage: 40 },  // Leggero - attivazione muscolare
+      { reps: 5, percentage: 55 },  // Medio - preparazione
+      { reps: 3, percentage: 70 },  // Pesante - avvicinamento
+      { reps: 1, percentage: 85 },  // Singola - "sentire" il carico
+    ];
+
+    return {
+      sets: 4,
+      reps: 4, // media (per stima durata)
+      percentage: 60, // media (per stima durata)
+      ramp,
+      note: `Rampa forza ${zoneLabel}: 8@40%, 5@55%, 3@70%, 1@85%`
+    };
+  }
+
+  if (workType === 'hypertrophy') {
+    // IPERTROFIA: Standard 2x6 @ 60%
+    return {
+      sets: 2,
+      reps: 6,
+      percentage: 60,
+      note: `Riscaldamento ${zoneLabel}`
+    };
+  }
+
+  // RESISTENZA: Leggero 1x8 @ 50%
   return {
-    sets: 2,
-    reps: 6,
-    percentage: 60,
-    note: zone === 'upper'
-      ? 'Riscaldamento parte alta'
-      : 'Riscaldamento parte bassa'
+    sets: 1,
+    reps: 8,
+    percentage: 50,
+    note: `Attivazione ${zoneLabel}`
   };
 }
 
@@ -187,6 +245,7 @@ function createWarmupSets(zone: MuscleZone): WarmupSet {
  * Logica:
  * - Traccia quali zone sono già state "scaldate"
  * - Aggiunge warmup solo al PRIMO esercizio di ogni zona
+ * - Adatta lo schema di warmup al tipo di lavoro (forza/ipertrofia/resistenza)
  * - Core/correttivi non ricevono warmup con pesi
  */
 function applyWarmupToExercises(exercises: Exercise[]): Exercise[] {
@@ -208,11 +267,21 @@ function applyWarmupToExercises(exercises: Exercise[]): Exercise[] {
     // Prima volta che incontriamo questa zona -> aggiungi warmup
     warmedUpZones.add(zone);
 
-    console.log(`🔥 Warmup ${zone}: ${exercise.name} (2x6 @ 60%)`);
+    // Crea warmup basato sulle ripetizioni target dell'esercizio
+    const warmup = createWarmupSets(zone, exercise.reps);
+    const workType = getWorkType(exercise.reps);
+
+    if (workType === 'strength') {
+      console.log(`🔥 Warmup FORZA ${zone}: ${exercise.name} (rampa: 8@40%, 5@55%, 3@70%, 1@85%)`);
+    } else if (workType === 'hypertrophy') {
+      console.log(`🔥 Warmup ${zone}: ${exercise.name} (2x6 @ 60%)`);
+    } else {
+      console.log(`🔥 Warmup leggero ${zone}: ${exercise.name} (1x8 @ 50%)`);
+    }
 
     return {
       ...exercise,
-      warmup: createWarmupSets(zone)
+      warmup
     };
   });
 }
@@ -371,7 +440,6 @@ function applySupersets(
 function estimateWorkoutDurationWithSupersets(exercises: Exercise[]): number {
   const GENERAL_WARMUP_MINUTES = 5;
   const COOLDOWN_MINUTES = 3;
-  const WARMUP_SET_SECONDS = 25;
   const WARMUP_REST_SECONDS = 45;
 
   let totalSeconds = 0;
@@ -385,11 +453,24 @@ function estimateWorkoutDurationWithSupersets(exercises: Exercise[]): number {
       continue;
     }
 
-    // Warmup
+    // Warmup (con supporto rampa forza)
     if (exercise.warmup) {
-      const warmupSets = exercise.warmup.sets;
-      const warmupTime = (warmupSets * WARMUP_SET_SECONDS) + ((warmupSets - 1) * WARMUP_REST_SECONDS);
-      totalSeconds += warmupTime + 30;
+      if (exercise.warmup.ramp) {
+        // RAMPA FORZA
+        let rampTime = 0;
+        for (const rampSet of exercise.warmup.ramp) {
+          const setTime = rampSet.reps * 3;
+          rampTime += setTime + WARMUP_REST_SECONDS + 20;
+        }
+        totalSeconds += rampTime + 30;
+      } else {
+        // STANDARD
+        const warmupSets = exercise.warmup.sets;
+        const warmupReps = exercise.warmup.reps;
+        const secondsPerWarmupSet = warmupReps * 3;
+        const warmupTime = (warmupSets * secondsPerWarmupSet) + ((warmupSets - 1) * WARMUP_REST_SECONDS);
+        totalSeconds += warmupTime + 30;
+      }
     }
 
     const sets = typeof exercise.sets === 'number' ? exercise.sets : 3;
@@ -510,7 +591,6 @@ function getGoalDistributionNote(goals: string[]): string {
 export function estimateWorkoutDuration(exercises: Exercise[]): number {
   const GENERAL_WARMUP_MINUTES = 5; // Cardio leggero + mobilità generale
   const COOLDOWN_MINUTES = 3;
-  const WARMUP_SET_SECONDS = 25; // ~25s per serie di riscaldamento (6 reps veloci)
   const WARMUP_REST_SECONDS = 45; // Rest breve tra serie warmup
 
   let totalSeconds = 0;
@@ -523,9 +603,23 @@ export function estimateWorkoutDuration(exercises: Exercise[]): number {
     // SERIE DI RISCALDAMENTO SPECIFICHE
     // ============================================
     if (exercise.warmup) {
-      const warmupSets = exercise.warmup.sets;
-      const warmupTime = (warmupSets * WARMUP_SET_SECONDS) + ((warmupSets - 1) * WARMUP_REST_SECONDS);
-      totalSeconds += warmupTime;
+      if (exercise.warmup.ramp) {
+        // RAMPA FORZA: calcola tempo per ogni serie della rampa
+        let rampTime = 0;
+        for (const rampSet of exercise.warmup.ramp) {
+          // ~3s per rep + tempo per cambiare peso
+          const setTime = rampSet.reps * 3;
+          rampTime += setTime + WARMUP_REST_SECONDS + 20; // +20s per cambio peso
+        }
+        totalSeconds += rampTime;
+      } else {
+        // STANDARD: warmup uniforme
+        const warmupSets = exercise.warmup.sets;
+        const warmupReps = exercise.warmup.reps;
+        const secondsPerWarmupSet = warmupReps * 3; // ~3s per rep
+        const warmupTime = (warmupSets * secondsPerWarmupSet) + ((warmupSets - 1) * WARMUP_REST_SECONDS);
+        totalSeconds += warmupTime;
+      }
 
       // Aggiungi transizione dopo warmup al peso di lavoro (~30s per caricare)
       totalSeconds += 30;

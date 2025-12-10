@@ -40,11 +40,25 @@ export interface ScreeningData {
   timestamp: string;
 }
 
+/**
+ * Serie singola di riscaldamento
+ */
+export interface WarmupSetDetail {
+  reps: number;       // Ripetizioni per questa serie
+  percentage: number; // Percentuale del peso di lavoro
+}
+
+/**
+ * Configurazione riscaldamento per un esercizio
+ * Può essere semplice (stesso schema per tutte le serie) o progressivo (rampa)
+ */
 export interface WarmupSet {
-  sets: number;       // Numero serie riscaldamento (es. 2)
-  reps: number;       // Ripetizioni per serie (es. 6)
-  percentage: number; // Percentuale del peso di lavoro (es. 60)
+  sets: number;       // Numero totale serie riscaldamento
+  reps: number;       // Ripetizioni per serie (se tutte uguali)
+  percentage: number; // Percentuale del peso di lavoro (se tutte uguali)
   note?: string;      // Nota opzionale (es. "Riscaldamento lower body")
+  /** Schema progressivo per lavori di forza (opzionale) */
+  ramp?: WarmupSetDetail[];
 }
 
 /**

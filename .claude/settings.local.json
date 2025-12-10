@@ -40,7 +40,8 @@
       "Bash(git push:*)",
       "Bash(git commit:*)",
       "Bash(mkdir:*)",
-      "Bash(ren \"C:\\Users\\dario\\OneDrive\\Desktop\\FitnessFlow\\packages\\web\\scripts\\generate-icons.js\" generate-icons.cjs)"
+      "Bash(ren \"C:\\Users\\dario\\OneDrive\\Desktop\\FitnessFlow\\packages\\web\\scripts\\generate-icons.js\" generate-icons.cjs)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []
