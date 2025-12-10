@@ -233,6 +233,16 @@ export {
   PROGRESSION_CHAINS
 } from './exerciseProgression';
 
+// Level Calculation (centralized)
+export type { Level as UserLevel, LevelThresholds } from './levelCalculation';
+export {
+  calculateLevelFromScore,
+  calculateLevelFromScreening,
+  calculateLevelFromBaselines,
+  getLevelInfo,
+  DEFAULT_THRESHOLDS
+} from './levelCalculation';
+
 // Pain Tracking System (real-time & cross-session)
 export type {
   // Base types

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { rateLimitMiddleware } from '../lib/rateLimit.js';
 
 /**
  * GDPR-compliant account deletion endpoint
@@ -20,6 +21,11 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Rate limiting: max 3 attempts per hour
+  if (rateLimitMiddleware(req, res, 'deleteAccount')) {
+    return; // Response already sent by middleware
   }
 
   try {

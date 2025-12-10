@@ -2,15 +2,44 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { CheckCircle, Circle, ArrowRight, ArrowLeft, Info, Check, Timer, RotateCw, X, ZoomIn } from 'lucide-react';
 import { useTranslation } from '../lib/i18n';
-import { getExerciseImageWithFallback } from '@fitnessflow/shared';
+import { getExerciseImageWithFallback, calculateLevelFromScreening } from '@fitnessflow/shared';
 
 /**
- * Formula di Brzycki per calcolare 1RM da peso e reps
- * 1RM = weight / (1.0278 - 0.0278 × reps)
+ * Calcola 1RM usando formule multiple per maggiore accuratezza
+ *
+ * - Reps 1-6: Brzycki (più accurata per bassi reps)
+ * - Reps 7-10: Media Brzycki + Epley
+ * - Reps 11+: Epley (più accurata per alti reps)
+ *
+ * Nota: Per reps > 15, l'errore può essere significativo.
+ * In questi casi, è consigliabile usare pesi più pesanti per il test.
  */
 function calculateOneRepMax(weight: number, reps: number): number {
   if (reps === 1) return weight;
-  return weight / (1.0278 - 0.0278 * reps);
+  if (reps <= 0 || weight <= 0) return 0;
+
+  // Formule:
+  // Brzycki: weight * 36 / (37 - reps) oppure weight / (1.0278 - 0.0278 × reps)
+  // Epley: weight * (1 + reps / 30)
+  // Lander: weight * 100 / (101.3 - 2.67 * reps)
+
+  const brzycki = weight / (1.0278 - 0.0278 * reps);
+  const epley = weight * (1 + reps / 30);
+
+  if (reps <= 6) {
+    // Brzycki è più accurata per bassi reps
+    return Math.round(brzycki * 10) / 10;
+  } else if (reps <= 10) {
+    // Media delle due formule
+    return Math.round(((brzycki + epley) / 2) * 10) / 10;
+  } else {
+    // Epley è più accurata per alti reps, ma con warning
+    // Per reps > 15, l'errore può superare il 10%
+    if (reps > 15) {
+      console.warn(`[1RM] High rep count (${reps}) - estimate may be inaccurate (±15%)`);
+    }
+    return Math.round(epley * 10) / 10;
+  }
 }
 
 // ===== PROGRESSIONI CALISTHENICS SCIENTIFICHE =====
@@ -410,15 +439,15 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
       parseFloat(physicalScore) * 0.2      // 20% peso ai parametri fisici
     ).toFixed(1);
 
-    // 5. Determina livello
-    let level = 'beginner';
-    if (finalScore >= 75) level = 'advanced';
-    else if (finalScore >= 55) level = 'intermediate';
+    // 5. Determina livello usando funzione centralizzata
+    const { level, finalScore: calculatedScore } = calculateLevelFromScreening(
+      parseFloat(practicalScore),
+      quizScore,
+      parseFloat(physicalScore),
+      isMachinesMode
+    );
 
-    // ✅ OVERRIDE: Chi usa macchine è sempre BEGINNER
-    // Logica: le macchine sono per principianti o chi preferisce sicurezza
     if (isMachinesMode) {
-      level = 'beginner';
       console.log('[SCREENING] ⚠️ Machines mode detected → forcing BEGINNER level');
     }
 

@@ -1,6 +1,5 @@
-45
-  import { createClient } from '@supabase/supabase-js';
-
+import { createClient } from '@supabase/supabase-js';
+import { rateLimitMiddleware } from './lib/rateLimit.js';
 
 // Helper function to determine split based on frequency
 function determineSplit(freq) {
@@ -38,6 +37,11 @@ function createProgramName(level, goal) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Rate limiting: max 5 requests per minute per user/IP
+  if (rateLimitMiddleware(req, res, 'programGenerate')) {
+    return; // Response already sent by middleware
   }
 
   try {
