@@ -5,8 +5,7 @@
  */
 
 import { Level, Goal, PatternBaselines, Exercise } from '../types';
-import { NormalizedPainArea } from './validators';
-import { calculateVolume } from './programGenerator';
+import { NormalizedPainArea, calculateVolume } from '@fitnessflow/shared';
 import {
   isExerciseConflicting,
   applyPainDeload,

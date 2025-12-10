@@ -1,14 +1,90 @@
 # Media Esercizi Mancanti - FitnessFlow
 
+> **Ultimo aggiornamento:** 29 Novembre 2025
+
 > **LEGENDA:**
 > - **VIDEO** = Esercizi dinamici che richiedono movimento
 > - **FOTO** = Esercizi statici/isometrici dove basta una foto
+> - **DA CARICARE SU SUPABASE** = Immagini da scaricare e caricare nel bucket `exercise-images`
 
 ---
 
-# SEZIONE 1: ESERCIZI DINAMICI (VIDEO NECESSARI)
+# SEZIONE 1: IMMAGINI DA CARICARE SU SUPABASE (PRIORITA' MASSIMA)
 
-## PRIORITÀ ALTA - Test Atletici Team Edition
+> Queste immagini sono referenziate nel codice ma **NON esistono ancora** su Supabase Storage.
+> Scaricarle dalle fonti indicate e caricarle nel bucket `exercise-images`.
+
+## Push-up Varianti (IconScout / Freepik)
+
+| File da caricare | Esercizio | Fonte | URL Download |
+|------------------|-----------|-------|--------------|
+| `wall-push-up.jpg` | Wall Push-up | IconScout | https://iconscout.com (cerca "wall push up") |
+| `incline-push-up.jpg` | Incline Push-up | IconScout | https://iconscout.com/illustrations/incline-push-up |
+| `diamond-push-up.jpg` | Diamond Push-up | IconScout | https://iconscout.com/illustration/diamond-push-up-9297885 |
+| `archer-push-up.jpg` | Archer Push-up | IconScout | https://iconscout.com/3d-illustrations/archer-push-up-exercise |
+| `pseudo-planche-push-up.jpg` | Pseudo Planche Push-up | IconScout | https://iconscout.com/illustration/man-doing-pseudo-planche-push-up-exercise-10357384 |
+| `one-arm-push-up.jpg` | One Arm Push-up | Spotebi | https://spotebi.com/wp-content/uploads/2016/03/one-arm-tricep-push-up-exercise-illustration-spotebi.jpg |
+
+## Vertical Push - HSPU Progressions (IconScout)
+
+| File da caricare | Esercizio | Fonte | URL Download |
+|------------------|-----------|-------|--------------|
+| `elevated-pike-push-up.jpg` | Elevated Pike Push-up | IconScout | https://iconscout.com (cerca "pike push up elevated") |
+| `wall-walk.jpg` | Wall Walk | IconScout | https://iconscout.com/illustrations/calisthenics-exercise |
+| `wall-hspu.jpg` | Wall HSPU (ROM parziale/completo) | IconScout | https://iconscout.com/illustrations/wall-assisted-handstand-pose |
+| `handstand-push-up.jpg` | Freestanding HSPU | IconScout | https://iconscout.com/illustrations/free-handstand-pushup |
+
+## Vertical Pull - Inverted Row (IconScout / Iconfinder)
+
+| File da caricare | Esercizio | Fonte | URL Download |
+|------------------|-----------|-------|--------------|
+| `inverted-row.jpg` | Inverted Row (tutte le varianti) | Iconfinder | https://www.iconfinder.com/icons/6243397/exercise_home_inverted_rows_workout_icon |
+
+## Lower Body Pull - Hamstring (Spotebi / Freepik / Vecteezy)
+
+| File da caricare | Esercizio | Fonte | URL Download |
+|------------------|-----------|-------|--------------|
+| `single-leg-bridge.jpg` | Single Leg Glute Bridge | Spotebi | https://spotebi.com/wp-content/uploads/2015/01/single-leg-bridge-exercise-illustration.jpg |
+| `single-leg-deadlift.jpg` | Single Leg RDL | Spotebi | https://spotebi.com/wp-content/uploads/2015/04/single-leg-deadlift-exercise-illustration.jpg |
+| `nordic-curl.jpg` | Nordic Curl (tutte le varianti) | Freepik | https://www.freepik.com/free-photos-vectors/nordic-hamstring-curl |
+| `sliding-leg-curl.jpg` | Sliding Leg Curl | Vecteezy | https://www.vecteezy.com/free-vector/leg-curl |
+
+## Core Avanzato (IconScout)
+
+| File da caricare | Esercizio | Fonte | URL Download |
+|------------------|-----------|-------|--------------|
+| `dragon-flag.jpg` | Dragon Flag | IconScout | https://iconscout.com/illustrations/dragon-flag |
+
+---
+
+## RIEPILOGO IMMAGINI DA CARICARE
+
+| # | File | Priorita |
+|---|------|----------|
+| 1 | `wall-push-up.jpg` | ALTA |
+| 2 | `incline-push-up.jpg` | ALTA |
+| 3 | `diamond-push-up.jpg` | ALTA |
+| 4 | `archer-push-up.jpg` | ALTA |
+| 5 | `pseudo-planche-push-up.jpg` | ALTA |
+| 6 | `one-arm-push-up.jpg` | ALTA |
+| 7 | `elevated-pike-push-up.jpg` | ALTA |
+| 8 | `wall-walk.jpg` | ALTA |
+| 9 | `wall-hspu.jpg` | ALTA |
+| 10 | `handstand-push-up.jpg` | ALTA |
+| 11 | `inverted-row.jpg` | ALTA |
+| 12 | `single-leg-bridge.jpg` | ALTA |
+| 13 | `single-leg-deadlift.jpg` | ALTA |
+| 14 | `nordic-curl.jpg` | MEDIA |
+| 15 | `sliding-leg-curl.jpg` | MEDIA |
+| 16 | `dragon-flag.jpg` | MEDIA |
+
+**TOTALE: 16 immagini da caricare**
+
+---
+
+# SEZIONE 2: VIDEO DINAMICI MANCANTI
+
+## PRIORITA' ALTA - Test Atletici Team Edition
 
 ### Test di Potenza (Salti) - TUTTI RICHIEDONO VIDEO
 | Esercizio | Descrizione | Note |
@@ -17,7 +93,7 @@
 | Squat Jump | Salto da posizione statica (90° ginocchia), no contromovimento | Confronto con CMJ |
 | Drop Jump | Caduta da box 30-40cm + rimbalzo immediato | Per calcolo RSI |
 | Broad Jump | Salto in lungo da fermo | Potenza orizzontale |
-| Box Jump | Salto su scatola | Esplosività |
+| Box Jump | Salto su scatola | Esplosivita |
 | Med Ball Chest Pass | Lancio palla medica dal petto | Potenza upper body |
 | Med Ball Overhead Throw | Lancio palla medica sopra la testa | Potenza totale |
 
@@ -28,8 +104,8 @@
 | FMS Hurdle Step | Passo sopra ostacolo | Score 0-3 |
 | FMS Inline Lunge | Affondo in linea | Score 0-3 |
 | FMS Active Straight Leg Raise | Sollevamento gamba tesa | Score 0-3 |
-| FMS Trunk Stability Push-Up | Push-up stabilità tronco | Score 0-3 |
-| FMS Rotary Stability | Stabilità rotatoria | Score 0-3 |
+| FMS Trunk Stability Push-Up | Push-up stabilita tronco | Score 0-3 |
+| FMS Rotary Stability | Stabilita rotatoria | Score 0-3 |
 
 ### Collo - Movimenti Dinamici (VIDEO)
 | Esercizio | Descrizione | Note |
@@ -44,21 +120,20 @@
 | Esercizio | Descrizione | Note |
 |-----------|-------------|------|
 | Back Extension (45°) | Estensione schiena su panca 45° | Fondamentale |
-| Back Extension (Roman Chair) | Estensione su sedia romana | Più intenso |
+| Back Extension (Roman Chair) | Estensione su sedia romana | Piu intenso |
 | Reverse Hyperextension | Iperestensione inversa | Ottimo per lombari |
 | Glute Ham Raise (GHR) | Curl femorali + estensione anca | Gold standard hamstring |
 | Reverse Nordic Curl | Nordic curl inverso per quadricipiti | Prevenzione |
 
 ---
 
-## PRIORITÀ MEDIA - Completezza Libreria (VIDEO)
+## PRIORITA' MEDIA - Completezza Libreria (VIDEO)
 
 ### Core Dinamico
 | Esercizio | Descrizione | Note |
 |-----------|-------------|------|
 | Hollow Body Rock | Oscillazione corpo cavo | Progressione |
 | V-Up | Chiusura a V | Dinamico |
-| Dragon Flag | Bandiera del drago | Molto avanzato - movimento lento |
 | Hanging Knee Raise | Sollevamento ginocchia appeso | Progressione leg raise |
 
 ### Pettorali
@@ -119,9 +194,7 @@
 |-----------|-------------|------|
 | Lying Leg Curl | Leg curl sdraiato | Macchina |
 | Seated Leg Curl | Leg curl seduto | Macchina |
-| Single Leg Romanian Deadlift | Stacco rumeno unilaterale | Stabilità + forza |
-| Slider Leg Curl | Leg curl con slider | Bodyweight |
-| Swiss Ball Leg Curl | Leg curl con palla svizzera | Instabilità |
+| Swiss Ball Leg Curl | Leg curl con palla svizzera | Instabilita |
 
 ### Polpacci
 | Esercizio | Descrizione | Note |
@@ -142,7 +215,7 @@
 
 ---
 
-## PRIORITÀ BASSA - Funzionali (VIDEO)
+## PRIORITA' BASSA - Funzionali (VIDEO)
 
 ### Esercizi Funzionali / Sport-Specific
 | Esercizio | Descrizione | Note |
@@ -152,55 +225,39 @@
 | Battle Ropes | Corde da battaglia | HIIT |
 | Farmer's Walk | Camminata del contadino | Grip + core |
 | Sandbag Carry | Trasporto sacchi | Funzionale |
-| Turkish Get Up | Alzata turca | Mobilità + stabilità |
+| Turkish Get Up | Alzata turca | Mobilita + stabilita |
 | Kettlebell Swing | Swing con kettlebell | Hip hinge esplosivo |
 | Kettlebell Clean | Clean con kettlebell | Potenza |
 | Kettlebell Snatch | Snatch con kettlebell | Potenza totale |
 
 ---
 
-# SEZIONE 2: ESERCIZI STATICI/ISOMETRICI (FOTO SUFFICIENTI)
+# SEZIONE 3: FOTO STATICHE MANCANTI
 
-## PRIORITÀ ALTA - Test Mobilità
+## PRIORITA' ALTA - Test Mobilita
 
-### Test Mobilità - FOTO
 | Esercizio | Descrizione | Angolazione Foto |
 |-----------|-------------|------------------|
-| Ankle Dorsiflexion Test | Test ginocchio-muro per mobilità caviglia | Laterale |
+| Ankle Dorsiflexion Test | Test ginocchio-muro per mobilita caviglia | Laterale |
 | Hip Internal Rotation Test | Rotazione interna anca da seduto | Dall'alto |
-| Sit and Reach Test | Flessibilità catena posteriore | Laterale |
-| Thomas Test | Test flessibilità flessori anca | Laterale |
-| FMS Shoulder Mobility | Test mobilità spalla | Posteriore |
+| Sit and Reach Test | Flessibilita catena posteriore | Laterale |
+| Thomas Test | Test flessibilita flessori anca | Laterale |
+| FMS Shoulder Mobility | Test mobilita spalla | Posteriore |
 
-### Collo - Tenute Isometriche (FOTO)
+## PRIORITA' ALTA - Collo Isometrici
+
 | Esercizio | Descrizione | Angolazione Foto |
 |-----------|-------------|------------------|
 | Neck Isometric Hold - Flexion | Tenuta isometrica flessione | Laterale |
 | Neck Isometric Hold - Extension | Tenuta isometrica estensione | Laterale |
 | Neck Isometric Hold - Lateral | Tenuta isometrica laterale | Frontale |
 
----
+## PRIORITA' BASSA - Stretching
 
-## PRIORITÀ MEDIA - Core Isometrico (FOTO)
-
-### Core - Tenute Statiche
 | Esercizio | Descrizione | Angolazione Foto |
 |-----------|-------------|------------------|
-| Side Plank (Full) | Plank laterale completo | Frontale |
-| Hollow Body Hold | Tenuta corpo cavo | Laterale |
-| Superman Hold | Tenuta superman prono | Laterale |
-| L-Sit | Tenuta a L su parallele | Laterale |
-
----
-
-## PRIORITÀ BASSA - Stretching (FOTO)
-
-### Stretching / Mobilità
-| Esercizio | Descrizione | Angolazione Foto |
-|-----------|-------------|------------------|
-| Pigeon Stretch | Stretch del piccione | Laterale o 3/4 |
 | 90/90 Stretch | Stretch 90/90 | Frontale |
-| World's Greatest Stretch | Stretch più completo | Laterale |
+| World's Greatest Stretch | Stretch piu completo | Laterale |
 | Couch Stretch | Stretch sul divano | Laterale |
 | Bretzel Stretch | Stretch bretzel | Dall'alto |
 
@@ -208,39 +265,56 @@
 
 # RIEPILOGO TOTALE
 
+## IMMAGINI DA CARICARE SU SUPABASE (Blocking)
+
+| Categoria | Quantita | Priorita |
+|-----------|----------|----------|
+| Push-up varianti | 6 | ALTA |
+| HSPU progressions | 4 | ALTA |
+| Inverted Row | 1 | ALTA |
+| Hamstring | 4 | ALTA |
+| Core avanzato | 1 | MEDIA |
+| **TOTALE IMMAGINI** | **16** | - |
+
 ## VIDEO NECESSARI (Esercizi Dinamici)
 
-| Categoria | Quantità | Priorità |
+| Categoria | Quantita | Priorita |
 |-----------|----------|----------|
 | Test Potenza (salti) | 7 | ALTA |
 | Test FMS (movimento) | 6 | ALTA |
 | Collo (dinamici) | 5 | ALTA |
 | Schiena bassa | 5 | ALTA |
-| Core dinamico | 4 | MEDIA |
+| Core dinamico | 3 | MEDIA |
 | Pettorali | 8 | MEDIA |
 | Spalle/Cuffia | 8 | MEDIA |
 | Schiena alta | 7 | MEDIA |
 | Braccia | 7 | MEDIA |
 | Gambe quadricipiti | 3 | MEDIA |
-| Gambe hamstring | 5 | MEDIA |
+| Gambe hamstring | 3 | MEDIA |
 | Polpacci | 3 | MEDIA |
 | Glutei | 6 | MEDIA |
 | Funzionali | 9 | BASSA |
-| **TOTALE VIDEO** | **~83** | - |
+| **TOTALE VIDEO** | **~80** | - |
 
-## FOTO SUFFICIENTI (Esercizi Statici)
+## FOTO STATICHE MANCANTI
 
-| Categoria | Quantità | Priorità |
+| Categoria | Quantita | Priorita |
 |-----------|----------|----------|
-| Test Mobilità | 5 | ALTA |
+| Test Mobilita | 5 | ALTA |
 | Collo (isometrici) | 3 | ALTA |
-| Core isometrico | 4 | MEDIA |
-| Stretching | 5 | BASSA |
-| **TOTALE FOTO** | **~17** | - |
+| Stretching | 4 | BASSA |
+| **TOTALE FOTO** | **~12** | - |
 
 ---
 
 # NOTE TECNICHE
+
+## Per le IMMAGINI da caricare su Supabase
+- **Bucket:** `exercise-images`
+- **Formato:** JPG preferito (dimensione minore)
+- **Risoluzione:** 800x600 minimo
+- **Dimensione:** < 200KB per immagine
+- **Naming:** `nome-esercizio-in-minuscolo.jpg`
 
 ## Per i VIDEO (Esercizi Dinamici)
 - **Risoluzione:** 1080p (1920x1080)
@@ -248,47 +322,30 @@
 - **Durata:** 10-20 secondi (loop)
 - **Formato:** MP4 (H.264)
 - **Sfondo:** neutro, buona illuminazione
-- **Angolazione:** laterale per movimenti sagittali, frontale per altri
-
-### Naming convention VIDEO:
-`nome-esercizio-in-minuscolo.mp4`
-```
-counter-movement-jump.mp4
-hack-squat.mp4
-neck-flexion.mp4
-```
-
----
+- **Naming:** `nome-esercizio-in-minuscolo.mp4`
 
 ## Per le FOTO (Esercizi Statici)
-- **Risoluzione:** 1080p (1920x1080) o superiore
-- **Formato:** JPG o PNG (PNG per trasparenza se necessario)
-- **Sfondo:** neutro, buona illuminazione
-- **Qualità:** Alta compressione (< 500KB per web)
-- **Mostrare:** Posizione corretta + punti chiave di allineamento
-
-### Naming convention FOTO:
-`nome-esercizio-in-minuscolo.jpg`
-```
-hollow-body-hold.jpg
-side-plank-full.jpg
-pigeon-stretch.jpg
-```
+- **Risoluzione:** 1080p o superiore
+- **Formato:** JPG o PNG
+- **Qualita:** < 500KB
+- **Naming:** `nome-esercizio-in-minuscolo.jpg`
 
 ---
 
-## RISORSE PER FOTO STOCK
+# FONTI CONSIGLIATE
 
-### Gratuiti:
-- **Pexels** (pexels.com) - Foto fitness di alta qualità
-- **Unsplash** (unsplash.com) - Alcune foto yoga/stretching
-- **Pixabay** (pixabay.com) - Varie foto esercizi
+## Per Immagini/Illustrazioni (Gratuite)
+- **IconScout** - https://iconscout.com (SVG, PNG gratuiti)
+- **Freepik** - https://freepik.com (vettori gratuiti)
+- **Vecteezy** - https://vecteezy.com (richiede attribuzione)
+- **Spotebi** - https://spotebi.com/exercise-guide/ (illustrazioni fitness)
+- **The Noun Project** - https://thenounproject.com (icone)
 
-### A pagamento (migliore qualità):
-- **Shutterstock** - Ampia libreria fitness
-- **Adobe Stock** - Qualità professionale
-- **iStock** - Buona selezione sport/fitness
+## Per Foto Stock (Gratuite)
+- **Pexels** - https://pexels.com
+- **Unsplash** - https://unsplash.com
+- **Pixabay** - https://pixabay.com
 
-### Specializzati (consigliati):
+## Per Video (A pagamento)
 - **Envato Elements** (~16$/mese) - Video + foto fitness bundle
-- **Artlist** - Per video di alta qualità
+- **Artlist** - Per video di alta qualita

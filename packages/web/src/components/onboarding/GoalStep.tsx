@@ -142,6 +142,7 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
   const showMotorRecoveryDisclaimer = goals.includes('motor_recovery');
   const showPregnancyDisclaimer = goals.includes('pre_partum') || goals.includes('post_partum');
   const showDisabilityDisclaimer = goals.includes('disabilita');
+  const showWeightLossDisclaimer = goals.includes('dimagrimento');
 
   // Separa goal per categoria
   const fitnessGoals = GOAL_OPTIONS.filter(g => g.category === 'fitness');
@@ -369,6 +370,36 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
                 <li>{t('onboarding.goal.disabilityNote3')}</li>
                 <li>{t('onboarding.goal.disabilityNote4')}</li>
               </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DISCLAIMER DIMAGRIMENTO */}
+      {showWeightLossDisclaimer && (
+        <div className="bg-orange-500/10 border border-orange-500/50 rounded-lg p-5 animate-in fade-in duration-300">
+          <div className="flex items-start gap-3">
+            <div className="text-2xl">⚠️</div>
+            <div>
+              <p className="text-sm font-semibold text-orange-300 mb-2">Informazione Importante sul Dimagrimento</p>
+              <p className="text-xs text-orange-200 mb-3">
+                La base per dimagrire è il <strong className="text-orange-100">deficit calorico</strong>.
+                Il dimagrimento si ottiene combinando l'attività fisica con una <strong className="text-orange-100">dieta equilibrata e ipocalorica</strong>.
+              </p>
+              <p className="text-xs text-orange-200 mb-3">
+                L'allenamento ti aiuterà a:
+              </p>
+              <ul className="text-xs text-orange-200 space-y-1.5 mb-3">
+                <li>• Aumentare il dispendio calorico giornaliero</li>
+                <li>• Preservare la massa muscolare durante il deficit</li>
+                <li>• Migliorare il metabolismo basale</li>
+                <li>• Favorire la ricomposizione corporea</li>
+              </ul>
+              <div className="pt-3 border-t border-orange-500/30">
+                <p className="text-xs text-orange-300 font-medium">
+                  📋 Consulta un nutrizionista o un dietologo per un piano alimentare personalizzato che accompagni il tuo programma di allenamento.
+                </p>
+              </div>
             </div>
           </div>
         </div>

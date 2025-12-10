@@ -11,6 +11,23 @@ export interface NormalizedPainArea {
 }
 
 /**
+ * Converte severità numerica (1-10) in categoria stringa
+ *
+ * LOGICA CONSERVATIVA (sicurezza prima di tutto):
+ * 1-3 = mild → Deload leggero, continua con cautela
+ * 4+  = severe → EVITA esercizio, sostituisci o escludi
+ *
+ * Razionale: un dolore 4+ pre-sessione o che emerge durante
+ * l'esercizio è un campanello d'allarme. Meglio essere conservativi.
+ */
+export function numericSeverityToString(severity: number): PainSeverity {
+  if (severity <= 3) return 'mild';
+  // 4+ = severe (evita esercizio)
+  // Non esiste più "moderate" - o è gestibile (1-3) o va evitato (4+)
+  return 'severe';
+}
+
+/**
  * Valida e normalizza formato painAreas
  * Supporta backward compatibility con formato stringa legacy
  *
@@ -43,7 +60,15 @@ export function validateAndNormalizePainAreas(painAreas: any[]): NormalizedPainA
       // Caso 1: Formato oggetto { area, severity }
       if (typeof entry === 'object' && entry.area) {
         const area = entry.area.toLowerCase();
-        const severity = entry.severity || 'mild';
+        let severity: PainSeverity;
+
+        // Supporta severità numerica (1-10) o stringa
+        if (typeof entry.severity === 'number') {
+          severity = numericSeverityToString(entry.severity);
+          console.log(`[VALIDATOR] Convertito severity ${entry.severity} -> ${severity} per ${area}`);
+        } else {
+          severity = entry.severity || 'mild';
+        }
 
         if (!validAreas.includes(area as PainArea)) {
           console.warn(`[VALIDATOR] Area non valida ignorata: ${area}`);

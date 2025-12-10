@@ -37,8 +37,31 @@ export type { VolumeResult, ProgramGeneratorOptions } from './programGenerator';
 export {
   calculateVolume,
   generateProgram,
-  generateProgramWithSplit
+  generateProgramWithSplit,
+  isBodyweightExercise
 } from './programGenerator';
+
+// Program Validation & Runtime Adaptation
+export type {
+  ValidationResult,
+  ValidationError,
+  ValidationWarning,
+  ValidationCorrection,
+  RuntimeContext,
+  RuntimeAdaptation,
+  ScreeningResults as PreWorkoutScreening,
+  SessionFeedback,
+  PainAdaptation,
+  ExerciseReplacement,
+  TimeCompression
+} from './programValidation';
+export {
+  validateProgramInput,
+  applyCorrections,
+  generateDefaultBaselines,
+  adaptWorkoutToRuntime,
+  formatValidationResult
+} from './programValidation';
 
 // Weekly Split Generator
 // Note: DayWorkout and WeeklySplit are exported from types, not here
@@ -96,7 +119,8 @@ export {
 // Validators
 export type { NormalizedPainArea } from './validators';
 export {
-  validateAndNormalizePainAreas
+  validateAndNormalizePainAreas,
+  numericSeverityToString
 } from './validators';
 
 // Pain Management
@@ -194,3 +218,106 @@ export {
   isExerciseCompatible,
   getAvailableVariants
 } from './locationAdapter';
+
+// Exercise Progression (downgrade/upgrade/auto-adjust)
+export type {
+  DifficultyFeedback,
+  ProgressionResult
+} from './exerciseProgression';
+export {
+  analyzeExerciseFeedback,
+  getDowngradedExercise,
+  getUpgradedExercise,
+  getLocationSwitchAdjustment,
+  getSuggestedStartingExercise,
+  PROGRESSION_CHAINS
+} from './exerciseProgression';
+
+// Pain Tracking System (real-time & cross-session)
+export type {
+  // Base types
+  ExtendedPainArea,
+  LateralizedPainArea,
+  AllPainAreas,
+  PainType,
+  PainCharacter,
+  Laterality,
+  PainTiming,
+  PainAction,
+  PainRecord,
+  // Exercise tracking
+  ExerciseTrackingStatus,
+  ExercisePainHistory,
+  RecoveryPlan,
+  NextSessionExerciseCheck,
+  ProgressivePainState,
+  PainEvaluationResult,
+  PainScreening,
+  IncompleteSetFeedback,
+  PainTrackedSession,
+  // Memory & History
+  UserPainMemory,
+  ChronicPainArea,
+  WeeklyPainSummary,
+  LongTermPainHistory,
+  MonthlyTrend,
+  // Correlations
+  ExercisePainCorrelation,
+  CyclePainCorrelation,
+  // Alerts & Warmup
+  MedicalAlert,
+  AdaptiveWarmup,
+  WarmupExercise,
+  PainTypeEvaluation
+} from './painTracking';
+export {
+  // Labels
+  EXTENDED_PAIN_AREA_LABELS,
+  LATERALIZED_PAIN_AREA_LABELS,
+  PAIN_TYPE_LABELS,
+  PAIN_CHARACTER_LABELS,
+  // Core evaluation
+  getSeverityCategory,
+  evaluatePreWorkoutPain,
+  evaluateIntraExercisePain,
+  evaluatePostExercisePain,
+  evaluateIncompleteSet,
+  // Screening
+  performPreWorkoutScreening,
+  performPostWarmupScreening,
+  // Progressive tracking
+  updateProgressivePainState,
+  // Memory
+  updatePainMemory,
+  createRecoveryPlan,
+  advanceRecoveryPlan,
+  isRecoveryPlanComplete,
+  checkExerciseForNextSession,
+  checkExerciseFlag,
+  prepareNextSessionAdaptations,
+  createEmptyPainMemory,
+  // Multi-area
+  evaluateMultiAreaPain,
+  // Area helpers
+  getAffectedPatterns,
+  isPainAreaSupported,
+  getSupportedPainAreas,
+  getPainAreaLabel,
+  getBaseArea,
+  areBilateral,
+  // DOMS vs Articolare
+  evaluatePainType,
+  getPainTypeQuestions,
+  // Warm-up adattivo
+  generateAdaptiveWarmup,
+  // Correlazioni
+  analyzeExercisePainCorrelations,
+  analyzeCyclePainCorrelations,
+  // Long-term
+  calculateLongTermTrend,
+  generateLongTermInsights,
+  // Medical alerts
+  generateMedicalAlerts,
+  hasUrgentAlerts,
+  acknowledgeAlert
+} from './painTracking';

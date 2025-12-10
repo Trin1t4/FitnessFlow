@@ -5,14 +5,15 @@
  */
 
 import { Level, Goal, PatternBaselines, Exercise } from '../types';
-import { NormalizedPainArea } from './validators';
-import { calculateVolume } from './programGenerator';
 import {
+  NormalizedPainArea,
+  calculateVolume,
+  // Pain Management from shared (complete system with lateralized areas, recovery plans, etc.)
   isExerciseConflicting,
   applyPainDeload,
   findSafeAlternative,
   getCorrectiveExercises
-} from './painManagement';
+} from '@fitnessflow/shared';
 import { convertToMachineVariant } from './exerciseMapping';
 import {
   getVariantForPattern,

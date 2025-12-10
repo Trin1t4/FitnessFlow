@@ -45,3 +45,46 @@ export type {
   AddPlayerForm,
   ModeSelectionState,
 } from './team.types';
+
+// Pain Tracking System (re-exported from @fitnessflow/shared)
+// Complete system with lateralized areas, recovery plans, DOMS detection, etc.
+export type {
+  // Base types
+  ExtendedPainArea,
+  LateralizedPainArea,
+  AllPainAreas,
+  PainType,
+  PainCharacter,
+  Laterality,
+  PainTiming,
+  PainAction,
+  PainRecord,
+  // Exercise tracking
+  ExerciseTrackingStatus,
+  ExercisePainHistory,
+  RecoveryPlan,
+  NextSessionExerciseCheck,
+  ProgressivePainState,
+  PainEvaluationResult,
+  PainScreening,
+  IncompleteSetFeedback,
+  PainTrackedSession,
+  // Memory & History
+  UserPainMemory,
+  ChronicPainArea,
+  WeeklyPainSummary,
+  LongTermPainHistory,
+  MonthlyTrend,
+  // Correlations
+  ExercisePainCorrelation,
+  CyclePainCorrelation,
+  // Alerts & Warmup
+  MedicalAlert,
+  AdaptiveWarmup,
+  WarmupExercise,
+  PainTypeEvaluation,
+  // Pain Management
+  PainExerciseMapping,
+  DeloadResult,
+  NormalizedPainArea,
+} from '@fitnessflow/shared';

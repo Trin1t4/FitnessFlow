@@ -4,6 +4,10 @@
 import { supabase } from './supabaseClient';
 import type { Team, TeamMember, CreateTeamForm, AddPlayerForm } from '@/types';
 
+// URL della Edge Function per invio email
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://mhcdxqhhlrujbjxtgnmz.supabase.co';
+const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-team-invite`;
+
 // ============================================
 // TEAMS
 // ============================================
@@ -133,18 +137,53 @@ export async function addPlayerToTeam(teamId: string, playerData: AddPlayerForm,
       .single();
 
     if (error) throw error;
+
+    // Invia email tramite Edge Function
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+
+      await fetch(EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          type: 'INSERT',
+          table: 'team_invites',
+          record: {
+            id: invite.id,
+            team_id: invite.team_id,
+            email: invite.email,
+            role: invite.role,
+            invite_token: invite.invite_token,
+            invited_by: invite.invited_by,
+            position: invite.position,
+            jersey_number: invite.jersey_number,
+            source_app: 'teamflow', // Identifica l'app sorgente
+          },
+        }),
+      });
+      console.log('Invite email sent successfully');
+    } catch (emailError) {
+      console.error('Failed to send invite email:', emailError);
+      // Non blocchiamo l'operazione se l'email fallisce
+    }
+
     return { invite: { token: invite.invite_token } };
   } else {
-    // Crea direttamente un membro senza account (gestito dal coach)
-    // Questo crea un "placeholder" che verrà collegato quando il giocatore si registra
+    // Crea un placeholder senza user_id (verrà collegato quando il giocatore si registra)
     const { data: member, error } = await supabase
       .from('team_members')
       .insert({
         team_id: teamId,
-        user_id: invitedBy, // Temporaneamente associato al coach
+        user_id: null, // Placeholder - nessun account ancora
         role: 'athlete',
         jersey_number: playerData.jersey_number,
         position: playerData.position,
+        player_name: `${playerData.first_name || ''} ${playerData.last_name || ''}`.trim() || `Giocatore #${playerData.jersey_number}`,
+        player_email: playerData.email || null,
         status: 'pending',
         invited_by: invitedBy,
       })

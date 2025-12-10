@@ -1,0 +1,541 @@
+/**
+ * Squat Analyzer
+ * Analisi biomeccanica per Back Squat e Front Squat
+ * Basato sui principi DCSS di Paolo Evangelista
+ */
+
+import type {
+  PoseLandmarks,
+  FrameAnalysis,
+  Issue,
+  Morphotype,
+  StickingPointAnalysis,
+  SafetyCheck,
+  EfficiencyCheck
+} from '../../../types/biomechanics.types';
+
+import {
+  calculateAngle,
+  getKneeAngle,
+  getHipAngle,
+  getTorsoAngle,
+  getKneeValgus,
+  isSpineNeutral,
+  areHeelsDown,
+  midpoint,
+  distance2D,
+  angleFromVertical
+} from '../core';
+
+// ============================================
+// RANGE DI SICUREZZA SQUAT
+// ============================================
+
+export const SQUAT_SAFE_RANGES = {
+  knee: { min: 70, max: 170 },          // Sotto 70° = stress rotula
+  hip: { min: 40, max: 170 },           // Varia con proporzioni
+  ankle: { min: 25, max: 45 },          // Limitato da mobilità
+  torso: { min: 20, max: 65 },          // Femori lunghi = più inclinato
+  kneeValgus: { min: -8, max: 8 }       // Oltre = rischio LCA
+};
+
+// ============================================
+// SAFETY CHECKS
+// ============================================
+
+export const SQUAT_SAFETY_CHECKS: SafetyCheck[] = [
+  {
+    code: 'SPINE_FLEXION',
+    severity: 'HIGH',
+    description: 'Perdita di neutralità lombare (butt wink)',
+    correction: 'Fermati prima del punto dove perdi la curva. Lavora su mobilità anca e caviglia.',
+    check: (frame) => frame.spineNeutral === false
+  },
+  {
+    code: 'KNEE_VALGUS',
+    severity: 'HIGH',
+    description: 'Ginocchia che collassano verso l\'interno',
+    correction: 'Spingi le ginocchia fuori attivamente, in linea con le punte dei piedi. Rinforza glutei con band work.',
+    check: (frame) => {
+      const valgus = frame.angles.kneeValgus || 0;
+      return Math.abs(valgus) > 10;
+    }
+  },
+  {
+    code: 'HEEL_RISE',
+    severity: 'MEDIUM',
+    description: 'Talloni che si alzano dal pavimento',
+    correction: 'Migliora mobilità caviglia o usa scarpe con tacco. Peso sui talloni/mesopiede.',
+    check: (frame) => frame.heelContact === false
+  },
+  {
+    code: 'KNEE_CAVE_SEVERE',
+    severity: 'HIGH',
+    description: 'Cedimento severo delle ginocchia nella risalita',
+    correction: 'Riduci il carico. Attiva i glutei spingendo le ginocchia fuori prima di iniziare la risalita.',
+    check: (frame) => {
+      const valgus = frame.angles.kneeValgus || 0;
+      return frame.phase === 'CONCENTRIC' && Math.abs(valgus) > 15;
+    }
+  },
+  {
+    code: 'EXCESSIVE_FORWARD_LEAN',
+    severity: 'MEDIUM',
+    description: 'Inclinazione del torso eccessiva',
+    correction: 'Petto alto, core attivo. Se persiste con torso lungo, potrebbe essere il peso troppo pesante.',
+    check: (frame, morphotype) => {
+      const torso = frame.angles.torso || 0;
+      const threshold = morphotype?.type === 'LONG_FEMUR' ? 65 : 55;
+      return torso > threshold;
+    }
+  }
+];
+
+// ============================================
+// EFFICIENCY CHECKS
+// ============================================
+
+export const SQUAT_EFFICIENCY_CHECKS: EfficiencyCheck[] = [
+  {
+    code: 'BAR_PATH_FORWARD',
+    description: 'Bilanciere si sposta in avanti durante il movimento',
+    correction: 'Mantieni il peso sui talloni/mesopiede. Il bilanciere deve rimanere sopra il mesopiede.',
+    check: (frames, morphotype) => {
+      // Verifica se il bar path devia troppo in avanti
+      const deviations = frames
+        .filter(f => f.barPath)
+        .map(f => f.barPath!.forwardDeviation || 0);
+
+      if (deviations.length === 0) return false;
+
+      const maxDeviation = Math.max(...deviations);
+      const threshold = morphotype?.type === 'LONG_FEMUR' ? 8 : 5;
+      return maxDeviation > threshold;
+    }
+  },
+  {
+    code: 'HIPS_RISE_FIRST',
+    description: 'Le anche salgono prima delle spalle (good morning squat)',
+    correction: 'Guida con il petto. Pensa a "spingere la schiena contro il bilanciere" mentre sali.',
+    check: (frames) => {
+      // Cerca pattern dove l'angolo del torso aumenta durante la fase concentrica
+      const concentricFrames = frames.filter(f => f.phase === 'CONCENTRIC');
+      if (concentricFrames.length < 3) return false;
+
+      // Se il torso si inclina di più mentre si sale = hips rise first
+      const firstTorso = concentricFrames[0].angles.torso || 0;
+      const midTorso = concentricFrames[Math.floor(concentricFrames.length / 2)].angles.torso || 0;
+
+      return midTorso > firstTorso + 10; // Il torso si inclina >10° in più
+    }
+  },
+  {
+    code: 'INSUFFICIENT_DEPTH',
+    description: 'Profondità insufficiente - anca non sotto il ginocchio',
+    correction: 'Scendi fino a quando la piega dell\'anca è sotto il ginocchio. Lavora su mobilità se necessario.',
+    check: (frames) => {
+      const bottomFrame = frames.find(f => f.phase === 'BOTTOM');
+      if (!bottomFrame) return false;
+
+      const hipAngle = bottomFrame.angles.hip || 180;
+      return hipAngle > 100; // Non abbastanza profondo
+    }
+  },
+  {
+    code: 'ASYMMETRIC_STANCE',
+    description: 'Posizione asimmetrica - un lato lavora più dell\'altro',
+    correction: 'Verifica che i piedi siano equidistanti. Possibile squilibrio muscolare da correggere.',
+    check: (frames) => {
+      // Verifica asimmetria confrontando angoli dx e sx
+      // Implementazione semplificata
+      return false; // TODO: implementare confronto bilaterale
+    }
+  },
+  {
+    code: 'NO_PAUSE_BOTTOM',
+    description: 'Rimbalzo eccessivo nel bottom - perdita di controllo',
+    correction: 'Controlla la discesa, breve pausa nel bottom per mantenere tensione.',
+    check: (frames) => {
+      // Cerca velocità eccessiva nell'inversione
+      const bottomFrames = frames.filter(f => f.phase === 'BOTTOM');
+      if (bottomFrames.length === 0) return false;
+
+      // Se la velocità nel bottom è alta = rimbalzo
+      const avgVelocity = bottomFrames.reduce((sum, f) => sum + (f.velocity || 0), 0) / bottomFrames.length;
+      return avgVelocity > 0.5; // Threshold arbitrario, da calibrare
+    }
+  }
+];
+
+// ============================================
+// ANALISI FRAME SQUAT
+// ============================================
+
+export function analyzeSquatFrame(
+  landmarks: PoseLandmarks,
+  frameNumber: number,
+  timestamp: number,
+  phase: string,
+  morphotype?: Morphotype
+): FrameAnalysis {
+  // Calcola angoli
+  const kneeAngleLeft = getKneeAngle(landmarks, 'left');
+  const kneeAngleRight = getKneeAngle(landmarks, 'right');
+  const kneeAngle = (kneeAngleLeft + kneeAngleRight) / 2;
+
+  const hipAngleLeft = getHipAngle(landmarks, 'left');
+  const hipAngleRight = getHipAngle(landmarks, 'right');
+  const hipAngle = (hipAngleLeft + hipAngleRight) / 2;
+
+  const torsoAngle = getTorsoAngle(landmarks);
+
+  const kneeValgusLeft = getKneeValgus(landmarks, 'left');
+  const kneeValgusRight = getKneeValgus(landmarks, 'right');
+  const kneeValgus = (kneeValgusLeft + kneeValgusRight) / 2;
+
+  // Stati
+  const spineNeutral = isSpineNeutral(landmarks);
+  const heelContact = areHeelsDown(landmarks);
+
+  // Calcola bar path (stima dalla posizione delle spalle)
+  const shoulderMid = midpoint(landmarks.left_shoulder, landmarks.right_shoulder);
+  const hipMid = midpoint(landmarks.left_hip, landmarks.right_hip);
+
+  // Issues per questo frame
+  const issues: Issue[] = [];
+
+  // Check safety
+  const frameAnalysis: FrameAnalysis = {
+    frameNumber,
+    timestamp,
+    phase: phase as any,
+    angles: {
+      knee: kneeAngle,
+      hip: hipAngle,
+      torso: torsoAngle,
+      kneeValgus
+    },
+    barPath: {
+      x: shoulderMid.x,
+      y: shoulderMid.y,
+      deviationFromVertical: Math.abs(shoulderMid.x - hipMid.x) * 100 // cm approssimati
+    },
+    spineNeutral,
+    heelContact,
+    issues
+  };
+
+  // Esegui safety checks
+  for (const check of SQUAT_SAFETY_CHECKS) {
+    if (check.check(frameAnalysis, morphotype)) {
+      issues.push({
+        type: 'SAFETY',
+        code: check.code,
+        severity: check.severity,
+        timestamp,
+        frameNumber,
+        description: check.description,
+        correction: check.correction
+      });
+    }
+  }
+
+  return frameAnalysis;
+}
+
+// ============================================
+// STICKING POINT ANALYSIS
+// ============================================
+
+export function analyzeSquatStickingPoint(frames: FrameAnalysis[]): StickingPointAnalysis {
+  // Trova il frame con velocità minima nella fase concentrica
+  const concentricFrames = frames.filter(f =>
+    f.phase === 'CONCENTRIC' || f.phase === 'MID_RANGE'
+  );
+
+  if (concentricFrames.length < 3) {
+    return { detected: false };
+  }
+
+  // Trova il frame più lento
+  let minVelocityFrame: FrameAnalysis | null = null;
+  let minVelocity = Infinity;
+
+  for (const frame of concentricFrames) {
+    if (frame.velocity !== undefined && frame.velocity < minVelocity && frame.velocity > 0) {
+      minVelocity = frame.velocity;
+      minVelocityFrame = frame;
+    }
+  }
+
+  if (!minVelocityFrame) {
+    return { detected: false };
+  }
+
+  const kneeAngle = minVelocityFrame.angles.knee || 180;
+
+  // Sticking nella buca (knee < 100°)
+  if (kneeAngle < 100) {
+    return {
+      detected: true,
+      position: 'BOTTOM',
+      angleAtSticking: kneeAngle,
+      diagnosis: {
+        muscular: ['Quadricipiti deboli in allungamento', 'Glutei non attivati nel bottom'],
+        technical: ['Perdita di tensione nel bottom', 'Rimbalzo assente o eccessivo']
+      },
+      recommendations: {
+        accessories: ['Pause squat (3s nel bottom)', 'Pin squat dal bottom', 'Belt squat'],
+        cues: ['Mantieni tensione nel bottom', 'Spingi il pavimento via da te', 'Gomiti sotto la barra']
+      }
+    };
+  }
+
+  // Sticking mid-range (100° < knee < 140°)
+  if (kneeAngle >= 100 && kneeAngle < 140) {
+    return {
+      detected: true,
+      position: 'MID_RANGE',
+      angleAtSticking: kneeAngle,
+      diagnosis: {
+        muscular: ['Glutei deboli nel mid-range', 'Estensori anca carenti'],
+        technical: ['Good morning squat', 'Perdita verticalità barra', 'Ginocchia che cedono']
+      },
+      recommendations: {
+        accessories: ['Hip thrust', 'Good morning', 'Squat con catene/bande', 'Box squat'],
+        cues: ['Guida con il petto', 'Stringi i glutei uscendo dalla buca', 'Spingi le ginocchia fuori']
+      }
+    };
+  }
+
+  // Sticking in lockout (knee > 140°)
+  return {
+    detected: true,
+    position: 'LOCKOUT',
+    angleAtSticking: kneeAngle,
+    diagnosis: {
+      muscular: ['Quadricipiti deboli in accorciamento'],
+      technical: ['Perdita di velocità nella parte finale']
+    },
+    recommendations: {
+      accessories: ['1.5 rep squat', 'Leg press', 'Leg extension'],
+      cues: ['Accelera attraverso il movimento', 'Spingi fino al lockout completo']
+    }
+  };
+}
+
+// ============================================
+// PUNTI DI FORZA
+// ============================================
+
+export function identifySquatStrengths(frames: FrameAnalysis[]): string[] {
+  const strengths: string[] = [];
+
+  // Verifica profondità
+  const bottomFrame = frames.find(f => f.phase === 'BOTTOM');
+  if (bottomFrame && (bottomFrame.angles.hip || 180) < 90) {
+    strengths.push('Ottima profondità raggiunta');
+  }
+
+  // Verifica spine neutrale
+  const spineIssues = frames.filter(f => f.spineNeutral === false);
+  if (spineIssues.length === 0) {
+    strengths.push('Spine neutrale mantenuta durante tutto il movimento');
+  }
+
+  // Verifica talloni
+  const heelIssues = frames.filter(f => f.heelContact === false);
+  if (heelIssues.length === 0) {
+    strengths.push('Peso ben distribuito sul piede');
+  }
+
+  // Verifica valgismo
+  const valgusIssues = frames.filter(f => Math.abs(f.angles.kneeValgus || 0) > 8);
+  if (valgusIssues.length === 0) {
+    strengths.push('Ginocchia stabili e allineate');
+  }
+
+  // Verifica controllo eccentrico
+  const eccentricFrames = frames.filter(f => f.phase === 'ECCENTRIC');
+  if (eccentricFrames.length > 0) {
+    const avgVelocity = eccentricFrames.reduce((sum, f) => sum + (f.velocity || 0), 0) / eccentricFrames.length;
+    if (avgVelocity < 0.3) {
+      strengths.push('Buon controllo nella fase eccentrica');
+    }
+  }
+
+  return strengths;
+}
+
+// ============================================
+// RACCOMANDAZIONI IMMEDIATE
+// ============================================
+
+export function generateSquatRecommendations(
+  issues: Issue[],
+  morphotype?: Morphotype
+): { immediate: string[]; accessories: string[]; mobility: string[] } {
+  const immediate: string[] = [];
+  const accessories: string[] = [];
+  const mobility: string[] = [];
+
+  // Raccomandazioni basate sugli issues
+  for (const issue of issues) {
+    switch (issue.code) {
+      case 'KNEE_VALGUS':
+      case 'KNEE_CAVE_SEVERE':
+        immediate.push('Usa una banda elastica sopra le ginocchia per feedback tattile');
+        accessories.push('Clamshell 2x15 per lato', 'Lateral band walk 2x20');
+        break;
+
+      case 'SPINE_FLEXION':
+        immediate.push('Riduci la profondità fino a mantenere la curva lombare');
+        mobility.push('90/90 hip stretch', 'Goblet squat hold 3x30s');
+        break;
+
+      case 'HEEL_RISE':
+        immediate.push('Prova con rialzo sotto i talloni o scarpe da squat');
+        mobility.push('Ankle dorsiflexion stretch', 'Calf foam rolling');
+        break;
+
+      case 'HIPS_RISE_FIRST':
+        immediate.push('Pensa "petto alto" mentre sali');
+        accessories.push('Front squat (obbliga posizione verticale)', 'Tempo squat 3-1-1');
+        break;
+
+      case 'EXCESSIVE_FORWARD_LEAN':
+        immediate.push('Core attivo, respira nel diaframma prima di ogni rep');
+        accessories.push('Front squat', 'Goblet squat');
+        break;
+    }
+  }
+
+  // Raccomandazioni basate sul morfotipo
+  if (morphotype?.type === 'LONG_FEMUR') {
+    immediate.push('Con femori lunghi, una maggiore inclinazione del torso è normale');
+    accessories.push('Box squat per trovare la profondità ottimale');
+  }
+
+  // Rimuovi duplicati
+  return {
+    immediate: [...new Set(immediate)],
+    accessories: [...new Set(accessories)],
+    mobility: [...new Set(mobility)]
+  };
+}
+
+// ============================================
+// FULL SQUAT ANALYSIS
+// ============================================
+
+export function analyzeFullSquat(
+  allFrames: FrameAnalysis[],
+  morphotype?: Morphotype
+): {
+  issues: Issue[];
+  strengths: string[];
+  stickingPoint: StickingPointAnalysis;
+  recommendations: { immediate: string[]; accessories: string[]; mobility: string[] };
+  overallScore: number;
+} {
+  // Raccogli tutti gli issues
+  const allIssues: Issue[] = [];
+
+  for (const frame of allFrames) {
+    allIssues.push(...frame.issues);
+  }
+
+  // Esegui efficiency checks
+  for (const check of SQUAT_EFFICIENCY_CHECKS) {
+    if (check.check(allFrames, morphotype)) {
+      allIssues.push({
+        type: 'EFFICIENCY',
+        code: check.code,
+        severity: check.severity || 'MEDIUM',
+        description: check.description,
+        correction: check.correction
+      });
+    }
+  }
+
+  // Ordina per priorità e rimuovi duplicati
+  const uniqueIssues = removeDuplicateIssues(allIssues);
+  const sortedIssues = sortIssuesByPriority(uniqueIssues);
+
+  // Max 2 correzioni alla volta per non sovraccaricare l'utente
+  const topIssues = sortedIssues.slice(0, 2);
+
+  // Identifica punti di forza
+  const strengths = identifySquatStrengths(allFrames);
+
+  // Analizza sticking point
+  const stickingPoint = analyzeSquatStickingPoint(allFrames);
+
+  // Genera raccomandazioni
+  const recommendations = generateSquatRecommendations(topIssues, morphotype);
+
+  // Aggiungi raccomandazioni dallo sticking point
+  if (stickingPoint.detected && stickingPoint.recommendations) {
+    recommendations.accessories.push(...stickingPoint.recommendations.accessories);
+    recommendations.immediate.push(...stickingPoint.recommendations.cues);
+  }
+
+  // Calcola score
+  const overallScore = calculateSquatScore(topIssues, strengths);
+
+  return {
+    issues: topIssues,
+    strengths,
+    stickingPoint,
+    recommendations: {
+      immediate: [...new Set(recommendations.immediate)].slice(0, 3),
+      accessories: [...new Set(recommendations.accessories)].slice(0, 4),
+      mobility: [...new Set(recommendations.mobility)].slice(0, 2)
+    },
+    overallScore
+  };
+}
+
+// ============================================
+// UTILITY
+// ============================================
+
+function removeDuplicateIssues(issues: Issue[]): Issue[] {
+  const seen = new Set<string>();
+  return issues.filter(issue => {
+    if (seen.has(issue.code)) return false;
+    seen.add(issue.code);
+    return true;
+  });
+}
+
+function sortIssuesByPriority(issues: Issue[]): Issue[] {
+  const priorityOrder = { SAFETY: 0, EFFICIENCY: 1, OPTIMIZATION: 2 };
+  const severityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+
+  return issues.sort((a, b) => {
+    const priorityDiff = priorityOrder[a.type] - priorityOrder[b.type];
+    if (priorityDiff !== 0) return priorityDiff;
+    return severityOrder[a.severity] - severityOrder[b.severity];
+  });
+}
+
+function calculateSquatScore(issues: Issue[], strengths: string[]): number {
+  let score = 10;
+
+  // Penalità per issues
+  for (const issue of issues) {
+    if (issue.type === 'SAFETY') {
+      score -= issue.severity === 'HIGH' ? 2 : issue.severity === 'MEDIUM' ? 1.5 : 1;
+    } else if (issue.type === 'EFFICIENCY') {
+      score -= issue.severity === 'HIGH' ? 1.5 : issue.severity === 'MEDIUM' ? 1 : 0.5;
+    } else {
+      score -= 0.5;
+    }
+  }
+
+  // Bonus per punti di forza
+  score += Math.min(strengths.length * 0.3, 1);
+
+  return Math.max(1, Math.min(10, Math.round(score * 10) / 10));
+}

@@ -41,15 +41,21 @@ export const PAIN_EXERCISE_MAP: Record<PainArea, PainExerciseMapping> = {
   },
 
   lower_back: {
-    avoid: ['deadlift', 'good_morning'],
+    avoid: ['good_morning'], // Solo good morning è sempre da evitare
     substitutions: {
-      'stacco': ['RDL Leggero', 'Hip Hinge Corpo Libero', 'Glute Bridge'],
-      'deadlift': ['RDL Leggero', 'Hip Hinge Corpo Libero', 'Glute Bridge'],
-      'good morning': ['Hip Hinge Corpo Libero', 'Bird Dog', 'Glute Bridge'],
-      'rdl': ['Single Leg RDL Leggero', 'Glute Bridge', 'Bird Dog'],
+      // GERARCHIA: mild → moderate → severe
+      // mild: stesso pattern, carico ridotto (deload gestito separatamente)
+      // moderate: pattern simile ma più sicuro (meno ROM, meno carico assiale)
+      // severe: pattern completamente diverso (no carico sulla colonna)
 
-      // Squat (solo se schiena in compromesso)
-      'squat': ['Goblet Squat', 'Box Squat', 'Leg Press se gym']
+      'stacco': ['RDL (ROM ridotto)', 'Hip Hinge Isometrico', 'Glute Bridge'],
+      'deadlift': ['RDL (ROM ridotto)', 'Hip Hinge Isometrico', 'Glute Bridge'],
+      'good morning': ['Hip Hinge Leggero', 'Bird Dog', 'Glute Bridge'],
+      'rdl': ['RDL (ROM ridotto)', 'Hip Hinge Isometrico', 'Glute Bridge'],
+      'hip hinge': ['Hip Hinge (ROM ridotto)', 'Hip Hinge Isometrico', 'Glute Bridge'],
+
+      // Squat: riduzione ROM prima, poi cambio pattern
+      'squat': ['Box Squat (Parallelo)', 'Box Squat (Alto)', 'Leg Press']
     },
     correctives: ['Cat-Cow', 'Bird Dog', 'Dead Bug', 'Pelvic Tilt', 'McGill Big 3']
   },
@@ -141,31 +147,37 @@ export function applyPainDeload(
   location: 'gym' | 'home'
 ): DeloadResult {
   if (severity === 'mild') {
-    // LIEVE: riduzione 10-15%
+    // MILD (1-3): Deload leggero, continua con cautela
+    // Stesso esercizio, volume/intensità ridotti, monitora
     return {
       sets: sets,
-      reps: Math.max(3, Math.floor(reps * 0.9)), // -10% reps
-      loadReduction: location === 'gym' ? 0.90 : 1.0, // -10% kg se gym
-      note: 'Deload leggero (dolore lieve)'
+      reps: Math.max(3, Math.floor(reps * 0.85)), // -15% reps
+      loadReduction: location === 'gym' ? 0.85 : 1.0, // -15% kg se gym
+      needsReplacement: false,
+      needsEasierVariant: false,
+      note: '⚠️ Dolore lieve - Deload applicato, monitora durante esecuzione'
     };
   } else if (severity === 'moderate') {
-    // MODERATO: riduzione 25-30%
+    // MODERATE: Tecnicamente non più usato (4+ = severe)
+    // Manteniamo per backward compatibility con dati esistenti
     return {
-      sets: Math.max(2, sets - 1), // -1 set
-      reps: Math.max(3, Math.floor(reps * 0.7)), // -30% reps
-      loadReduction: location === 'gym' ? 0.75 : 1.0, // -25% kg se gym
-      needsEasierVariant: location === 'home', // Se home, serve variante più facile
-      note: 'Deload moderato (dolore moderato) - Monitorare'
+      sets: Math.max(2, sets - 1),
+      reps: Math.max(3, Math.floor(reps * 0.7)),
+      loadReduction: location === 'gym' ? 0.70 : 1.0,
+      needsReplacement: true, // Ora anche moderate = evita
+      needsEasierVariant: true,
+      note: '🛑 Dolore moderato - Esercizio sostituito per sicurezza'
     };
   } else if (severity === 'severe') {
-    // SEVERO: riduzione drastica + sostituzione
+    // SEVERE (4+): EVITA esercizio
+    // Dolore 4+ pre-sessione = campanello d'allarme, non rischiare
     return {
-      sets: Math.max(2, Math.floor(sets * 0.5)), // -50% sets
-      reps: Math.max(3, Math.floor(reps * 0.5)), // -50% reps
-      loadReduction: location === 'gym' ? 0.5 : 1.0, // -50% kg se gym
-      needsReplacement: true, // Sostituisci esercizio!
-      needsEasierVariant: location === 'home',
-      note: 'ATTENZIONE: Dolore severo - Esercizio sostituito + correttivi'
+      sets: Math.max(2, Math.floor(sets * 0.5)), // Sets ridotti per l'alternativa
+      reps: Math.max(5, Math.floor(reps * 0.6)), // Reps ridotte per l'alternativa
+      loadReduction: location === 'gym' ? 0.5 : 1.0,
+      needsReplacement: true, // EVITA - sostituisci con esercizio sicuro
+      needsEasierVariant: true,
+      note: '🛑 EVITA - Dolore significativo, esercizio sostituito + correttivi'
     };
   }
 

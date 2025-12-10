@@ -16,7 +16,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Play, Pause, SkipForward, X, Info, ThumbsDown } from 'lucide-react';
+import { CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Play, Pause, SkipForward, X, Info, ThumbsDown, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import autoRegulationService from '../lib/autoRegulationService';
 import { supabase } from '../lib/supabaseClient';
@@ -28,6 +28,17 @@ import VideoUploadModal from './VideoUploadModal';
 import ExerciseDislikeModal from './ExerciseDislikeModal';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import { getVariantsForExercise } from '../utils/exerciseVariants';
+import {
+  adaptExercisesForLocation,
+  analyzeExerciseFeedback,
+  getDowngradedExercise,
+  getUpgradedExercise,
+  isBodyweightExercise,
+  getExerciseAlternatives,
+  DifficultyFeedback,
+  ProgressionResult,
+  ExerciseAlternative
+} from '@fitnessflow/shared';
 
 interface Exercise {
   name: string;
@@ -150,6 +161,7 @@ interface LiveWorkoutSessionProps {
   dayName: string;
   exercises: Exercise[];
   onWorkoutComplete?: (logs: any[]) => void;
+  onLocationChange?: (newLocation: 'gym' | 'home', equipment: Record<string, boolean>) => Promise<void>;
 }
 
 export default function LiveWorkoutSession({
@@ -159,7 +171,8 @@ export default function LiveWorkoutSession({
   programId,
   dayName,
   exercises: initialExercises,
-  onWorkoutComplete
+  onWorkoutComplete,
+  onLocationChange
 }: LiveWorkoutSessionProps) {
   const { t } = useTranslation();
 
@@ -198,6 +211,10 @@ export default function LiveWorkoutSession({
   const [showCycleTracker, setShowCycleTracker] = useState(false);
   const [isFemale, setIsFemale] = useState(false);
 
+  // User data for relative strength calculation
+  const [userBodyweight, setUserBodyweight] = useState<number>(75); // Default 75kg
+  const [realLoads, setRealLoads] = useState<Record<string, number>>({}); // Carichi reali dai test
+
   // Workout state
   const [exercises, setExercises] = useState<Exercise[]>(initialExercises);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
@@ -205,16 +222,23 @@ export default function LiveWorkoutSession({
   const [setLogs, setSetLogs] = useState<Record<string, SetLog[]>>({});
   const [workoutStartTime, setWorkoutStartTime] = useState<Date | null>(null);
   const [locationSwitched, setLocationSwitched] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<'gym' | 'home'>('gym');
 
   // Current set state
   const [showRPEInput, setShowRPEInput] = useState(false);
   const [currentRPE, setCurrentRPE] = useState(7);
   const [currentRIR, setCurrentRIR] = useState(2); // RIR percepito (0-5)
+  const [currentDifficulty, setCurrentDifficulty] = useState(5); // Difficoltà esercizio 1-10
   const [currentReps, setCurrentReps] = useState(0);
   const [currentWeight, setCurrentWeight] = useState(0);
   const [restTimerActive, setRestTimerActive] = useState(false);
   const [restTimeRemaining, setRestTimeRemaining] = useState(0);
   const [showExerciseDescription, setShowExerciseDescription] = useState(false);
+
+  // Auto-adjustment state
+  const [showProgressionSuggestion, setShowProgressionSuggestion] = useState(false);
+  const [progressionResult, setProgressionResult] = useState<ProgressionResult | null>(null);
+  const [exerciseAdjustments, setExerciseAdjustments] = useState<Record<string, { adjusted: boolean; originalName: string; newWeight?: number }>>({});
 
   // Video upload modal state
   const [showVideoUpload, setShowVideoUpload] = useState(false);
@@ -235,6 +259,10 @@ export default function LiveWorkoutSession({
   // Exercise Dislike Modal state
   const [showDislikeModal, setShowDislikeModal] = useState(false);
   const [adjustedWeights, setAdjustedWeights] = useState<Record<string, number>>({});
+
+  // Station Occupied / Alternatives Modal state
+  const [showAlternativesModal, setShowAlternativesModal] = useState(false);
+  const [currentAlternatives, setCurrentAlternatives] = useState<ExerciseAlternative[]>([]);
 
   // Adjustment state
   const [suggestion, setSuggestion] = useState<{
@@ -257,28 +285,70 @@ export default function LiveWorkoutSession({
   const [adjustedSets, setAdjustedSets] = useState<Record<string, number>>({});
   const currentTargetSets = adjustedSets[currentExercise?.name] || currentExercise?.sets || 3;
 
-  // Fetch user gender for menstrual cycle tracking
+  // Fetch user data: gender, bodyweight, and test baselines for accurate strength matching
   useEffect(() => {
-    const fetchUserGender = async () => {
+    const fetchUserData = async () => {
       try {
         const { data: userData } = await supabase.auth.getUser();
         if (userData.user) {
+          // Fetch profile with onboarding data
           const { data: profileData } = await supabase
             .from('user_profiles')
             .select('onboarding_data')
             .eq('user_id', userData.user.id)
             .single();
 
-          if (profileData?.onboarding_data?.personalInfo?.gender === 'F') {
-            setIsFemale(true);
+          if (profileData?.onboarding_data) {
+            const onboarding = profileData.onboarding_data;
+
+            // Gender for menstrual tracking
+            if (onboarding.personalInfo?.gender === 'F') {
+              setIsFemale(true);
+            }
+
+            // PESO CORPOREO - fondamentale per calcolo forza relativa
+            if (onboarding.personalInfo?.weight) {
+              const weight = Number(onboarding.personalInfo.weight);
+              if (weight > 0 && weight < 300) { // Sanity check
+                setUserBodyweight(weight);
+                console.log(`⚖️ User bodyweight: ${weight}kg`);
+              }
+            }
+          }
+
+          // Fetch current program to get baselines (carichi reali dai test)
+          const { data: programData } = await supabase
+            .from('user_programs')
+            .select('screening_data')
+            .eq('user_id', userData.user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (programData?.screening_data?.patternBaselines) {
+            const baselines = programData.screening_data.patternBaselines;
+            const loads: Record<string, number> = {};
+
+            // Estrai i carichi reali dai test per ogni pattern
+            Object.entries(baselines).forEach(([pattern, baseline]: [string, any]) => {
+              if (baseline?.weight10RM && baseline.weight10RM > 0) {
+                loads[pattern] = baseline.weight10RM;
+                console.log(`🏋️ Real load for ${pattern}: ${baseline.weight10RM}kg (from test)`);
+              }
+            });
+
+            if (Object.keys(loads).length > 0) {
+              setRealLoads(loads);
+              console.log('📊 Real loads from screening:', loads);
+            }
           }
         }
       } catch (error) {
-        console.error('Error fetching user gender:', error);
+        console.error('Error fetching user data:', error);
       }
     };
 
-    fetchUserGender();
+    fetchUserData();
   }, []);
 
   // Fetch pain thresholds for exercises at workout start
@@ -318,77 +388,86 @@ export default function LiveWorkoutSession({
     fetchPainThresholds();
   }, [userId, open, initialExercises]);
 
-  // Handle location switch for THIS SESSION ONLY
+  // Handle location switch - TEMPORARY for this session only
+  // Uses biomechanical pattern matching to find equivalent exercises
   const handleSessionLocationSwitch = async () => {
     try {
       setSwitchingLocation(true);
 
-      console.log('🏋️ Switching location for this session only...');
+      console.log('🏋️ Switching location for this SESSION ONLY (temporary)');
       console.log('Equipment selected:', homeEquipment);
+      console.log('Current exercises:', exercises.map(e => `${e.name} (${e.pattern})`));
 
-      // Map gym exercises to home equivalents
-      const homeExercises = exercises.map(ex => {
-        // Keep core exercises as-is (bodyweight)
-        if (ex.pattern === 'core') return ex;
+      // Build equipment object for locationAdapter
+      const equipment = {
+        barbell: false,
+        dumbbellMaxKg: homeEquipment.dumbbell ? 30 : 0, // Assume 30kg if has dumbbells
+        kettlebellKg: homeEquipment.kettlebell ? [16, 24] : undefined,
+        bands: homeEquipment.bands || false,
+        pullupBar: homeEquipment.pullUpBar || false,
+        bench: false // Assume no bench at home
+      };
 
-        // Map gym → home equivalents based on pattern
-        const homeEquivalents: Record<string, { name: string; notes?: string }> = {
-          // Lower Push
-          'Squat (Bilanciere)': { name: 'Pistol Squat Assistito', notes: 'Usa una sedia per supporto' },
-          'Bulgarian Split Squat': { name: 'Split Squat Corpo Libero', notes: 'Aggiungi peso se hai manubri' },
-          'Leg Press': { name: 'Air Squat + Jump', notes: 'Volume alto per compensare' },
+      // Determine home type based on equipment
+      const hasEquipment = homeEquipment.dumbbell || homeEquipment.bands || homeEquipment.pullUpBar || homeEquipment.kettlebell;
+      const homeType = hasEquipment ? 'with_equipment' : 'bodyweight';
 
-          // Horizontal Push
-          'Panca Piana': { name: 'Push-up', notes: homeEquipment.dumbbell ? 'Usa manubri per push-up weighted' : 'Standard push-ups' },
-          'Chest Press Manubri': { name: 'Push-up Diamonds', notes: 'Focus su pettorali' },
-          'Piegamenti Sbarra': { name: 'Push-up Wide', notes: 'Ampia stance per petto' },
+      console.log('🏠 Home type:', homeType);
+      console.log('🛠️ Equipment config:', equipment);
+      console.log(`⚖️ User bodyweight: ${userBodyweight}kg`);
+      console.log('📊 Real loads from tests:', realLoads);
 
-          // Vertical Push
-          'Military Press': { name: 'Pike Push-up', notes: homeEquipment.dumbbell ? 'Usa manubri overhead' : 'Pike push-ups progressivi' },
-          'Shoulder Press Manubri': { name: 'Handstand Push-up Progressione', notes: 'Wall-assisted HSPU' },
-
-          // Vertical Pull
-          'Trazioni': { name: homeEquipment.pullUpBar ? ex.name : 'Australian Pull-up (Tavolo)', notes: homeEquipment.pullUpBar ? 'Usa sbarra' : 'Usa tavolo robusto' },
-          'Lat Machine': { name: 'Inverted Row (Tavolo)', notes: 'Usa tavolo o sbarra bassa' },
-          'Pull-down': { name: homeEquipment.bands ? 'Band Pull-down' : 'Scap Pull-ups', notes: 'Focus su dorsali' },
-
-          // Horizontal Pull
-          'Rematore Bilanciere': { name: homeEquipment.dumbbell ? 'Rematore Manubri' : 'Inverted Row', notes: 'Focus su middle back' },
-          'Rematore Manubri': { name: homeEquipment.dumbbell ? ex.name : 'Bodyweight Row (Tavolo)', notes: 'Mantieni intensità' },
-          'Cable Row': { name: homeEquipment.bands ? 'Band Row' : 'Inverted Row', notes: 'Controlla movimento' },
-
-          // Lower Pull
-          'Stacchi Rumeni': { name: homeEquipment.dumbbell ? 'RDL Manubri' : 'Nordic Curl Assistito', notes: 'Focus hamstrings' },
-          'Leg Curl': { name: 'Nordic Curl Progressione', notes: 'Usa letto/divano per bloccare piedi' },
-          'Good Morning': { name: 'Single Leg RDL', notes: 'Equilibrio + posterior chain' }
-        };
-
-        // Find home equivalent
-        const homeEquiv = homeEquivalents[ex.name];
-
-        if (homeEquiv) {
-          return {
-            ...ex,
-            name: homeEquiv.name,
-            notes: homeEquiv.notes || ex.notes,
-            intensity: ex.intensity // Keep same intensity intent
-          };
+      // Use the shared locationAdapter with:
+      // - Biomechanical pattern matching
+      // - User bodyweight for relative strength calculation
+      // - Real loads from screening tests (not estimates)
+      const adaptedExercises = adaptExercisesForLocation(
+        exercises as any, // Cast because Exercise types might differ slightly
+        {
+          location: 'home',
+          homeType: homeType as 'bodyweight' | 'with_equipment',
+          equipment,
+          userBodyweight, // Peso corporeo per calcolo forza relativa
+          realLoads // Carichi REALI dai test (priorità su stime)
         }
+      );
 
-        // If no specific mapping, keep original (might be bodyweight already)
-        return ex;
+      // Log what changed
+      const changes: string[] = [];
+      adaptedExercises.forEach((adapted, i) => {
+        if (adapted.name !== exercises[i].name) {
+          changes.push(`${exercises[i].name} → ${adapted.name}`);
+          console.log(`🔄 ${exercises[i].pattern}: ${exercises[i].name} → ${adapted.name}`);
+        }
       });
+
+      // Cast back to our Exercise type and preserve original properties
+      const homeExercises = adaptedExercises.map((adapted, i) => ({
+        ...exercises[i],
+        name: adapted.name,
+        notes: adapted.name !== exercises[i].name
+          ? `Adattato da: ${exercises[i].name}. ${exercises[i].notes || ''}`
+          : exercises[i].notes
+      }));
 
       setExercises(homeExercises);
       setLocationSwitched(true);
+      setCurrentLocation('home'); // Track location for progression analysis
       setShowLocationSwitch(false);
       setSwitchingLocation(false);
 
-      toast.success('🏠 Location cambiata per questa sessione!', {
-        description: 'Esercizi adattati per allenamento casa'
-      });
+      if (changes.length > 0) {
+        toast.success('🏠 Location cambiata per questa sessione!', {
+          description: `${changes.length} esercizi adattati per casa`
+        });
+      } else {
+        toast.success('🏠 Location cambiata!', {
+          description: 'Esercizi già compatibili con allenamento casa'
+        });
+      }
 
       console.log('✅ Session exercises adapted for home:', homeExercises);
+      console.log('📝 Changes made:', changes);
 
     } catch (error) {
       console.error('❌ Error switching location:', error);
@@ -1043,6 +1122,127 @@ export default function LiveWorkoutSession({
     }
   };
 
+  // ========================================================================
+  // EXERCISE PROGRESSION/REGRESSION ANALYSIS
+  // Analyzes difficulty, RPE, RIR to suggest exercise downgrade/upgrade
+  // ========================================================================
+  const analyzeExerciseProgression = () => {
+    if (!currentExercise) return;
+
+    const targetReps = typeof currentExercise.reps === 'string'
+      ? parseInt(currentExercise.reps.split('-')[0])
+      : currentExercise.reps;
+
+    const feedback: DifficultyFeedback = {
+      rpe: currentRPE,
+      rir: currentRIR,
+      difficulty: currentDifficulty,
+      completedReps: currentReps,
+      targetReps: targetReps,
+      weight: currentWeight || undefined
+    };
+
+    const result = analyzeExerciseFeedback(feedback, currentLocation);
+
+    console.log('📊 Exercise progression analysis:', {
+      exercise: currentExercise.name,
+      pattern: currentExercise.pattern,
+      location: currentLocation,
+      feedback,
+      result
+    });
+
+    // If action needed (not maintain), show suggestion
+    if (result.action !== 'maintain') {
+      if (result.action === 'downgrade') {
+        // Find downgraded exercise
+        const downgrade = getDowngradedExercise(
+          currentExercise.name,
+          currentExercise.pattern,
+          currentLocation
+        );
+
+        if (downgrade) {
+          result.newExercise = downgrade.name;
+          result.newDifficulty = downgrade.difficulty;
+          result.recommendation = `${result.recommendation}\n\nSuggerimento: ${currentExercise.name} → ${downgrade.name}`;
+        }
+      } else if (result.action === 'upgrade') {
+        // Find upgraded exercise
+        const upgrade = getUpgradedExercise(
+          currentExercise.name,
+          currentExercise.pattern,
+          currentLocation
+        );
+
+        if (upgrade) {
+          result.newExercise = upgrade.name;
+          result.newDifficulty = upgrade.difficulty;
+          result.recommendation = `${result.recommendation}\n\nProssima sessione: ${currentExercise.name} → ${upgrade.name}`;
+        }
+      }
+
+      setProgressionResult(result);
+      setShowProgressionSuggestion(true);
+    }
+  };
+
+  // Apply exercise downgrade/upgrade
+  const applyExerciseProgression = () => {
+    if (!progressionResult || !currentExercise) return;
+
+    if (progressionResult.action === 'downgrade' && progressionResult.newExercise) {
+      // Replace current exercise with easier version
+      const updatedExercises = exercises.map((ex, idx) => {
+        if (idx === currentExerciseIndex) {
+          return {
+            ...ex,
+            name: progressionResult.newExercise!,
+            notes: `Adattato da ${currentExercise.name} (difficoltà ridotta)`
+          };
+        }
+        return ex;
+      });
+
+      setExercises(updatedExercises);
+      setExerciseAdjustments(prev => ({
+        ...prev,
+        [currentExercise.name]: {
+          adjusted: true,
+          originalName: currentExercise.name
+        }
+      }));
+
+      toast.success(`🔄 Esercizio adattato: ${progressionResult.newExercise}`, {
+        description: 'Versione più gestibile per questa sessione'
+      });
+    } else if (progressionResult.action === 'reduce_weight' && progressionResult.newWeight) {
+      // Reduce weight for next set
+      setCurrentWeight(progressionResult.newWeight);
+      setExerciseAdjustments(prev => ({
+        ...prev,
+        [currentExercise.name]: {
+          adjusted: true,
+          originalName: currentExercise.name,
+          newWeight: progressionResult.newWeight
+        }
+      }));
+
+      toast.info(`⚖️ Peso ridotto a ${progressionResult.newWeight}kg`, {
+        description: 'Per le prossime serie'
+      });
+    }
+
+    setShowProgressionSuggestion(false);
+    setProgressionResult(null);
+  };
+
+  // Dismiss progression suggestion
+  const dismissProgressionSuggestion = () => {
+    setShowProgressionSuggestion(false);
+    setProgressionResult(null);
+  };
+
   // Helper: Decrease rest time
   const decreaseRest = (currentRest: string): string => {
     const seconds = parseInt(currentRest.replace(/\D/g, ''));
@@ -1190,12 +1390,20 @@ export default function LiveWorkoutSession({
     // Analyze RPE and provide suggestions
     analyzeRPEAndSuggest(currentRPE);
 
+    // Analyze exercise progression (especially for home workouts)
+    // Only on last set to avoid too many interruptions
+    const totalSetsPlanned = currentExercise.sets;
+    if (currentSet === totalSetsPlanned) {
+      analyzeExerciseProgression();
+    }
+
     // Reset for next set
     setShowRPEInput(false);
     setCurrentReps(0);
     setCurrentWeight(0);
     setCurrentRPE(7);
     setCurrentRIR(2);
+    setCurrentDifficulty(5);
     setCurrentPainLevel(0);
   };
 
@@ -2152,14 +2360,28 @@ export default function LiveWorkoutSession({
                 </span>
               )}
             </div>
-            {/* Dislike button */}
-            <button
-              onClick={() => setShowDislikeModal(true)}
-              className="p-2 bg-slate-700/50 hover:bg-red-500/20 border border-slate-600 hover:border-red-500/50 rounded-lg transition-all group"
-              title={t('exercise_dislike.title')}
-            >
-              <ThumbsDown className="w-5 h-5 text-slate-400 group-hover:text-red-400 transition-colors" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Station Occupied button */}
+              <button
+                onClick={() => {
+                  const alternatives = getExerciseAlternatives(currentExercise.name, currentLocation === 'gym');
+                  setCurrentAlternatives(alternatives);
+                  setShowAlternativesModal(true);
+                }}
+                className="p-2 bg-slate-700/50 hover:bg-amber-500/20 border border-slate-600 hover:border-amber-500/50 rounded-lg transition-all group"
+                title="Postazione occupata"
+              >
+                <RefreshCw className="w-5 h-5 text-slate-400 group-hover:text-amber-400 transition-colors" />
+              </button>
+              {/* Dislike button */}
+              <button
+                onClick={() => setShowDislikeModal(true)}
+                className="p-2 bg-slate-700/50 hover:bg-red-500/20 border border-slate-600 hover:border-red-500/50 rounded-lg transition-all group"
+                title={t('exercise_dislike.title')}
+              >
+                <ThumbsDown className="w-5 h-5 text-slate-400 group-hover:text-red-400 transition-colors" />
+              </button>
+            </div>
           </div>
 
           {/* Exercise Video - Autoplay in loop */}
@@ -2253,7 +2475,7 @@ export default function LiveWorkoutSession({
               />
             </div>
 
-            {currentExercise.pattern !== 'core' && (
+            {currentExercise.pattern !== 'core' && !isBodyweightExercise(currentExercise.name) && (
               <div>
                 <label className="block text-slate-300 text-sm mb-2">
                   Peso (kg){currentExercise.weight && <span className="text-amber-400 font-bold"> - Suggerito: {currentExercise.weight}</span>}
@@ -2376,6 +2598,88 @@ export default function LiveWorkoutSession({
                 return null;
               })()}
             </div>
+
+            {/* Exercise Difficulty Rating - Only show for home workouts */}
+            {locationSwitched && (
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <p className="text-cyan-300 font-bold">📊 Difficoltà Esercizio</p>
+                    <p className="text-slate-400 text-xs">Quanto è stato difficile questo esercizio?</p>
+                  </div>
+                  <span className={`text-3xl font-bold ${
+                    currentDifficulty <= 4 ? 'text-green-400' :
+                    currentDifficulty <= 6 ? 'text-yellow-400' :
+                    currentDifficulty <= 8 ? 'text-orange-400' :
+                    'text-red-400'
+                  }`}>{currentDifficulty}</span>
+                </div>
+
+                {/* Difficulty Scale 1-10 */}
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={currentDifficulty}
+                    onChange={(e) => setCurrentDifficulty(parseInt(e.target.value))}
+                    className="w-full accent-cyan-500"
+                  />
+                  <div className="flex justify-between text-xs">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => (
+                      <button
+                        key={val}
+                        onClick={() => setCurrentDifficulty(val)}
+                        className={`p-1 rounded text-xs font-bold transition-all ${
+                          currentDifficulty === val
+                            ? val <= 4 ? 'bg-green-500/30 text-green-300' :
+                              val <= 6 ? 'bg-yellow-500/30 text-yellow-300' :
+                              val <= 8 ? 'bg-orange-500/30 text-orange-300' :
+                              'bg-red-500/30 text-red-300'
+                            : 'bg-slate-800 text-slate-600'
+                        }`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Difficulty level indicators */}
+                  <div className="grid grid-cols-4 gap-2 text-xs mt-2">
+                    <div className="text-center">
+                      <span className="text-green-400">1-4</span>
+                      <p className="text-slate-500">Facile</p>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-yellow-400">5-6</span>
+                      <p className="text-slate-500">Medio</p>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-orange-400">7-8</span>
+                      <p className="text-slate-500">Difficile</p>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-red-400">9-10</span>
+                      <p className="text-slate-500">Max</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Difficulty Warning */}
+                {currentDifficulty >= 8 && (
+                  <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2">
+                    <p className="text-amber-300 text-xs font-semibold">
+                      ⚠️ Esercizio molto difficile
+                    </p>
+                    <p className="text-slate-400 text-xs mt-1">
+                      {currentDifficulty >= 9
+                        ? 'Il sistema suggerirà una versione più facile'
+                        : 'Considera una variante più accessibile se non riesci a mantenere la forma'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Pain Level Tracking */}
             {(userId && programId && dayName) && (
@@ -2530,6 +2834,89 @@ export default function LiveWorkoutSession({
                   className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition-all duration-300"
                 >
                   {suggestion.type === 'maintain' ? 'Continua' : 'Ignora'}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Exercise Progression Suggestion */}
+        <AnimatePresence>
+          {showProgressionSuggestion && progressionResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className={`rounded-xl p-4 mb-6 border ${
+                progressionResult.action === 'downgrade' || progressionResult.action === 'reduce_weight'
+                  ? 'bg-orange-500/10 border-orange-500/30'
+                  : progressionResult.action === 'upgrade' || progressionResult.action === 'increase_weight'
+                  ? 'bg-emerald-500/10 border-emerald-500/30'
+                  : 'bg-blue-500/10 border-blue-500/30'
+              }`}
+            >
+              <div className="flex items-start gap-3 mb-3">
+                {(progressionResult.action === 'downgrade' || progressionResult.action === 'reduce_weight') && (
+                  <TrendingDown className="w-6 h-6 text-orange-400 flex-shrink-0" />
+                )}
+                {(progressionResult.action === 'upgrade' || progressionResult.action === 'increase_weight') && (
+                  <TrendingUp className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+                )}
+
+                <div className="flex-1">
+                  <p className={`font-bold mb-1 ${
+                    progressionResult.action === 'downgrade' || progressionResult.action === 'reduce_weight'
+                      ? 'text-orange-300'
+                      : 'text-emerald-300'
+                  }`}>
+                    {progressionResult.action === 'downgrade' && '📉 Esercizio Troppo Difficile'}
+                    {progressionResult.action === 'reduce_weight' && '⚖️ Riduzione Carico Suggerita'}
+                    {progressionResult.action === 'upgrade' && '📈 Pronto per Progressione'}
+                    {progressionResult.action === 'increase_weight' && '💪 Aumenta il Carico'}
+                  </p>
+                  <p className="text-slate-300 text-sm mb-2">{progressionResult.reason}</p>
+                  <p className="text-slate-400 text-xs whitespace-pre-line">{progressionResult.recommendation}</p>
+
+                  {progressionResult.newExercise && (
+                    <div className="mt-3 bg-slate-800/50 rounded-lg p-3">
+                      <p className="text-xs text-slate-400 mb-1">Alternativa suggerita:</p>
+                      <p className="text-white font-bold">{progressionResult.newExercise}</p>
+                    </div>
+                  )}
+
+                  {progressionResult.newWeight && (
+                    <div className="mt-3 bg-slate-800/50 rounded-lg p-3">
+                      <p className="text-xs text-slate-400 mb-1">Nuovo peso suggerito:</p>
+                      <p className="text-white font-bold">{progressionResult.newWeight}kg</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                {(progressionResult.action === 'downgrade' || progressionResult.action === 'reduce_weight') && (
+                  <button
+                    onClick={applyExerciseProgression}
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-lg transition-all duration-300"
+                  >
+                    {progressionResult.action === 'downgrade' ? 'Cambia Esercizio' : 'Applica Riduzione'}
+                  </button>
+                )}
+
+                {(progressionResult.action === 'upgrade' || progressionResult.action === 'increase_weight') && (
+                  <button
+                    onClick={applyExerciseProgression}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition-all duration-300"
+                  >
+                    Ricorda per Prossima Sessione
+                  </button>
+                )}
+
+                <button
+                  onClick={dismissProgressionSuggestion}
+                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition-all duration-300"
+                >
+                  Continua Così
                 </button>
               </div>
             </motion.div>
@@ -2701,6 +3088,122 @@ export default function LiveWorkoutSession({
         onReplaceExercise={handleReplaceExercise}
         onReportPain={handlePainFromDislike}
       />
+
+      {/* Station Occupied / Alternatives Modal */}
+      <AnimatePresence>
+        {showAlternativesModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowAlternativesModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <RefreshCw className="w-5 h-5 text-amber-400" />
+                  Postazione Occupata?
+                </h3>
+                <button
+                  onClick={() => setShowAlternativesModal(false)}
+                  className="p-1 hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              <p className="text-slate-400 text-sm mb-4">
+                Ecco delle alternative equivalenti per <span className="text-white font-semibold">{currentExercise.name}</span>:
+              </p>
+
+              {currentAlternatives.length > 0 ? (
+                <div className="space-y-3">
+                  {currentAlternatives.map((alt, index) => {
+                    // Calcola peso convertito se disponibile
+                    const currentWeight = getCurrentExerciseWeight();
+                    const convertedWeight = alt.weightFactor && currentWeight > 0
+                      ? Math.round(currentWeight * alt.weightFactor)
+                      : null;
+                    const convertedReps = alt.repsFactor && alt.repsFactor !== 1
+                      ? Math.round(targetReps * alt.repsFactor)
+                      : null;
+
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          // Sostituisci l'esercizio corrente
+                          const updatedExercises = [...exercises];
+                          const oldName = currentExercise.name;
+                          updatedExercises[currentExerciseIndex] = {
+                            ...currentExercise,
+                            name: alt.name,
+                            notes: `${currentExercise.notes || ''} (sostituito da ${oldName})`.trim(),
+                            // Aggiorna peso se c'è conversione
+                            ...(convertedWeight && { weight: convertedWeight }),
+                            // Aggiorna reps se c'è conversione
+                            ...(convertedReps && { reps: convertedReps })
+                          };
+                          setExercises(updatedExercises);
+                          setShowAlternativesModal(false);
+
+                          toast.success(`Esercizio cambiato!`, {
+                            description: `${oldName} → ${alt.name}${convertedWeight ? ` (${convertedWeight}kg)` : ''}`
+                          });
+                        }}
+                        className="w-full bg-slate-700/50 hover:bg-amber-500/20 border border-slate-600 hover:border-amber-500/50 rounded-xl p-4 text-left transition-all group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-white font-semibold group-hover:text-amber-300 transition-colors">
+                              {alt.name}
+                            </p>
+                            {alt.notes && (
+                              <p className="text-slate-400 text-xs mt-1">{alt.notes}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            {convertedWeight && (
+                              <p className="text-amber-400 font-bold text-lg">{convertedWeight}kg</p>
+                            )}
+                            {convertedReps && (
+                              <p className="text-blue-400 text-sm">{convertedReps} reps</p>
+                            )}
+                            {!convertedWeight && !convertedReps && (
+                              <span className="text-slate-500 text-xs">
+                                {alt.equipment === 'bodyweight' ? '🏠 Corpo libero' : '🏋️ Palestra'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-slate-400">Nessuna alternativa disponibile per questo esercizio.</p>
+                  <p className="text-slate-500 text-sm mt-2">Prova a chiedere aiuto al trainer.</p>
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowAlternativesModal(false)}
+                className="w-full mt-4 py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl transition-colors"
+              >
+                Annulla
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

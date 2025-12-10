@@ -56,7 +56,7 @@ export interface ActivityLevel {
   sessionDuration: number; // minutes
 }
 
-export type PainArea = 'knee' | 'shoulder' | 'lower_back' | 'wrist' | 'ankle' | 'elbow' | 'hip';
+export type PainArea = 'knee' | 'shoulder' | 'lower_back' | 'wrist' | 'ankle' | 'elbow' | 'hip' | 'neck';
 
 export type PainSeverity = 'mild' | 'moderate' | 'severe';
 

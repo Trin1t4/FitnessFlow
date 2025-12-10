@@ -19,6 +19,7 @@ import {
   HORIZONTAL_PULL_VARIANTS,
   ACCESSORY_VARIANTS
 } from './exerciseVariants';
+import { adaptExercisesForLocation } from './locationAdapter';
 
 /**
  * Determina l'intensità dell'esercizio con ROTAZIONE tra giorni
@@ -99,6 +100,7 @@ interface SplitGeneratorOptions {
   painAreas: NormalizedPainArea[];
   muscularFocus?: string; // glutei, addome, petto, dorso, spalle, gambe, braccia, polpacci
   sessionDuration?: number; // Durata sessione disponibile in minuti (15, 20, 30, 45, 60, 90)
+  userBodyweight?: number; // Peso corporeo utente in kg - fondamentale per location adapter
 }
 
 /**
@@ -908,18 +910,34 @@ function createExercise(
     const severity = painEntry.severity;
 
     if (isExerciseConflicting(exerciseName, painArea)) {
-      console.log(`Warning: Conflitto: ${exerciseName} carica zona dolente: ${painArea} (${severity})`);
+      console.log(`⚠️ Dolore ${painArea} (${severity}): ${exerciseName}`);
 
       const deload = applyPainDeload(severity, finalSets, finalReps, location);
       finalSets = deload.sets;
       finalReps = deload.reps;
       painNotes = deload.note;
 
-      if (deload.needsReplacement || (deload.needsEasierVariant && location === 'home')) {
+      // LOGICA SOSTITUZIONE:
+      // - mild: MAI sostituire, solo deload
+      // - moderate: variante più facile dello STESSO pattern (es. Deadlift → RDL ridotto)
+      // - severe: sostituzione completa con pattern diverso (es. Deadlift → Glute Bridge)
+      if (deload.needsReplacement) {
+        // SEVERE: sostituzione completa
         const alternative = findSafeAlternative(exerciseName, painArea, severity);
+        console.log(`  🔄 Sostituzione (${severity}): ${exerciseName} → ${alternative}`);
         exerciseName = alternative;
         wasReplaced = true;
-        painNotes = `${painNotes} | Sostituito da ${baseline.variantName}`;
+        painNotes = `${painNotes} | Sostituito con ${alternative}`;
+      } else if (deload.needsEasierVariant) {
+        // MODERATE: variante più facile stesso pattern
+        const alternative = findSafeAlternative(exerciseName, painArea, severity);
+        console.log(`  📉 Variante ridotta (${severity}): ${exerciseName} → ${alternative}`);
+        exerciseName = alternative;
+        wasReplaced = true;
+        painNotes = `${painNotes} | Variante ridotta: ${alternative}`;
+      } else {
+        // MILD: solo deload, nessuna sostituzione
+        console.log(`  📊 Deload (${severity}): ${finalSets}x${finalReps}, carico -${Math.round((1-deload.loadReduction)*100)}%`);
       }
 
       break;
@@ -1318,7 +1336,7 @@ function adaptWorkoutToTimeLimit(
 }
 
 export function generateWeeklySplit(options: SplitGeneratorOptions): WeeklySplit {
-  const { frequency, goals } = options;
+  const { frequency, goals, location, baselines, userBodyweight } = options;
 
   console.log(`Generazione split settimanale per ${frequency}x/settimana`);
 
@@ -1343,6 +1361,48 @@ export function generateWeeklySplit(options: SplitGeneratorOptions): WeeklySplit
   const distributionNote = getGoalDistributionNote(goals || []);
   if (distributionNote) {
     split.description = `${split.description}\n\n${distributionNote}`;
+  }
+
+  // ============================================
+  // ADATTAMENTO ESERCIZI PER LOCATION (home/gym)
+  // ============================================
+  if (location === 'home') {
+    console.log('\n🏠 Adattamento esercizi per HOME (bodyweight)');
+
+    // Costruisci i carichi reali e le date dei test dai baseline per matching accurato
+    const realLoads: Record<string, number> = {};
+    const testDates: Record<string, string> = {};
+    if (baselines) {
+      Object.entries(baselines).forEach(([pattern, baseline]) => {
+        if (baseline) {
+          if (baseline.weight10RM) {
+            realLoads[pattern] = baseline.weight10RM;
+          }
+          if (baseline.testDate) {
+            testDates[pattern] = baseline.testDate;
+          }
+        }
+      });
+    }
+
+    split.days.forEach(day => {
+      const originalExercises = day.exercises.map(e => e.name);
+
+      day.exercises = adaptExercisesForLocation(day.exercises, {
+        location: 'home',
+        homeType: 'bodyweight',
+        realLoads,
+        testDates,
+        userBodyweight
+      });
+
+      // Log conversioni
+      day.exercises.forEach((ex, i) => {
+        if (ex.name !== originalExercises[i]) {
+          console.log(`  📝 ${originalExercises[i]} → ${ex.name}`);
+        }
+      });
+    });
   }
 
   // Calcola durata stimata per ogni giorno

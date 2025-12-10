@@ -63,7 +63,12 @@ const CATEGORIES: { key: TestCategory; label: string; icon: any }[] = [
 ];
 
 // Video URLs per i test (da Supabase Storage)
-const VIDEO_BASE_URL = 'https://mhcdxqhhlrujbjxtgnmz.supabase.co/storage/v1/object/public/exercise-videos';
+// Costruito dinamicamente dall'URL Supabase configurato
+const getVideoBaseUrl = () => {
+  const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || 'https://mhcdxqhhlrujbjxtgnmz.supabase.co';
+  return `${supabaseUrl}/storage/v1/object/public/exercise-videos`;
+};
+const VIDEO_BASE_URL = getVideoBaseUrl();
 
 const TEST_VIDEOS: Record<string, string> = {
   // Strength tests

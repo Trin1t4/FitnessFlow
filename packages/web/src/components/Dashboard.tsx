@@ -6,8 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut, Shield, ClipboardList } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from '../lib/i18n';
-import { validateAndNormalizePainAreas } from '../utils/validators';
-import { generateProgram, generateProgramWithSplit } from '../utils/programGenerator';
+import { validateAndNormalizePainAreas, generateProgram, generateProgramWithSplit } from '@fitnessflow/shared';
 import { motion } from 'framer-motion';
 import WeeklySplitView from './WeeklySplitView';
 import WorkoutLogger from './WorkoutLogger';
@@ -16,6 +15,7 @@ import PainProgressChart from './PainProgressChart';
 import DeloadSuggestionModal from './DeloadSuggestionModal';
 import RetestNotification from './RetestNotification';
 import DeloadWeekNotification from './DeloadWeekNotification';
+import CycleScreeningNotification from './CycleScreeningNotification';
 import PaywallModal from './PaywallModal';
 import { getRetestSchedule, Goal, DeloadConfig } from '../utils/retestProgression';
 import {
@@ -37,6 +37,7 @@ import * as adminService from '../lib/adminService';
 import { toast } from 'sonner';
 // ✅ React Query hooks
 import { useCurrentProgram, useUserPrograms, useCreateProgram, programKeys } from '../hooks/useProgram';
+import VideoMosaicBackground from './VideoMosaicBackground';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -91,12 +92,31 @@ export default function Dashboard() {
   // Paywall state
   const [showPaywall, setShowPaywall] = useState(false);
 
+  // User email for admin features
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Cycle screening state (post-cycle screening for weight/pain)
+  const [showCycleScreening, setShowCycleScreening] = useState(false);
+  const [cycleScreeningDismissed, setCycleScreeningDismissed] = useState(false);
+
   useEffect(() => {
     loadData();
     initializePrograms();
     checkAdminStatus();
     checkPaywallTrigger();
+    loadUserEmail();
   }, []);
+
+  // Load user email for feature gating
+  async function loadUserEmail() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email) {
+      setUserEmail(user.email);
+    }
+  }
+
+  // Check if user is the developer (for reset access)
+  const isDeveloper = userEmail === 'dario.tripol@gmail.com';
 
   // Check if user should see paywall (after 7 days)
   async function checkPaywallTrigger() {
@@ -142,6 +162,21 @@ export default function Dashboard() {
     console.log('[Dashboard] Retest schedule calculated:', schedule);
     return schedule;
   }, [program?.start_date, program?.goal, program?.level]);
+
+  // Check if cycle screening should be shown (after completing a cycle)
+  useEffect(() => {
+    if (!retestSchedule || !dataStatus.onboarding) return;
+
+    // Show cycle screening when we're in retest phase and haven't done screening for this cycle
+    const lastScreeningCycle = dataStatus.onboarding.lastScreeningCycle || 0;
+    const currentCycle = retestSchedule.currentCycle;
+
+    // If user is in retest phase and hasn't done screening for current cycle, show it
+    if (retestSchedule.phase === 'retest' && lastScreeningCycle < currentCycle && !cycleScreeningDismissed) {
+      console.log('[Dashboard] Showing cycle screening for cycle:', currentCycle);
+      setShowCycleScreening(true);
+    }
+  }, [retestSchedule, dataStatus.onboarding, cycleScreeningDismissed]);
 
   // ✅ SIMPLIFIED: Only handle localStorage migration (React Query handles fetching)
   async function initializePrograms() {
@@ -401,6 +436,60 @@ export default function Dashboard() {
     } catch (error) {
       console.error('❌ Reset error:', error);
       alert(t('dashboard.reset.error_message'));
+    } finally {
+      setResetting(false);
+      setShowResetModal(false);
+    }
+  }
+
+  // Reset solo obiettivo (mantiene assessment, screening, quiz)
+  async function handleGoalReset() {
+    setResetting(true);
+
+    try {
+      console.log('🎯 STARTING GOAL-ONLY RESET...');
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        // 1. Cancella solo il programma attuale
+        console.log('1️⃣ Deleting current program...');
+        const { error: programError } = await supabase
+          .from('training_programs')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('is_active', true);
+
+        if (programError) {
+          console.error('Error deleting program:', programError);
+        } else {
+          console.log('  ✅ Active program deleted');
+        }
+
+        // 2. Reset solo il goal nell'onboarding data (mantieni tutto il resto)
+        console.log('2️⃣ Resetting goal in onboarding...');
+
+        // Clear localStorage program cache
+        localStorage.removeItem('currentProgram');
+        localStorage.removeItem('programGenerated');
+        localStorage.removeItem('generatedProgram');
+
+        // Clear React Query cache for programs
+        queryClient.invalidateQueries({ queryKey: ['program'] });
+        queryClient.invalidateQueries({ queryKey: ['programs'] });
+      }
+
+      console.log('✅ GOAL RESET COMPLETE!');
+      alert('Obiettivo resettato! Verrai reindirizzato per scegliere un nuovo obiettivo.');
+
+      // Redirect to goal selection (step specifico dell'onboarding)
+      setTimeout(() => {
+        navigate('/onboarding?step=goal');
+      }, 1000);
+
+    } catch (error) {
+      console.error('❌ Goal reset error:', error);
+      alert('Errore durante il reset dell\'obiettivo');
     } finally {
       setResetting(false);
       setShowResetModal(false);
@@ -732,8 +821,25 @@ export default function Dashboard() {
       }
 
       // 2. Update onboarding data with new location and equipment
+      // ✅ FALLBACK: Se dataStatus.onboarding è vuoto, usa i dati dal programma esistente
+      let onboardingBase = dataStatus.onboarding;
+
+      if (!onboardingBase || !onboardingBase.goal) {
+        console.log('⚠️ Onboarding data missing from localStorage, using program data as fallback...');
+        if (program) {
+          onboardingBase = {
+            goal: program.goal,
+            trainingLocation: program.location || 'gym',
+            trainingType: program.training_type || 'equipment',
+            painAreas: program.pain_areas || [],
+            equipment: program.available_equipment || {}
+          };
+          console.log('✅ Reconstructed onboarding from program:', onboardingBase);
+        }
+      }
+
       const updatedOnboarding = {
-        ...dataStatus.onboarding,
+        ...onboardingBase,
         trainingLocation: newLocation,
         trainingType: trainingType,
         equipment: newLocation === 'gym'
@@ -754,8 +860,26 @@ export default function Dashboard() {
       console.log('✅ Updated onboarding data:', updatedOnboarding);
 
       // 2. Update screening timestamp to trigger regeneration
+      // ✅ FALLBACK: Se dataStatus.screening è vuoto, usa i dati dal programma esistente
+      let screeningBase = dataStatus.screening;
+
+      if (!screeningBase || !screeningBase.level) {
+        console.log('⚠️ Screening data missing from localStorage, using program data as fallback...');
+        if (program) {
+          screeningBase = {
+            level: program.level,
+            patternBaselines: program.pattern_baselines || {},
+            finalScore: program.metadata?.screeningScores?.final || 50,
+            practicalScore: program.metadata?.screeningScores?.practical || 50,
+            physicalScore: program.metadata?.screeningScores?.physical || 50,
+            userId: program.user_id
+          };
+          console.log('✅ Reconstructed screening from program:', screeningBase);
+        }
+      }
+
       const updatedScreening = {
-        ...dataStatus.screening,
+        ...screeningBase,
         timestamp: new Date().toISOString()
       };
       localStorage.setItem('screening_data', JSON.stringify(updatedScreening));
@@ -767,6 +891,17 @@ export default function Dashboard() {
         quiz: dataStatus.quiz,
         screening: updatedScreening
       };
+
+      // Verifica che screening abbia i dati necessari
+      if (!screening || !screening.level) {
+        console.error('❌ Screening data missing! Cannot switch location.');
+        alert('Errore: dati di screening mancanti. Completa prima lo screening.');
+        setSwitchingLocation(false);
+        setShowLocationSwitch(false);
+        setSwitchStep('choose');
+        setSelectedLocation(null);
+        return;
+      }
 
       const userLevel = screening.level;
 
@@ -831,18 +966,25 @@ export default function Dashboard() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
         setShowLocationSwitch(false);
+        setSwitchStep('choose');
+        setSelectedLocation(null);
         console.groupEnd();
       } else {
         console.warn('⚠️ Failed to save:', saveResult.error);
         localStorage.setItem('currentProgram', JSON.stringify(generatedProgram));
         alert(`${t('dashboard.error.saved_locally')}\n\n${saveResult.error || t('dashboard.error.cloud_sync')}`);
         setShowLocationSwitch(false);
+        setSwitchStep('choose');
+        setSelectedLocation(null);
         console.groupEnd();
       }
 
     } catch (error) {
       console.error('❌ Error switching location:', error);
       alert(t('dashboard.location_switch.error_message'));
+      setShowLocationSwitch(false);
+      setSwitchStep('choose');
+      setSelectedLocation(null);
       console.groupEnd();
     } finally {
       setSwitchingLocation(false);
@@ -943,8 +1085,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8 relative overflow-hidden">
+      {/* Video Mosaic Background */}
+      <VideoMosaicBackground videoCount={9} opacity={0.04} blur={3} />
+
+      <div className="max-w-6xl mx-auto relative z-10">
         {/* Header - Responsive: stacked on mobile, row on desktop */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8">
           <motion.h1
@@ -953,7 +1098,9 @@ export default function Dashboard() {
             transition={{ duration: 0.5 }}
             className="text-3xl md:text-5xl font-display font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent"
           >
-            {t('dashboard.title')}
+            {dataStatus.onboarding?.anagrafica?.firstName
+              ? `Ciao, ${dataStatus.onboarding.anagrafica.firstName}!`
+              : t('dashboard.title')}
           </motion.h1>
 
           {/* Action buttons - horizontal scroll on mobile */}
@@ -1011,15 +1158,17 @@ export default function Dashboard() {
               <span className="hidden sm:inline">{t('nav.logout')}</span>
             </motion.button>
 
-            {/* Reset Button */}
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowResetModal(true)}
-              className="bg-gradient-to-r from-red-600 to-red-700 text-white px-3 md:px-6 py-2 md:py-3 rounded-xl flex items-center gap-1.5 md:gap-2 shadow-lg shadow-red-500/20 transition-all duration-300 whitespace-nowrap text-sm md:text-base"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reset
-            </motion.button>
+            {/* Reset Button - Solo per developer */}
+            {isDeveloper && (
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowResetModal(true)}
+                className="bg-gradient-to-r from-red-600 to-red-700 text-white px-3 md:px-6 py-2 md:py-3 rounded-xl flex items-center gap-1.5 md:gap-2 shadow-lg shadow-red-500/20 transition-all duration-300 whitespace-nowrap text-sm md:text-base"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reset
+              </motion.button>
+            )}
           </div>
         </div>
 
@@ -1123,6 +1272,135 @@ export default function Dashboard() {
               });
             }}
             onDismiss={() => setShowRetestDismissed(true)}
+          />
+        )}
+
+        {/* Cycle Screening Notification - Dopo ogni ciclo completo */}
+        {retestSchedule && showCycleScreening && !cycleScreeningDismissed && hasProgram && (
+          <CycleScreeningNotification
+            currentCycle={retestSchedule.currentCycle}
+            currentWeight={dataStatus.onboarding?.personalInfo?.weight || 0}
+            currentLocation={dataStatus.onboarding?.trainingLocation === 'home' ? 'home' : 'gym'}
+            currentGoal={dataStatus.onboarding?.goal || 'ipertrofia'}
+            onComplete={async (data) => {
+              console.log('Cycle screening completed:', data);
+              // Update local state with new data
+              if (dataStatus.onboarding) {
+                const updatedOnboarding = {
+                  ...dataStatus.onboarding,
+                  personalInfo: {
+                    ...dataStatus.onboarding.personalInfo,
+                    weight: data.weight
+                  },
+                  painAreas: data.painAreas,
+                  trainingLocation: data.location,
+                  goal: data.goal
+                };
+                setDataStatus(prev => ({ ...prev, onboarding: updatedOnboarding }));
+                localStorage.setItem('onboarding_data', JSON.stringify(updatedOnboarding));
+
+                // Se location o goal sono cambiati, rigenera il programma
+                if (data.locationChanged || data.goalChanged) {
+                  console.log('🔄 Location or goal changed, regenerating program...');
+                  console.log('  - Location changed:', data.locationChanged, '→', data.location);
+                  console.log('  - Goal changed:', data.goalChanged, '→', data.goal);
+
+                  try {
+                    const screening = dataStatus.screening;
+                    if (!screening) {
+                      console.error('❌ No screening data available');
+                      return;
+                    }
+
+                    const userLevel = screening.level || (screening.finalScore >= 70 ? 'intermediate' : 'beginner');
+                    const newLocation = data.location;
+                    const newGoal = data.goal;
+
+                    console.log('🎯 Generating new program with:', { level: userLevel, goal: newGoal, location: newLocation });
+
+                    // 1. Generate new program
+                    const generatedProgram = generateLocalProgram(userLevel, newGoal, {
+                      ...updatedOnboarding,
+                      trainingLocation: newLocation,
+                      goal: newGoal
+                    });
+
+                    // 2. Save to Supabase
+                    const saveResult = await createProgram({
+                      name: generatedProgram.name,
+                      description: `Programma ${userLevel} per ${newGoal} - ${newLocation === 'gym' ? 'Palestra' : 'Casa'} (Ciclo ${retestSchedule?.currentCycle || 1})`,
+                      level: userLevel as 'beginner' | 'intermediate' | 'advanced',
+                      goal: newGoal,
+                      location: newLocation,
+                      training_type: updatedOnboarding.trainingType || 'bodyweight',
+                      frequency: generatedProgram.frequency || 3,
+                      split: generatedProgram.split,
+                      days_per_week: generatedProgram.frequency || 3,
+                      weekly_split: generatedProgram.weeklySplit || { days: [] },
+                      exercises: generatedProgram.exercises || [],
+                      total_weeks: generatedProgram.totalWeeks || 8,
+                      start_date: new Date().toISOString(),
+                      is_active: true,
+                      status: 'active',
+                      pain_areas: data.painAreas || [],
+                      pattern_baselines: screening?.patternBaselines || {},
+                      available_equipment: updatedOnboarding?.equipment || {},
+                      metadata: {
+                        screeningScores: {
+                          final: screening.finalScore,
+                          quiz: dataStatus.quiz?.score,
+                          practical: screening.practicalScore,
+                          physical: screening.physicalScore
+                        },
+                        cycleScreening: true,
+                        previousCycle: retestSchedule?.currentCycle || 1,
+                        locationChanged: data.locationChanged,
+                        goalChanged: data.goalChanged,
+                        previousLocation: dataStatus.onboarding?.trainingLocation,
+                        previousGoal: dataStatus.onboarding?.goal
+                      }
+                    });
+
+                    if (saveResult.success) {
+                      console.log('✅ New program saved after cycle screening:', saveResult.data?.id);
+
+                      localStorage.removeItem('currentProgram');
+
+                      // 3. Invalidate React Query cache and refetch
+                      console.log('🔄 Invalidating cache and waiting for refetch...');
+                      await queryClient.invalidateQueries({ queryKey: programKeys.all });
+                      await refetchProgram();
+
+                      console.log('✅ Refetch complete, new program is now active');
+
+                      const locationLabel = newLocation === 'gym' ? 'PALESTRA' : 'CASA';
+                      const changeMessage = data.locationChanged && data.goalChanged
+                        ? `Location (${locationLabel}) e obiettivo (${newGoal}) aggiornati!`
+                        : data.locationChanged
+                          ? `Location cambiata: ${locationLabel}`
+                          : `Obiettivo aggiornato: ${newGoal}`;
+
+                      alert(`✅ Nuovo ciclo iniziato!\n\n${changeMessage}\n\nNuovo programma generato con successo!`);
+
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                      console.warn('⚠️ Failed to save new program:', saveResult.error);
+                      localStorage.setItem('currentProgram', JSON.stringify(generatedProgram));
+                      alert(`Programma salvato localmente.\n\n${saveResult.error || 'Errore di sincronizzazione cloud'}`);
+                    }
+                  } catch (error) {
+                    console.error('Error regenerating program after cycle screening:', error);
+                    alert('Errore durante la rigenerazione del programma. Riprova.');
+                  }
+                }
+              }
+              setShowCycleScreening(false);
+              setCycleScreeningDismissed(true);
+            }}
+            onDismiss={() => {
+              setShowCycleScreening(false);
+              setCycleScreeningDismissed(true);
+            }}
           />
         )}
 
@@ -1403,6 +1681,7 @@ export default function Dashboard() {
                   </motion.button>
 
                   <div className="flex gap-2 md:gap-4">
+                    {/* Pulsante Cambio Location PERMANENTE */}
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={() => {
@@ -1413,7 +1692,7 @@ export default function Dashboard() {
                       className="flex-1 sm:flex-none px-3 md:px-6 bg-purple-600 hover:bg-purple-700 text-white py-3 md:py-4 rounded-xl border border-purple-500/50 transition-all duration-300 flex items-center justify-center gap-1.5 md:gap-2 text-sm md:text-base"
                     >
                       🏋️
-                      <span className="hidden sm:inline">Location</span>
+                      <span className="hidden sm:inline">Cambia Programma</span>
                     </motion.button>
 
                     <motion.button
@@ -1457,6 +1736,26 @@ export default function Dashboard() {
             <h2 className="text-3xl font-display font-bold mb-6 text-white">{t('dashboard.reset.modal_title')}</h2>
 
             <div className="space-y-4">
+              {/* Reset Solo Obiettivo - Opzione principale */}
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-5 backdrop-blur-sm">
+                <h3 className="font-display font-semibold text-amber-400 mb-2 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  Reset Obiettivo
+                </h3>
+                <p className="text-sm text-slate-300 mb-4">
+                  Resetta solo il programma e l'obiettivo. Mantiene assessment, screening e quiz completati.
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleGoalReset}
+                  disabled={resetting}
+                  className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:from-slate-600 disabled:to-slate-700 text-white font-bold py-3 rounded-lg shadow-lg shadow-amber-500/20 transition-all duration-300"
+                >
+                  {resetting ? 'Resetting...' : 'Reset Solo Obiettivo'}
+                </motion.button>
+              </div>
+
               {/* Reset Profondo */}
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-5 backdrop-blur-sm">
                 <h3 className="font-display font-semibold text-red-400 mb-2 flex items-center gap-2">
@@ -1728,7 +2027,11 @@ export default function Dashboard() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setShowLocationSwitch(false)}
+                  onClick={() => {
+                    setShowLocationSwitch(false);
+                    setSwitchStep('choose');
+                    setSelectedLocation(null);
+                  }}
                   className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl border border-slate-600/50 transition-all duration-300"
                 >
                   {t('common.cancel')}

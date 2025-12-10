@@ -12,7 +12,7 @@ interface PainStepProps {
  * Alcune zone sono mappate come best-match (es. cervicale/dorsale → shoulder)
  */
 const getPainAreas = (t: (key: string) => string): Array<{ value: PainArea; label: string; icon: string }> => [
-  { value: 'shoulder', label: t('body.neck'), icon: '🦴' },
+  { value: 'neck', label: t('body.neck'), icon: '🦴' },
   { value: 'shoulder', label: t('body.shoulder'), icon: '💪' },
   { value: 'lower_back', label: t('body.lowerBack'), icon: '⬇️' },
   { value: 'hip', label: t('body.hip'), icon: '🦴' },

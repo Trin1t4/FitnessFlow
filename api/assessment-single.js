@@ -13,8 +13,11 @@ export default async function handler(req, res) {
   try {
     const { exerciseName, weight, reps, notes } = req.body;
     
-    // Get session from cookie
-    const token = req.cookies['sb-access-token'] || req.cookies['sb-mhcdxqhhlrujbjxtgnmz-auth-token'];
+    // Get session from cookie - dynamic project ID extraction
+    const projectId = process.env.SUPABASE_PROJECT_ID ||
+                      process.env.NEXT_PUBLIC_SUPABASE_URL?.split('.')[0].split('//')[1];
+    const token = req.cookies['sb-access-token'] ||
+                  req.cookies[`sb-${projectId}-auth-token`];
     if (!token) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

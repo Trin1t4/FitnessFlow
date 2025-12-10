@@ -1,6 +1,6 @@
 {
-  "installCommand": "echo 'Skipping root install - using buildCommand'",
-  "buildCommand": "cd packages/web && npm install && npm run build",
+  "installCommand": "npm install",
+  "buildCommand": "cd packages/web && npm run build",
   "outputDirectory": "packages/web/dist",
   "functions": {
     "api/*.js": {

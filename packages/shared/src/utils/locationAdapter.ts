@@ -33,6 +33,20 @@ export interface LocationAdaptationOptions {
   location: LocationType;
   homeType?: HomeType;
   equipment?: HomeEquipment;
+  userBodyweight?: number; // Peso corporeo utente in kg - FONDAMENTALE per matching accurato
+  /**
+   * Carichi REALI dai test di screening (baselines)
+   * Questi hanno priorità sulle stime perché sono dati effettivi
+   * Formato: { pattern: carico_in_kg }
+   * Es: { lower_push: 80, horizontal_push: 60 }
+   */
+  realLoads?: Record<string, number>;
+  /**
+   * Date dell'ultimo test per pattern
+   * Formato: { pattern: ISO_date_string }
+   * Es: { lower_push: '2025-01-15', horizontal_push: '2025-01-10' }
+   */
+  testDates?: Record<string, string>;
 }
 
 /**
@@ -120,28 +134,235 @@ const NO_PULLUP_BAR_ALTERNATIVES: Record<string, string> = {
 };
 
 /**
- * Trova variante bodyweight per un esercizio
+ * RELATIVE STRENGTH-BASED BODYWEIGHT EQUIVALENTS
+ *
+ * La logica: usa il RAPPORTO carico/peso_corporeo per determinare l'equivalente.
+ * Questo è fondamentale perché:
+ * - Ragazza 40kg che squatta 80kg = 2x BW → MOLTO AVANZATA → Pistol Squat
+ * - Uomo 80kg che squatta 80kg = 1x BW → INTERMEDIO → Skater Squat
+ * - Uomo 100kg che squatta 80kg = 0.8x BW → BASE → Bulgarian Split Squat
+ *
+ * Standard di forza relativa (Squat come riferimento):
+ * - <0.5x BW = Principiante
+ * - 0.5-1x BW = Intermedio
+ * - 1-1.5x BW = Avanzato
+ * - 1.5-2x BW = Molto avanzato
+ * - >2x BW = Elite
+ *
+ * minRatio = rapporto minimo carico/peso_corporeo per questo esercizio
  */
-function findBodyweightAlternative(exerciseName: string, pattern: string): string {
+const RELATIVE_STRENGTH_ALTERNATIVES: Record<string, { minRatio: number; exercise: string; notes: string }[]> = {
+  // LOWER PUSH - Basato su rapporto carico/bodyweight
+  'lower_push': [
+    { minRatio: 2.0, exercise: 'Pistol Squat', notes: 'Elite - 2x+ bodyweight squat' },
+    { minRatio: 1.5, exercise: 'Pistol Squat (Assisted)', notes: 'Molto avanzato - 1.5x+ BW' },
+    { minRatio: 1.2, exercise: 'Shrimp Squat', notes: 'Avanzato - 1.2x+ BW' },
+    { minRatio: 1.0, exercise: 'Skater Squat', notes: 'Intermedio-avanzato - 1x BW' },
+    { minRatio: 0.75, exercise: 'Bulgarian Split Squat', notes: 'Intermedio - 0.75x BW' },
+    { minRatio: 0.5, exercise: 'Split Squat', notes: 'Intermedio base - 0.5x BW' },
+    { minRatio: 0, exercise: 'Bodyweight Squat', notes: 'Principiante' }
+  ],
+  // LOWER PULL - Hip hinge (stacco come riferimento)
+  // Nordic curl è MOLTO difficile, riservato a elite
+  'lower_pull': [
+    { minRatio: 2.5, exercise: 'Nordic Hamstring Curl', notes: 'Elite - 2.5x+ BW deadlift' },
+    { minRatio: 2.0, exercise: 'Nordic Curl (Eccentric Only)', notes: 'Molto avanzato - 2x+ BW' },
+    { minRatio: 1.5, exercise: 'Slider Leg Curl (Single Leg)', notes: 'Avanzato - 1.5x+ BW' },
+    { minRatio: 1.2, exercise: 'Slider Leg Curl', notes: 'Intermedio-avanzato - 1.2x BW' },
+    { minRatio: 1.0, exercise: 'Single Leg RDL (Bodyweight)', notes: 'Intermedio - 1x BW' },
+    { minRatio: 0.75, exercise: 'Hip Thrust (Single Leg)', notes: 'Intermedio - 0.75x BW' },
+    { minRatio: 0.5, exercise: 'Hip Thrust (Elevated)', notes: 'Base - 0.5x BW' },
+    { minRatio: 0, exercise: 'Glute Bridge', notes: 'Principiante' }
+  ],
+  // HORIZONTAL PUSH (bench press come riferimento)
+  // 1x BW bench = intermedio-avanzato
+  'horizontal_push': [
+    { minRatio: 1.5, exercise: 'One-Arm Push-up', notes: 'Elite - 1.5x+ BW bench' },
+    { minRatio: 1.3, exercise: 'One-Arm Push-up (Assisted)', notes: 'Molto avanzato - 1.3x+ BW' },
+    { minRatio: 1.1, exercise: 'Archer Push-up', notes: 'Avanzato - 1.1x+ BW' },
+    { minRatio: 0.9, exercise: 'Pseudo Planche Push-up', notes: 'Avanzato - 0.9x BW' },
+    { minRatio: 0.75, exercise: 'Diamond Push-up', notes: 'Intermedio-avanzato - 0.75x BW' },
+    { minRatio: 0.6, exercise: 'Deficit Push-up', notes: 'Intermedio - 0.6x BW' },
+    { minRatio: 0.5, exercise: 'Standard Push-up', notes: 'Intermedio - 0.5x BW' },
+    { minRatio: 0.3, exercise: 'Knee Push-up', notes: 'Base - 0.3x BW' },
+    { minRatio: 0.15, exercise: 'Incline Push-up', notes: 'Principiante avanzato - 0.15x BW' },
+    { minRatio: 0, exercise: 'Wall Push-up', notes: 'Principiante' }
+  ],
+  // VERTICAL PUSH (OHP come riferimento - carichi più bassi, 0.75x BW OHP = molto forte)
+  'vertical_push': [
+    { minRatio: 1.0, exercise: 'Freestanding Handstand Push-up', notes: 'Elite mondiale - 1x+ BW OHP' },
+    { minRatio: 0.85, exercise: 'Wall Handstand Push-up', notes: 'Elite - 0.85x+ BW OHP' },
+    { minRatio: 0.7, exercise: 'Wall Handstand Push-up (Eccentric)', notes: 'Molto avanzato - 0.7x+ BW' },
+    { minRatio: 0.6, exercise: 'Elevated Pike Push-up (High)', notes: 'Avanzato - 0.6x+ BW' },
+    { minRatio: 0.5, exercise: 'Elevated Pike Push-up', notes: 'Intermedio-avanzato - 0.5x BW' },
+    { minRatio: 0.4, exercise: 'Pike Push-up', notes: 'Intermedio - 0.4x BW' },
+    { minRatio: 0.25, exercise: 'Pike Push-up (Knee)', notes: 'Base - 0.25x BW' },
+    { minRatio: 0, exercise: 'Wall Shoulder Tap', notes: 'Principiante' }
+  ],
+  // VERTICAL PULL - Basato su lat pulldown/weighted pull-up come riferimento
+  // Chi fa lat pulldown pesante dovrebbe fare varianti pull-up avanzate
+  'vertical_pull': [
+    { minRatio: 1.2, exercise: 'Archer Pull-up', notes: 'Elite - 1.2x+ BW lat pulldown' },
+    { minRatio: 1.0, exercise: 'L-Sit Pull-up', notes: 'Avanzato - 1x BW' },
+    { minRatio: 0.75, exercise: 'Pull-up', notes: 'Intermedio - 0.75x BW' },
+    { minRatio: 0.5, exercise: 'Chin-up', notes: 'Intermedio base - 0.5x BW' },
+    { minRatio: 0.25, exercise: 'Australian Pull-up (Feet Elevated)', notes: 'Base - 0.25x BW' },
+    { minRatio: 0, exercise: 'Australian Pull-up', notes: 'Principiante' }
+  ],
+  // HORIZONTAL PULL (row come riferimento - bent over row/cable row)
+  'horizontal_pull': [
+    { minRatio: 1.2, exercise: 'Front Lever Row', notes: 'Elite - 1.2x+ BW row' },
+    { minRatio: 1.0, exercise: 'Archer Row', notes: 'Molto avanzato - 1x+ BW row' },
+    { minRatio: 0.85, exercise: 'One-Arm Inverted Row', notes: 'Avanzato - 0.85x BW' },
+    { minRatio: 0.7, exercise: 'Inverted Row (Feet Elevated)', notes: 'Intermedio-avanzato - 0.7x BW' },
+    { minRatio: 0.5, exercise: 'Inverted Row', notes: 'Intermedio - 0.5x BW' },
+    { minRatio: 0.3, exercise: 'Inverted Row (Knee Bent)', notes: 'Base - 0.3x BW' },
+    { minRatio: 0, exercise: 'Band Row', notes: 'Principiante' }
+  ]
+};
+
+/**
+ * Stima il carico equivalente basato sul nome dell'esercizio
+ * Per esercizi con bilanciere, stima conservativa del carico tipico
+ */
+function estimateExerciseLoad(exerciseName: string): number {
   const lowerName = exerciseName.toLowerCase();
 
-  // Prima cerca nella mappa diretta
+  // Esercizi con bilanciere = carichi significativi
+  if (lowerName.includes('bilanciere') || lowerName.includes('barbell')) {
+    if (lowerName.includes('squat')) return 70; // Squat con bilanciere ~70kg
+    if (lowerName.includes('deadlift') || lowerName.includes('stacco')) return 80;
+    if (lowerName.includes('bench') || lowerName.includes('panca')) return 60;
+    if (lowerName.includes('press') || lowerName.includes('military')) return 40;
+    if (lowerName.includes('row') || lowerName.includes('rematore')) return 50;
+    return 60; // Default bilanciere
+  }
+
+  // Esercizi specifici
+  if (lowerName.includes('back squat') || lowerName === 'squat') return 70;
+  if (lowerName.includes('front squat')) return 60;
+  if (lowerName.includes('leg press')) return 100;
+  if (lowerName.includes('deadlift') || lowerName.includes('stacco')) return 80;
+  if (lowerName.includes('rdl') || lowerName.includes('romanian')) return 60;
+  if (lowerName.includes('bench') || lowerName.includes('panca piana')) return 60;
+  if (lowerName.includes('incline')) return 50;
+  if (lowerName.includes('shoulder press') || lowerName.includes('lento avanti')) return 40;
+  if (lowerName.includes('lat pulldown') || lowerName.includes('lat machine')) return 50;
+  if (lowerName.includes('cable row') || lowerName.includes('pulley')) return 45;
+  if (lowerName.includes('dumbbell') || lowerName.includes('manubr')) return 30; // Manubri = meno carico
+
+  // Default per esercizi non riconosciuti ma probabilmente con sovraccarico
+  if (lowerName.includes('press') || lowerName.includes('curl') || lowerName.includes('row')) return 35;
+
+  return 20; // Default basso per esercizi non riconosciuti
+}
+
+/**
+ * Converte un carico NRM (N Rep Max) in 1RM stimato usando Brzycki formula
+ * 1RM = weight × (36 / (37 - reps))
+ *
+ * Esempi:
+ * - 70kg x 10RM → 70 × (36/27) = 93kg 1RM
+ * - 80kg x 10RM → 80 × (36/27) = 107kg 1RM
+ */
+function convert10RMTo1RM(weight10RM: number): number {
+  // Brzycki formula per 10 reps: multiplier = 36 / (37 - 10) = 36/27 ≈ 1.333
+  return weight10RM * (36 / (37 - 10));
+}
+
+/**
+ * Trova variante bodyweight per un esercizio
+ * LOGICA RELATIVE STRENGTH: considera il RAPPORTO 1RM_stimato/peso_corporeo
+ *
+ * IMPORTANTE: I carichi dai test sono 10RM, vanno convertiti in 1RM per confronto accurato!
+ * Formula Brzycki: 1RM = weight × (36 / (37 - reps))
+ *
+ * Esempi con 70kg x 10RM (= ~93kg 1RM):
+ * - Ragazza 40kg: 93/40 = 2.33x BW → Pistol Squat (elite)
+ * - Uomo 80kg: 93/80 = 1.16x BW → Shrimp Squat (avanzato)
+ * - Uomo 100kg: 93/100 = 0.93x BW → Bulgarian Split Squat (intermedio)
+ *
+ * @param exerciseName - Nome esercizio originale
+ * @param pattern - Pattern biomeccanico (lower_push, etc)
+ * @param userBodyweight - Peso corporeo utente in kg (default 75 se non specificato)
+ * @param realLoad10RM - Carico REALE 10RM da test di screening (ha priorità sulla stima)
+ * @param testDate - Data ISO dell'ultimo test per questo pattern
+ */
+function findBodyweightAlternative(
+  exerciseName: string,
+  pattern: string,
+  userBodyweight: number = 75,
+  realLoad10RM?: number,
+  testDate?: string
+): string {
+  const lowerName = exerciseName.toLowerCase();
+
+  // USA IL CARICO REALE se disponibile, convertendo da 10RM a 1RM stimato
+  let estimated1RM: number;
+  let loadSource: string;
+
+  if (realLoad10RM && realLoad10RM > 0) {
+    estimated1RM = convert10RMTo1RM(realLoad10RM);
+    // Formatta la data del test se disponibile
+    const testInfo = testDate
+      ? ` (test: ${new Date(testDate).toLocaleDateString('it-IT')})`
+      : '';
+    loadSource = `TEST REALE: ${realLoad10RM}kg x10RM → ${estimated1RM.toFixed(0)}kg 1RM${testInfo}`;
+  } else {
+    // Stima conservativa (assume già 1RM)
+    estimated1RM = estimateExerciseLoad(exerciseName);
+    loadSource = `stimato ${estimated1RM}kg 1RM (nessun test recente)`;
+  }
+
+  // Calcola il rapporto forza relativa basato su 1RM stimato
+  const strengthRatio = estimated1RM / userBodyweight;
+
+  console.log(`🏋️ "${exerciseName}": ${loadSource} / ${userBodyweight}kg BW = ${strengthRatio.toFixed(2)}x BW`);
+
+  // Trova la migliore alternativa bodyweight basata sul RAPPORTO
+  const alternatives = RELATIVE_STRENGTH_ALTERNATIVES[pattern];
+
+  if (alternatives && alternatives.length > 0) {
+    // Trova l'esercizio bodyweight appropriato per questo rapporto
+    for (const alt of alternatives) {
+      if (strengthRatio >= alt.minRatio) {
+        console.log(`🎯 Relative strength match: ${strengthRatio.toFixed(2)}x BW → ${alt.exercise} (${alt.notes})`);
+        return alt.exercise;
+      }
+    }
+    // Fallback all'ultimo (più facile)
+    const easiest = alternatives[alternatives.length - 1];
+    console.log(`🎯 Fallback to easiest: ${easiest.exercise}`);
+    return easiest.exercise;
+  }
+
+  // Fallback al sistema precedente basato su difficoltà
+  const variants = PATTERN_VARIANTS[pattern];
+  if (variants) {
+    // Per rapporti alti, prendi il bodyweight più difficile
+    const bodyweightVariants = variants.filter(
+      v => v.equipment === 'bodyweight' || v.equipment === 'both'
+    ).sort((a, b) => b.difficulty - a.difficulty);
+
+    if (bodyweightVariants.length > 0) {
+      // Se rapporto >= 1x BW, prendi il più difficile disponibile
+      if (strengthRatio >= 1.0 && bodyweightVariants[0]) {
+        console.log(`🎯 High ratio (${strengthRatio.toFixed(2)}x BW) → hardest BW: ${bodyweightVariants[0].name}`);
+        return bodyweightVariants[0].name;
+      }
+      // Altrimenti prendi uno intermedio
+      const midIndex = Math.floor(bodyweightVariants.length / 2);
+      console.log(`🎯 Medium ratio → mid BW: ${bodyweightVariants[midIndex].name}`);
+      return bodyweightVariants[midIndex].name;
+    }
+  }
+
+  // Fallback alla mappa diretta (per compatibilità)
   if (BODYWEIGHT_ALTERNATIVES[lowerName]) {
     return BODYWEIGHT_ALTERNATIVES[lowerName];
   }
 
-  // Poi cerca nelle varianti del pattern
-  const variants = PATTERN_VARIANTS[pattern];
-  if (variants) {
-    const bodyweightVariant = variants.find(
-      v => v.equipment === 'bodyweight' || v.equipment === 'both'
-    );
-    if (bodyweightVariant) {
-      return bodyweightVariant.name;
-    }
-  }
-
-  // Fallback: mantieni originale
+  // Fallback finale: mantieni originale
   return exerciseName;
 }
 
@@ -193,12 +414,13 @@ function requiresEquipment(exerciseName: string): {
 
 /**
  * Adatta un singolo esercizio alla location
+ * Usa il peso corporeo dell'utente E i carichi reali dai test per matching accurato
  */
 function adaptExercise(
   exercise: Exercise,
   options: LocationAdaptationOptions
 ): Exercise {
-  const { location, homeType, equipment } = options;
+  const { location, homeType, equipment, userBodyweight, realLoads, testDates } = options;
 
   // Pattern correttivi non vengono modificati
   if (exercise.pattern === 'corrective') {
@@ -208,6 +430,13 @@ function adaptExercise(
   let newName = exercise.name;
   let wasReplaced = false;
 
+  // Default 75kg se non specificato
+  const bodyweight = userBodyweight || 75;
+
+  // Ottieni il carico REALE e la data del test per questo pattern (se disponibili)
+  const patternRealLoad = realLoads?.[exercise.pattern];
+  const patternTestDate = testDates?.[exercise.pattern];
+
   if (location === 'gym') {
     // Converti bodyweight -> gym/macchine
     newName = findGymAlternative(exercise.name, exercise.pattern);
@@ -215,8 +444,8 @@ function adaptExercise(
   } else if (location === 'home') {
     // Casa: dipende da homeType e equipment
     if (homeType === 'bodyweight' || !equipment) {
-      // Solo corpo libero
-      newName = findBodyweightAlternative(exercise.name, exercise.pattern);
+      // Solo corpo libero - USA PESO CORPOREO + CARICO REALE + DATA TEST per matching accurato
+      newName = findBodyweightAlternative(exercise.name, exercise.pattern, bodyweight, patternRealLoad, patternTestDate);
       wasReplaced = newName !== exercise.name;
     } else {
       // Casa con attrezzatura - verifica cosa e' disponibile
@@ -237,15 +466,15 @@ function adaptExercise(
           // Usa manubri come alternativa
           newName = exercise.name.replace(/barbell/i, 'Dumbbell');
         } else {
-          // Altrimenti bodyweight
-          newName = findBodyweightAlternative(exercise.name, exercise.pattern);
+          // Altrimenti bodyweight - USA PESO CORPOREO + CARICO REALE + DATA TEST
+          newName = findBodyweightAlternative(exercise.name, exercise.pattern, bodyweight, patternRealLoad, patternTestDate);
         }
         wasReplaced = newName !== exercise.name;
       }
 
       // Se richiede panca ma non ce l'ha
       if (required.bench && !equipment.bench) {
-        newName = findBodyweightAlternative(exercise.name, exercise.pattern);
+        newName = findBodyweightAlternative(exercise.name, exercise.pattern, bodyweight, patternRealLoad, patternTestDate);
         wasReplaced = newName !== exercise.name;
       }
     }

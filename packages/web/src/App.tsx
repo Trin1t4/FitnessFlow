@@ -22,9 +22,15 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ResponsiveLayout from "./components/ResponsiveLayout";
+import CookieBanner from "./components/CookieBanner";
+import InstallPWA from "./components/InstallPWA";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Non-critical routes (lazy loaded for code splitting)
 const Pricing = lazy(() => import("./pages/Pricing"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const BodyCompositionScan = lazy(() => import("./pages/BodyCompositionScan"));
 const BiomechanicsQuiz = lazy(() => import("./pages/BiomechanicsQuiz"));
@@ -32,12 +38,15 @@ const Screening = lazy(() => import("./pages/Screening"));
 const Dashboard = lazy(() => import("./components/Dashboard"));
 const Workout = lazy(() => import('./pages/Workout'));
 const WorkoutSession = lazy(() => import('./pages/WorkoutSession'));
-const RecoveryScreening = lazy(() => import('./components/RecoveryScreening'));
+const RecoveryScreening = lazy(() => import('./pages/RecoveryScreening'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const VideoFeedback = lazy(() => import('./pages/VideoFeedback'));
 const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
 const Stats = lazy(() => import('./pages/Stats'));
 const Profile = lazy(() => import('./pages/Profile'));
+const Community = lazy(() => import('./pages/Community'));
+const Achievements = lazy(() => import('./pages/Achievements'));
+const About = lazy(() => import('./pages/About'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -51,17 +60,24 @@ const PageLoader = () => (
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <BrowserRouter>
-          <Toaster position="top-right" richColors />
-          <ResponsiveLayout>
-            <Suspense fallback={<PageLoader />}>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
+          <BrowserRouter>
+            <Toaster position="top-right" richColors />
+            <ResponsiveLayout>
+              <Suspense fallback={<PageLoader />}>
               <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/about" element={<About />} />
+
+              {/* LEGAL PAGES */}
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/cookie-policy" element={<CookiePolicy />} />
 
               {/* ONBOARDING - Senza auth per test */}
               <Route path="/onboarding" element={<Onboarding />} />
@@ -92,15 +108,24 @@ function App() {
               <Route path="/stats" element={<Stats />} />
               <Route path="/profile" element={<Profile />} />
 
+              {/* SOCIAL FEATURES */}
+              <Route path="/community" element={<Community />} />
+              <Route path="/achievements" element={<Achievements />} />
+
               <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
           </ResponsiveLayout>
-        </BrowserRouter>
-      </LanguageProvider>
-      {/* React Query DevTools - solo in development */}
-      <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
-    </QueryClientProvider>
+          {/* Cookie Banner - GDPR Compliance */}
+          <CookieBanner />
+          {/* PWA Install Prompt */}
+          <InstallPWA />
+          </BrowserRouter>
+        </LanguageProvider>
+        {/* React Query DevTools - solo in development */}
+        <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

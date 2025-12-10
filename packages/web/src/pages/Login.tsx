@@ -4,6 +4,7 @@ import supabase from "../lib/supabaseClient";
 import { LogIn, Mail, Lock, AlertCircle, Loader2 } from "lucide-react"; // ✅ Icone
 import { useTranslation } from '../lib/i18n';
 import { usePrefetchCurrentProgram } from '../hooks/useProgram'; // ✅ Prefetch hook
+import VideoMosaicBackground from '../components/VideoMosaicBackground';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -106,8 +107,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Video Mosaic Background */}
+      <VideoMosaicBackground videoCount={12} opacity={0.06} blur={2} />
+
+      <div className="max-w-md w-full relative z-10">
         {/* Header */}
         <div className="text-center mb-8 animate-fade-in">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl mb-4 shadow-lg shadow-emerald-500/50">
@@ -215,8 +219,9 @@ export default function Login() {
 
         {/* Footer */}
         <p className="text-center text-sm text-slate-500 mt-6">
-          Accedendo accetti i nostri{' '}
-          <a href="#" className="text-emerald-400 hover:text-emerald-300">Termini di Servizio</a>
+          <Link to="/terms-of-service" className="text-emerald-400 hover:text-emerald-300">Termini di Servizio</Link>
+          {' '}&bull;{' '}
+          <Link to="/privacy-policy" className="text-emerald-400 hover:text-emerald-300">Privacy Policy</Link>
         </p>
       </div>
 

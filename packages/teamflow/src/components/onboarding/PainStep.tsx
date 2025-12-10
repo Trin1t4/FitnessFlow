@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { OnboardingData, PainArea, PainSeverity, PainEntry } from '../../types/onboarding.types';
 import { useTranslation } from '../../lib/i18n';
+import { numericSeverityToString } from '@fitnessflow/shared';
 
 interface PainStepProps {
   data: Partial<OnboardingData>;
@@ -8,27 +9,74 @@ interface PainStepProps {
 }
 
 /**
- * Mapping zone dolore italiano → PainArea types
- * Alcune zone sono mappate come best-match (es. cervicale/dorsale → shoulder)
+ * Extended pain area type with lateralization support
+ * Base areas: knee, shoulder, hip, ankle, wrist, elbow, lower_back
+ * Lateralized areas: left_knee, right_knee, left_shoulder, right_shoulder, etc.
  */
-const getPainAreas = (t: (key: string) => string): Array<{ value: PainArea; label: string; icon: string }> => [
-  { value: 'shoulder', label: t('body.neck'), icon: '🦴' },
-  { value: 'shoulder', label: t('body.shoulder'), icon: '💪' },
+type ExtendedPainArea = PainArea |
+  'left_knee' | 'right_knee' |
+  'left_shoulder' | 'right_shoulder' |
+  'left_hip' | 'right_hip' |
+  'left_ankle' | 'right_ankle' |
+  'left_wrist' | 'right_wrist' |
+  'left_elbow' | 'right_elbow';
+
+/**
+ * Mapping zone dolore italiano → PainArea types
+ * Supporta aree lateralizzate (sinistra/destra)
+ */
+const getPainAreas = (t: (key: string) => string): Array<{ value: ExtendedPainArea; label: string; icon: string; side?: 'left' | 'right' }> => [
+  // Neck/Cervical → now has its own value
+  { value: 'neck', label: t('body.neck'), icon: '🦴' },
+
+  // Shoulders - lateralized
+  { value: 'left_shoulder', label: `${t('body.shoulder')} (SX)`, icon: '💪', side: 'left' },
+  { value: 'right_shoulder', label: `${t('body.shoulder')} (DX)`, icon: '💪', side: 'right' },
+
+  // Lower back - central
   { value: 'lower_back', label: t('body.lowerBack'), icon: '⬇️' },
-  { value: 'hip', label: t('body.hip'), icon: '🦴' },
-  { value: 'knee', label: t('body.knee'), icon: '🦵' },
-  { value: 'ankle', label: t('body.ankle'), icon: '👣' },
-  { value: 'wrist', label: t('body.wrist'), icon: '🤚' },
-  { value: 'elbow', label: t('body.elbow'), icon: '💪' }
+
+  // Hips - lateralized
+  { value: 'left_hip', label: `${t('body.hip')} (SX)`, icon: '🦴', side: 'left' },
+  { value: 'right_hip', label: `${t('body.hip')} (DX)`, icon: '🦴', side: 'right' },
+
+  // Knees - lateralized
+  { value: 'left_knee', label: `${t('body.knee')} (SX)`, icon: '🦵', side: 'left' },
+  { value: 'right_knee', label: `${t('body.knee')} (DX)`, icon: '🦵', side: 'right' },
+
+  // Ankles - lateralized
+  { value: 'left_ankle', label: `${t('body.ankle')} (SX)`, icon: '👣', side: 'left' },
+  { value: 'right_ankle', label: `${t('body.ankle')} (DX)`, icon: '👣', side: 'right' },
+
+  // Wrists - lateralized
+  { value: 'left_wrist', label: `${t('body.wrist')} (SX)`, icon: '🤚', side: 'left' },
+  { value: 'right_wrist', label: `${t('body.wrist')} (DX)`, icon: '🤚', side: 'right' },
+
+  // Elbows - lateralized
+  { value: 'left_elbow', label: `${t('body.elbow')} (SX)`, icon: '💪', side: 'left' },
+  { value: 'right_elbow', label: `${t('body.elbow')} (DX)`, icon: '💪', side: 'right' }
 ];
 
 /**
  * Converti intensità dolore (1-10) → severity type
+ * NUOVA LOGICA CONSERVATIVA:
+ * - 1-3: mild (deload leggero, continua)
+ * - 4+: severe (EVITA esercizio, sostituisci)
+ *
+ * Usa numericSeverityToString da @fitnessflow/shared per consistenza
  */
 function intensityToSeverity(intensity: number): PainSeverity {
-  if (intensity >= 8) return 'severe';
-  if (intensity >= 4) return 'moderate';
-  return 'mild';
+  return numericSeverityToString(intensity);
+}
+
+/**
+ * Get base area from lateralized area (e.g., left_knee → knee)
+ */
+function getBaseArea(area: ExtendedPainArea): PainArea {
+  if (area.startsWith('left_') || area.startsWith('right_')) {
+    return area.replace(/^(left_|right_)/, '') as PainArea;
+  }
+  return area as PainArea;
 }
 
 export default function PainStep({ data, onNext }: PainStepProps) {
@@ -40,22 +88,24 @@ export default function PainStep({ data, onNext }: PainStepProps) {
   );
 
   // Inizializza da painAreas esistenti (se presenti)
-  const initialPainMap: Map<PainArea, number> = new Map();
+  // Supporta sia aree base che lateralizzate
+  const initialPainMap: Map<ExtendedPainArea, number> = new Map();
   if (data.painAreas) {
     data.painAreas.forEach((entry) => {
-      const intensity = entry.severity === 'severe' ? 9 : entry.severity === 'moderate' ? 5 : 2;
-      initialPainMap.set(entry.area, intensity);
+      // Nuova logica: 4+ = severe, altrimenti mild
+      const intensity = entry.severity === 'severe' ? 5 : 2;
+      initialPainMap.set(entry.area as ExtendedPainArea, intensity);
     });
   }
 
-  const [painIntensity, setPainIntensity] = useState<Map<PainArea, number>>(initialPainMap);
+  const [painIntensity, setPainIntensity] = useState<Map<ExtendedPainArea, number>>(initialPainMap);
 
-  const togglePainArea = (area: PainArea) => {
+  const togglePainArea = (area: ExtendedPainArea) => {
     const newMap = new Map(painIntensity);
     if (newMap.has(area)) {
       newMap.delete(area);
     } else {
-      newMap.set(area, 5); // Default: moderate
+      newMap.set(area, 3); // Default: mild (1-3 range, border)
     }
     setPainIntensity(newMap);
   };
@@ -67,11 +117,15 @@ export default function PainStep({ data, onNext }: PainStepProps) {
       return;
     }
 
-    // Converti Map<PainArea, intensity> → PainEntry[]
+    // Converti Map<ExtendedPainArea, intensity> → PainEntry[]
+    // Per compatibilità DB, salva area base (senza lateralizzazione)
+    // ma memorizziamo l'info lateralizzata per uso locale
     const painAreas: PainEntry[] = Array.from(painIntensity.entries()).map(([area, intensity]) => ({
-      area,
-      severity: intensityToSeverity(intensity)
-    }));
+      area: getBaseArea(area), // Converti left_knee → knee per compatibilità DB
+      severity: intensityToSeverity(intensity),
+      // Estensione: salviamo anche info lateralizzata per uso futuro
+      ...(area !== getBaseArea(area) && { laterality: area.startsWith('left_') ? 'left' : 'right' })
+    } as PainEntry));
 
     onNext({ painAreas });
   };
@@ -160,10 +214,12 @@ export default function PainStep({ data, onNext }: PainStepProps) {
                           <span className="text-white font-mono font-bold text-xl">{intensity}</span>
                           <span className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
                             severity === 'severe' ? 'bg-red-500/10 text-red-400 border-red-500/30' :
-                            severity === 'moderate' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
                             'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                           }`}>
-                            {severity === 'severe' ? t('onboarding.pain.severe') : severity === 'moderate' ? t('onboarding.pain.moderate') : t('onboarding.pain.mild')}
+                            {/* Nuova logica: 1-3 = mild (OK), 4+ = severe (EVITA) */}
+                            {severity === 'severe'
+                              ? `${t('onboarding.pain.severe')} - EVITA`
+                              : `${t('onboarding.pain.mild')} - OK`}
                           </span>
                         </div>
                       </div>
@@ -180,9 +236,10 @@ export default function PainStep({ data, onNext }: PainStepProps) {
                         className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
                       />
                       <div className="flex justify-between text-xs text-slate-500 mt-1">
-                        <span>{t('onboarding.pain.mildRange')}</span>
-                        <span>{t('onboarding.pain.moderateRange')}</span>
-                        <span>{t('onboarding.pain.severeRange')}</span>
+                        {/* Nuova scala: 1-3 = continua (mild), 4+ = evita (severe) */}
+                        <span>1-3: Continua</span>
+                        <span className="text-amber-400">|</span>
+                        <span>4+: Evita esercizio</span>
                       </div>
                     </div>
                   );

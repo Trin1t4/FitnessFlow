@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { UserPlus, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { UserPlus, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, Loader2, Shield } from 'lucide-react';
 import { useTranslation } from '../lib/i18n';
+import VideoMosaicBackground from '../components/VideoMosaicBackground';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -15,6 +16,14 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // Consensi GDPR
+  const [consents, setConsents] = useState({
+    privacy: false,
+    terms: false,
+    dataProcessing: false,
+    marketing: false, // opzionale
+  });
 
   // Validazione password
   const validatePassword = (pass: string) => {
@@ -52,8 +61,17 @@ export default function Register() {
       return;
     }
 
+    // Verifica consensi obbligatori
+    if (!consents.privacy || !consents.terms || !consents.dataProcessing) {
+      setError('Devi accettare Privacy Policy, Termini di Servizio e il trattamento dei dati per continuare');
+      return;
+    }
+
     try {
       setLoading(true);
+
+      // Timestamp consensi
+      const consentTimestamp = new Date().toISOString();
 
       // Registrazione con Supabase
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -62,7 +80,13 @@ export default function Register() {
         options: {
           emailRedirectTo: `${window.location.origin}/onboarding`,
           data: {
-            created_at: new Date().toISOString(),
+            created_at: consentTimestamp,
+            consents: {
+              privacy_accepted: consentTimestamp,
+              terms_accepted: consentTimestamp,
+              data_processing_accepted: consentTimestamp,
+              marketing_accepted: consents.marketing ? consentTimestamp : null,
+            }
           }
         }
       });
@@ -133,8 +157,9 @@ export default function Register() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4">
-        <div className="max-w-md w-full">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4 relative overflow-hidden">
+        <VideoMosaicBackground videoCount={12} opacity={0.06} blur={2} />
+        <div className="max-w-md w-full relative z-10">
           <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-8 border border-emerald-500 text-center">
             <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
               <CheckCircle className="w-10 h-10 text-emerald-400" />
@@ -164,8 +189,11 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      {/* Video Mosaic Background */}
+      <VideoMosaicBackground videoCount={12} opacity={0.06} blur={2} />
+
+      <div className="max-w-md w-full relative z-10">
         {/* Header */}
         <div className="text-center mb-8 animate-fade-in">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl mb-4 shadow-lg shadow-emerald-500/50">
@@ -295,10 +323,87 @@ export default function Register() {
               )}
             </div>
 
+            {/* Consensi GDPR */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-start gap-3 p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
+                <Shield className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-slate-400">
+                  Per creare il tuo account, devi accettare i seguenti consensi obbligatori.
+                </p>
+              </div>
+
+              {/* Privacy Policy */}
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={consents.privacy}
+                  onChange={(e) => setConsents({ ...consents, privacy: e.target.checked })}
+                  className="mt-1 w-4 h-4 rounded border-slate-500 bg-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-800"
+                />
+                <span className="text-sm text-slate-300 group-hover:text-white transition">
+                  Ho letto e accetto l'{' '}
+                  <Link to="/privacy-policy" target="_blank" className="text-emerald-400 hover:text-emerald-300 underline">
+                    Informativa sulla Privacy
+                  </Link>
+                  {' '}<span className="text-red-400">*</span>
+                </span>
+              </label>
+
+              {/* Terms of Service */}
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={consents.terms}
+                  onChange={(e) => setConsents({ ...consents, terms: e.target.checked })}
+                  className="mt-1 w-4 h-4 rounded border-slate-500 bg-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-800"
+                />
+                <span className="text-sm text-slate-300 group-hover:text-white transition">
+                  Accetto i{' '}
+                  <Link to="/terms-of-service" target="_blank" className="text-emerald-400 hover:text-emerald-300 underline">
+                    Termini di Servizio
+                  </Link>
+                  {' '}<span className="text-red-400">*</span>
+                </span>
+              </label>
+
+              {/* Data Processing (per dati sanitari) */}
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={consents.dataProcessing}
+                  onChange={(e) => setConsents({ ...consents, dataProcessing: e.target.checked })}
+                  className="mt-1 w-4 h-4 rounded border-slate-500 bg-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-800"
+                />
+                <span className="text-sm text-slate-300 group-hover:text-white transition">
+                  Acconsento al trattamento dei miei dati relativi alla salute (zone di dolore, condizioni fisiche)
+                  per la personalizzazione del programma di allenamento{' '}
+                  <span className="text-red-400">*</span>
+                </span>
+              </label>
+
+              {/* Marketing (opzionale) */}
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={consents.marketing}
+                  onChange={(e) => setConsents({ ...consents, marketing: e.target.checked })}
+                  className="mt-1 w-4 h-4 rounded border-slate-500 bg-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-800"
+                />
+                <span className="text-sm text-slate-400 group-hover:text-slate-300 transition">
+                  Desidero ricevere comunicazioni promozionali e aggiornamenti via email{' '}
+                  <span className="text-slate-500">(opzionale)</span>
+                </span>
+              </label>
+
+              <p className="text-xs text-slate-500 mt-2">
+                <span className="text-red-400">*</span> Campi obbligatori
+              </p>
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading || !email || !password || !confirmPassword || password !== confirmPassword}
+              disabled={loading || !email || !password || !confirmPassword || password !== confirmPassword || !consents.privacy || !consents.terms || !consents.dataProcessing}
               className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold py-3 rounded-lg shadow-lg shadow-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/70 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2"
             >
               {loading ? (
@@ -336,10 +441,11 @@ export default function Register() {
 
         {/* Footer */}
         <p className="text-center text-sm text-slate-500 mt-6">
-          Registrandoti accetti i nostri{' '}
-          <a href="#" className="text-emerald-400 hover:text-emerald-300">Termini di Servizio</a>
-          {' '}e la{' '}
-          <a href="#" className="text-emerald-400 hover:text-emerald-300">Privacy Policy</a>
+          <Link to="/terms-of-service" className="text-emerald-400 hover:text-emerald-300">Termini di Servizio</Link>
+          {' '}&bull;{' '}
+          <Link to="/privacy-policy" className="text-emerald-400 hover:text-emerald-300">Privacy Policy</Link>
+          {' '}&bull;{' '}
+          <Link to="/cookie-policy" className="text-emerald-400 hover:text-emerald-300">Cookie Policy</Link>
         </p>
       </div>
 

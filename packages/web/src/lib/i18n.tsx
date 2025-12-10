@@ -20,6 +20,9 @@ const translations: Translations = {
   "nav.dashboard": { it: "Dashboard", en: "Dashboard", fr: "Tableau de bord", es: "Panel" },
   "nav.settings": { it: "Impostazioni", en: "Settings", fr: "Paramètres", es: "Ajustes" },
   "nav.profile": { it: "Profilo", en: "Profile", fr: "Profil", es: "Perfil" },
+  "nav.community": { it: "Community", en: "Community", fr: "Communauté", es: "Comunidad" },
+  "nav.stats": { it: "Statistiche", en: "Stats", fr: "Stats", es: "Estadísticas" },
+  "nav.workout": { it: "Workout", en: "Workout", fr: "Entraînement", es: "Entrenamiento" },
   "nav.logout": { it: "Esci", en: "Logout", fr: "Déconnexion", es: "Cerrar sesión" },
 
   "common.loading": { it: "Caricamento...", en: "Loading...", fr: "Chargement...", es: "Cargando..." },
@@ -766,9 +769,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   });
 
   const setLanguage = (lang: Language) => {
+    console.log(`🌍 Changing language from ${language} to ${lang}`);
     setLanguageState(lang);
     localStorage.setItem("trainsmart_language", lang);
     console.log(`🌍 Language changed to: ${lang}`);
+    // Force a small delay to ensure state propagates
+    setTimeout(() => {
+      console.log(`🌍 Language state confirmed: ${lang}`);
+    }, 100);
   };
 
   const t = (key: string): string => {

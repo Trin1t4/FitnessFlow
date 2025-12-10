@@ -4,7 +4,12 @@
  */
 
 // URL base di Supabase Storage
-const SUPABASE_STORAGE_URL = 'https://mhcdxqhhlrujbjxtgnmz.supabase.co/storage/v1/object/public/exercise-videos';
+// Costruito dinamicamente dall'URL Supabase configurato
+const getSupabaseStorageUrl = () => {
+  const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || 'https://mhcdxqhhlrujbjxtgnmz.supabase.co';
+  return `${supabaseUrl}/storage/v1/object/public/exercise-videos`;
+};
+const SUPABASE_STORAGE_URL = getSupabaseStorageUrl();
 
 /**
  * Converte nome esercizio in nome file video

@@ -265,21 +265,8 @@ export default function PainProgressChart({ userId, className = '' }: PainProgre
     );
   }
 
-  if (painLogs.length === 0) {
-    return (
-      <div className="bg-slate-800/50 rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Activity className="w-5 h-5 text-blue-400" />
-          <h3 className="font-semibold text-white">Tracking Dolore</h3>
-        </div>
-        <div className="text-center py-8">
-          <Info className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-          <p className="text-slate-400">Nessun dato sul dolore registrato.</p>
-          <p className="text-sm text-slate-500 mt-1">I dati verranno mostrati dopo i tuoi allenamenti.</p>
-        </div>
-      </div>
-    );
-  }
+  // Mostra messaggio "nessun dato" MA mantieni i controlli per cambiare time range
+  const hasNoData = painLogs.length === 0;
 
   return (
     <div className={`bg-slate-800/50 rounded-xl overflow-hidden ${className}`}>
@@ -328,7 +315,8 @@ export default function PainProgressChart({ userId, className = '' }: PainProgre
                   ))}
                 </div>
 
-                {/* Toggle Metrics */}
+                {/* Toggle Metrics - solo se ci sono dati */}
+                {!hasNoData && (
                 <button
                   onClick={() => setShowMetrics(!showMetrics)}
                   className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
@@ -339,9 +327,11 @@ export default function PainProgressChart({ userId, className = '' }: PainProgre
                 >
                   {showMetrics ? 'Nascondi' : 'Mostra'} Metriche
                 </button>
+                )}
               </div>
 
-              {/* Area Selector */}
+              {/* Area Selector - solo se ci sono dati */}
+              {!hasNoData && uniqueAreas.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">
                 {uniqueAreas.map(area => {
                   const trend = trends[area];
@@ -380,8 +370,10 @@ export default function PainProgressChart({ userId, className = '' }: PainProgre
                   );
                 })}
               </div>
+              )}
 
-              {/* Summary Cards */}
+              {/* Summary Cards - solo se ci sono dati */}
+              {!hasNoData && uniqueAreas.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 {uniqueAreas.filter(a => selectedAreas.includes(a)).map(area => {
                   const trend = trends[area];
@@ -420,9 +412,20 @@ export default function PainProgressChart({ userId, className = '' }: PainProgre
                   );
                 })}
               </div>
+              )}
 
               {/* Main Chart */}
               <div className="h-72">
+                {hasNoData ? (
+                  <div className="h-full flex flex-col items-center justify-center">
+                    <Info className="w-12 h-12 text-slate-500 mb-3" />
+                    <p className="text-slate-400">Nessun dato nel periodo selezionato</p>
+                    <p className="text-sm text-slate-500 mt-1">
+                      {timeRange === '7d' ? 'Prova a selezionare 30d o un periodo più lungo' :
+                       'I dati verranno mostrati dopo i tuoi allenamenti'}
+                    </p>
+                  </div>
+                ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={aggregatedData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -497,9 +500,11 @@ export default function PainProgressChart({ userId, className = '' }: PainProgre
                     )}
                   </ComposedChart>
                 </ResponsiveContainer>
+                )}
               </div>
 
-              {/* Legend Info */}
+              {/* Legend Info - solo se ci sono dati */}
+              {!hasNoData && (
               <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-400">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-0.5 bg-emerald-500" style={{ borderStyle: 'dashed', borderWidth: '1px', borderColor: '#22c55e' }}></div>
@@ -522,6 +527,7 @@ export default function PainProgressChart({ userId, className = '' }: PainProgre
                   </>
                 )}
               </div>
+              )}
             </div>
           </motion.div>
         )}

@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Dumbbell, User, BarChart3, Settings } from 'lucide-react';
+import { Home, Dumbbell, User, BarChart3, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../lib/i18n';
 
@@ -22,6 +22,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: Dumbbell,
     labelKey: 'nav.workout',
     matchPaths: ['/workout', '/workout-session']
+  },
+  {
+    path: '/community',
+    icon: Users,
+    labelKey: 'nav.community',
+    matchPaths: ['/community', '/achievements']
   },
   {
     path: '/stats',

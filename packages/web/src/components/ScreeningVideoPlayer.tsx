@@ -15,8 +15,12 @@ interface ScreeningVideoPlayerProps {
 }
 
 // URL base per i video di screening su Supabase Storage
-const SUPABASE_SCREENING_VIDEOS_URL =
-  'https://mhcdxqhhlrujbjxtgnmz.supabase.co/storage/v1/object/public/screening-videos';
+// Costruito dinamicamente dall'URL Supabase configurato
+const getSupabaseScreeningUrl = () => {
+  const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || 'https://mhcdxqhhlrujbjxtgnmz.supabase.co';
+  return `${supabaseUrl}/storage/v1/object/public/screening-videos`;
+};
+const SUPABASE_SCREENING_VIDEOS_URL = getSupabaseScreeningUrl();
 
 /**
  * Converte video_ref in nome file

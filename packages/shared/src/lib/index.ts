@@ -83,5 +83,109 @@ export {
   type AdminDashboardData,
 } from './adminService';
 
+// Streak Service
+export {
+  initStreakService,
+  getStreak,
+  updateStreak,
+  getStreakMilestones,
+  checkNewMilestone,
+  resetStreak,
+  getStreakLeaderboard,
+  recalculateStreak,
+  STREAK_MILESTONES,
+} from './streakService';
+
+// Personal Records Service
+export {
+  initPersonalRecordsService,
+  getAllPRs,
+  getPRByExercise,
+  getPRHistory,
+  checkForNewPR,
+  createOrUpdatePR,
+  getRecentPRs,
+  getPRSummary,
+  getPRCount,
+  deletePR,
+  getPRLeaderboard,
+} from './personalRecordsService';
+
+// Achievement Service
+export {
+  initAchievementService,
+  getAllAchievements,
+  getUserAchievements,
+  getAchievementProgress,
+  unlockAchievement,
+  checkAndUnlockAchievements,
+  markAchievementShared,
+  getAchievementLeaderboard,
+} from './achievementService';
+
+// Follow Service
+export {
+  initFollowService,
+  followUser,
+  unfollowUser,
+  getFollowers,
+  getFollowing,
+  getFollowStats,
+  isFollowing,
+  searchUsers,
+} from './followService';
+
+// Social Service
+export {
+  initSocialService,
+  createPost,
+  getPost,
+  getFeed,
+  getUserPosts,
+  getFollowingFeed,
+  deletePost,
+  likePost,
+  unlikePost,
+  addComment,
+  getComments,
+  deleteComment,
+} from './socialService';
+
+// Pain Tracking Service
+export {
+  initPainTrackingService,
+  reportWorkoutPain,
+  reportWorkoutPainClientSide,
+  getPainTracking,
+  getPainTrackingByArea,
+  getPendingRehabilitationOffers,
+  resetPainTracking,
+  resetAllPainTracking,
+} from './painTrackingService';
+
+// Rehabilitation Service
+export {
+  initRehabilitationService,
+  respondToRehabilitation,
+  getActiveRehabilitations,
+  getRehabilitationByArea,
+  getRehabilitationProgram,
+  getRehabilitationSessionExercises,
+  completeRehabilitationSession,
+  completeRehabilitation,
+  pauseRehabilitation,
+  resumeRehabilitation,
+  getRehabilitationHistory,
+  getRehabilitationDashboardCards,
+  REHABILITATION_PROGRAMS,
+} from './rehabilitationService';
+
 // Default exports for convenience
 export { default as autoRegulationService } from './autoRegulationService';
+export { default as streakService } from './streakService';
+export { default as personalRecordsService } from './personalRecordsService';
+export { default as achievementService } from './achievementService';
+export { default as painTrackingService } from './painTrackingService';
+export { default as rehabilitationService } from './rehabilitationService';
+export { default as followService } from './followService';
+export { default as socialService } from './socialService';

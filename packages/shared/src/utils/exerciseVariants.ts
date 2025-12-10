@@ -15,8 +15,10 @@ export interface ExerciseVariant {
 
 /**
  * LOWER PUSH VARIANTS (Squat pattern - Quadriceps dominanti)
+ * Progressione completa dal più facile al più difficile per ogni equipment type
  */
 export const LOWER_PUSH_VARIANTS: ExerciseVariant[] = [
+  // Bodyweight progressions (dall'utente più debole al più forte)
   {
     id: 'squat_basic',
     name: 'Bodyweight Squat',
@@ -26,36 +28,36 @@ export const LOWER_PUSH_VARIANTS: ExerciseVariant[] = [
     secondary: ['hamstrings', 'core']
   },
   {
-    id: 'squat_goblet',
-    name: 'Goblet Squat',
+    id: 'squat_pause',
+    name: 'Pause Squat (Bodyweight)',
     difficulty: 4,
-    equipment: 'gym',
+    equipment: 'bodyweight',
     primary: ['quadriceps', 'glutes'],
     secondary: ['hamstrings', 'core']
   },
   {
-    id: 'squat_front',
-    name: 'Front Squat',
-    difficulty: 6,
-    equipment: 'gym',
-    primary: ['quadriceps'],
-    secondary: ['glutes', 'core', 'upper_back']
-  },
-  {
-    id: 'squat_back',
-    name: 'Back Squat',
-    difficulty: 5,
-    equipment: 'gym',
-    primary: ['quadriceps', 'glutes'],
-    secondary: ['hamstrings', 'core', 'erectors']
-  },
-  {
-    id: 'leg_press',
-    name: 'Leg Press',
+    id: 'squat_jump',
+    name: 'Jump Squat',
     difficulty: 4,
-    equipment: 'gym',
+    equipment: 'bodyweight',
     primary: ['quadriceps', 'glutes'],
-    secondary: ['hamstrings']
+    secondary: ['hamstrings', 'core', 'power']
+  },
+  {
+    id: 'split_squat',
+    name: 'Split Squat',
+    difficulty: 4,
+    equipment: 'bodyweight',
+    primary: ['quadriceps', 'glutes'],
+    secondary: ['hamstrings', 'core', 'balance']
+  },
+  {
+    id: 'lunge_reverse',
+    name: 'Reverse Lunge',
+    difficulty: 4,
+    equipment: 'bodyweight',
+    primary: ['quadriceps', 'glutes'],
+    secondary: ['hamstrings', 'core']
   },
   {
     id: 'bulgarian_split',
@@ -66,19 +68,78 @@ export const LOWER_PUSH_VARIANTS: ExerciseVariant[] = [
     secondary: ['hamstrings', 'core']
   },
   {
+    id: 'skater_squat',
+    name: 'Skater Squat',
+    difficulty: 6,
+    equipment: 'bodyweight',
+    primary: ['quadriceps', 'glutes'],
+    secondary: ['hamstrings', 'core', 'balance']
+  },
+  {
+    id: 'shrimp_squat',
+    name: 'Shrimp Squat',
+    difficulty: 7,
+    equipment: 'bodyweight',
+    primary: ['quadriceps', 'glutes'],
+    secondary: ['hamstrings', 'core', 'balance']
+  },
+  {
     id: 'pistol_squat',
     name: 'Pistol Squat',
     difficulty: 8,
     equipment: 'bodyweight',
     primary: ['quadriceps', 'glutes'],
     secondary: ['hamstrings', 'core', 'balance']
+  },
+  // Gym progressions
+  {
+    id: 'squat_goblet',
+    name: 'Goblet Squat',
+    difficulty: 4,
+    equipment: 'gym',
+    primary: ['quadriceps', 'glutes'],
+    secondary: ['hamstrings', 'core']
+  },
+  {
+    id: 'leg_press',
+    name: 'Leg Press',
+    difficulty: 4,
+    equipment: 'gym',
+    primary: ['quadriceps', 'glutes'],
+    secondary: ['hamstrings']
+  },
+  {
+    id: 'squat_back',
+    name: 'Back Squat',
+    difficulty: 5,
+    equipment: 'gym',
+    primary: ['quadriceps', 'glutes'],
+    secondary: ['hamstrings', 'core', 'erectors']
+  },
+  {
+    id: 'squat_front',
+    name: 'Front Squat',
+    difficulty: 6,
+    equipment: 'gym',
+    primary: ['quadriceps'],
+    secondary: ['glutes', 'core', 'upper_back']
+  },
+  {
+    id: 'squat_zercher',
+    name: 'Zercher Squat',
+    difficulty: 7,
+    equipment: 'gym',
+    primary: ['quadriceps', 'glutes'],
+    secondary: ['core', 'upper_back', 'biceps']
   }
 ];
 
 /**
  * LOWER PULL VARIANTS (Deadlift/Hip Hinge - Posterior chain)
+ * Progressione completa per bodyweight e gym
  */
 export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
+  // Bodyweight progressions
   {
     id: 'hinge_basic',
     name: 'Bodyweight Hip Hinge',
@@ -88,12 +149,77 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
     secondary: ['erectors', 'core']
   },
   {
-    id: 'deadlift_conventional',
-    name: 'Conventional Deadlift',
+    id: 'glute_bridge',
+    name: 'Glute Bridge',
+    difficulty: 2,
+    equipment: 'bodyweight',
+    primary: ['glutes', 'hamstrings'],
+    secondary: ['core']
+  },
+  {
+    id: 'single_leg_bridge',
+    name: 'Single Leg Glute Bridge',
+    difficulty: 4,
+    equipment: 'bodyweight',
+    primary: ['glutes', 'hamstrings'],
+    secondary: ['core', 'balance']
+  },
+  {
+    id: 'single_leg_rdl',
+    name: 'Single Leg RDL (Bodyweight)',
+    difficulty: 5,
+    equipment: 'bodyweight',
+    primary: ['hamstrings', 'glutes'],
+    secondary: ['erectors', 'balance']
+  },
+  {
+    id: 'hip_thrust_elevated',
+    name: 'Hip Thrust (Elevated)',
+    difficulty: 5,
+    equipment: 'bodyweight',
+    primary: ['glutes', 'hamstrings'],
+    secondary: ['core']
+  },
+  {
+    id: 'nordic_eccentric',
+    name: 'Nordic Curl (Eccentric Only)',
+    difficulty: 5,
+    equipment: 'bodyweight',
+    primary: ['hamstrings'],
+    secondary: ['glutes', 'core']
+  },
+  {
+    id: 'slider_leg_curl',
+    name: 'Slider Leg Curl',
     difficulty: 6,
+    equipment: 'bodyweight',
+    primary: ['hamstrings', 'glutes'],
+    secondary: ['core']
+  },
+  {
+    id: 'nordic_curl',
+    name: 'Nordic Hamstring Curl',
+    difficulty: 7,
+    equipment: 'bodyweight',
+    primary: ['hamstrings'],
+    secondary: ['glutes', 'core']
+  },
+  // Gym progressions
+  {
+    id: 'leg_curl',
+    name: 'Leg Curl (Machine)',
+    difficulty: 3,
     equipment: 'gym',
-    primary: ['hamstrings', 'glutes', 'erectors'],
-    secondary: ['lats', 'traps', 'forearms']
+    primary: ['hamstrings'],
+    secondary: ['calves']
+  },
+  {
+    id: 'deadlift_trap_bar',
+    name: 'Trap Bar Deadlift',
+    difficulty: 4,
+    equipment: 'gym',
+    primary: ['quadriceps', 'glutes', 'hamstrings'],
+    secondary: ['erectors', 'traps']
   },
   {
     id: 'deadlift_romanian',
@@ -112,28 +238,20 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
     secondary: ['quadriceps', 'erectors']
   },
   {
-    id: 'deadlift_trap_bar',
-    name: 'Trap Bar Deadlift',
-    difficulty: 4,
+    id: 'deadlift_conventional',
+    name: 'Conventional Deadlift',
+    difficulty: 6,
     equipment: 'gym',
-    primary: ['quadriceps', 'glutes', 'hamstrings'],
-    secondary: ['erectors', 'traps']
+    primary: ['hamstrings', 'glutes', 'erectors'],
+    secondary: ['lats', 'traps', 'forearms']
   },
   {
-    id: 'nordic_curl',
-    name: 'Nordic Hamstring Curl',
+    id: 'deadlift_deficit',
+    name: 'Deficit Deadlift',
     difficulty: 7,
-    equipment: 'bodyweight',
-    primary: ['hamstrings'],
-    secondary: ['glutes', 'core']
-  },
-  {
-    id: 'leg_curl',
-    name: 'Leg Curl (Machine)',
-    difficulty: 3,
     equipment: 'gym',
-    primary: ['hamstrings'],
-    secondary: ['calves']
+    primary: ['hamstrings', 'glutes', 'erectors'],
+    secondary: ['lats', 'traps', 'forearms']
   }
 ];
 

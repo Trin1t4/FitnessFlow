@@ -36,7 +36,7 @@ const Screening = lazy(() => import("./pages/Screening"));
 const Dashboard = lazy(() => import("./components/Dashboard"));
 const Workout = lazy(() => import('./pages/Workout'));
 const WorkoutSession = lazy(() => import('./pages/WorkoutSession'));
-const RecoveryScreening = lazy(() => import('./components/RecoveryScreening'));
+const RecoveryScreening = lazy(() => import('./pages/RecoveryScreening'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const VideoFeedback = lazy(() => import('./pages/VideoFeedback'));
 const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));

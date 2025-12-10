@@ -33,3 +33,94 @@ export type {
   WorkoutExercise,
   VolumeCalculation,
 } from './program.types';
+
+// Rehabilitation & Pain Tracking
+export type {
+  TrackedBodyArea,
+  RehabilitationStatus,
+  RehabilitationPhase,
+  PainTracking,
+  PainTrackingSummary,
+  ActiveRehabilitation,
+  RehabilitationSession,
+  RehabilitationExerciseLog,
+  RehabilitationExercise,
+  RehabilitationProgram,
+  ReportPainResponse,
+  RespondToRehabilitationResponse,
+  CompleteRehabSessionResponse,
+  CompleteRehabilitationResponse,
+  ReportPainInput,
+  RespondToRehabilitationInput,
+  CompleteRehabSessionInput,
+  RehabilitationDashboardCard,
+} from './rehabilitation.types';
+
+export {
+  TRACKED_BODY_AREAS,
+  PAIN_TO_REHAB_MAPPING,
+  REHABILITATION_PHASES,
+  BODY_AREA_LABELS,
+} from './rehabilitation.types';
+
+// Social Features
+export type {
+  // User Profile
+  UserProfileSocial,
+  // Followers
+  FollowStatus,
+  Follower,
+  FollowerWithProfile,
+  FollowStats,
+  // Personal Records
+  RecordType,
+  PersonalRecord,
+  PersonalRecordHistory,
+  PRSummary,
+  PRDetectionResult,
+  // Achievements
+  AchievementCategory,
+  AchievementRequirementType,
+  AchievementRarity,
+  Achievement,
+  UserAchievement,
+  AchievementProgress,
+  AchievementUnlockEvent,
+  // Social Posts
+  PostType,
+  PostVisibility,
+  SocialPost,
+  WorkoutCompletedMetadata,
+  PRAchievedMetadata,
+  StreakMilestoneMetadata,
+  AchievementUnlockedMetadata,
+  PostMetadata,
+  PostLike,
+  PostComment,
+  // Streaks
+  WorkoutStreak,
+  StreakMilestone,
+  // Share Cards
+  ShareCardType,
+  ShareCardData,
+  WorkoutShareCardData,
+  PRShareCardData,
+  StreakShareCardData,
+  AchievementShareCardData,
+  // Sharing
+  SharePlatform,
+  ShareOptions,
+  ShareResult,
+  // Feed
+  FeedFilters,
+  FeedPagination,
+  FeedResponse,
+  // Service Responses
+  SocialServiceResponse,
+  FollowResponse,
+  LikeResponse,
+  CommentResponse,
+  // Notifications
+  NotificationType,
+  SocialNotification,
+} from './social.types';
