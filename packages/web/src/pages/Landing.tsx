@@ -500,7 +500,7 @@ export default function Landing() {
                   </div>
 
                   <p>
-                    L'ultima ernia, ad <span className="text-white font-medium">agosto 2025</span>, è stata la goccia che ha fatto traboccare il vaso. Bloccato a letto, ho pensato: <em className="text-emerald-400">"Quanti infortuni avrei potuto evitare se avessi saputo cosa stavo sbagliando?"</em>
+                    L'ultima ernia, ad <span className="text-white font-medium">agosto 2025</span>, è stata la goccia che ha fatto traboccare il vaso. Bloccato a letto, ho pensato: <em className="text-emerald-400">"Quanti infortuni avrei potuto evitare se mi fossi fermato quando il mio corpo me lo chiedeva?"</em>
                   </p>
 
                   <p>
