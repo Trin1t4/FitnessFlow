@@ -8,10 +8,27 @@ interface PersonalInfoStepProps {
   onNext: (data: Partial<OnboardingData>) => void;
 }
 
+// Calcola età dalla data di nascita
+function calculateAgeFromBirthDate(birthDate: string): number {
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 export default function PersonalInfoStep({ data, onNext }: PersonalInfoStepProps) {
   const { t } = useTranslation();
   const [gender, setGender] = useState(data.personalInfo?.gender || 'M');
-  const [age, setAge] = useState(data.personalInfo?.age || '');
+
+  // Se abbiamo birthDate da anagrafica, calcola età automaticamente
+  const birthDate = data.anagrafica?.birthDate;
+  const calculatedAge = birthDate ? calculateAgeFromBirthDate(birthDate) : null;
+  const [age, setAge] = useState(data.personalInfo?.age?.toString() || (calculatedAge?.toString() || ''));
+
   const [height, setHeight] = useState(data.personalInfo?.height || '');
   const [weight, setWeight] = useState(data.personalInfo?.weight || '');
 
@@ -111,19 +128,21 @@ export default function PersonalInfoStep({ data, onNext }: PersonalInfoStepProps
           </div>
         </div>
 
-        {/* Età */}
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">{t('onboarding.personal.age')}</label>
-          <input
-            type="number"
-            min="10"
-            max="100"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder={t('onboarding.personal.agePlaceholder')}
-            className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-          />
-        </div>
+        {/* Età - solo se non abbiamo la data di nascita */}
+        {!birthDate ? (
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">{t('onboarding.personal.age')}</label>
+            <input
+              type="number"
+              min="10"
+              max="100"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              placeholder={t('onboarding.personal.agePlaceholder')}
+              className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+            />
+          </div>
+        ) : null}
 
         {/* Altezza */}
         <div>
