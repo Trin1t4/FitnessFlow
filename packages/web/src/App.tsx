@@ -26,6 +26,7 @@ import CookieBanner from "./components/CookieBanner";
 import InstallPWA from "./components/InstallPWA";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
+import BetaBanner from "./components/BetaBanner";
 
 // Non-critical routes (lazy loaded for code splitting)
 const Pricing = lazy(() => import("./pages/Pricing"));
@@ -66,6 +67,7 @@ function App() {
         <LanguageProvider>
           <BrowserRouter>
             <Toaster position="top-right" richColors />
+            <BetaBanner />
             <ResponsiveLayout>
               <Suspense fallback={<PageLoader />}>
               <Routes>
