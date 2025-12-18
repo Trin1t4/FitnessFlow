@@ -43,7 +43,7 @@ export default function Login() {
       <div className="glass-card p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white font-display">
-            FitnessFlow
+            TrainSmart
           </h1>
           <p className="text-primary-400 font-semibold">TEAM EDITION</p>
         </div>

@@ -1,8 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { CheckCircle, Circle, ArrowRight, ArrowLeft, Info, Check, Timer, RotateCw, X, ZoomIn } from 'lucide-react';
+import { CheckCircle, Circle, ArrowRight, ArrowLeft, Info, Check, Timer, RotateCw, X, ZoomIn, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useTranslation } from '../lib/i18n';
 import { getExerciseImageWithFallback } from '@fitnessflow/shared';
+
+// Video disponibili per i test iniziali (SOLO quelli verificati esistenti)
+const SCREENING_VIDEOS: Record<string, string> = {
+  // === PUSH-UPS (verificati) ===
+  'Pike Push-up': '/videos/exercises/pike-push-up.mp4',
+  'Wall HSPU (ROM parziale)': '/videos/exercises/wall-handstand-push-up.mp4',
+  'Wall HSPU (ROM completo)': '/videos/exercises/wall-handstand-push-up.mp4',
+  'Freestanding HSPU': '/videos/exercises/wall-handstand-push-up.mp4',
+  'Wall Push-up': '/videos/exercises/wall-push-up.mp4',
+  'Incline Push-up (rialzato)': '/videos/exercises/incline-push-up.mp4',
+  'Push-up Standard': '/videos/exercises/standard-push-up.mp4',
+  'Diamond Push-up': '/videos/exercises/diamond-push-up.mp4',
+  // MANCANO: Push-up su Ginocchia, Archer, Pseudo Planche, One Arm, Elevated Pike, Wall Walk
+
+  // === SQUAT (verificati) ===
+  'Air Squat': '/videos/exercises/bodyweight-squat.mp4',
+  'Bulgarian Split Squat': '/videos/exercises/bulgarian-split-squat.mp4',
+  'Pistol Squat': '/videos/exercises/pistol-squat.mp4',
+  'Pistol Squat Assistito': '/videos/exercises/pistol-squat.mp4',
+  // MANCANO: Squat Assistito, Jump Squat, Shrimp Squat
+
+  // === PULL (verificati) ===
+  'Inverted Row (barra alta)': '/videos/exercises/inverted-row.mp4',
+  'Inverted Row (barra media)': '/videos/exercises/inverted-row.mp4',
+  'Inverted Row (barra bassa)': '/videos/exercises/inverted-row.mp4',
+  'Pull-up Standard': '/videos/exercises/standard-pull-up.mp4',
+  'Chin-up': '/videos/exercises/chin-up.mp4',
+  // MANCANO: Negative Pull-up, Band-Assisted Pull-up, Archer Pull-up
+
+  // === HINGE/CORE (verificati) ===
+  'Glute Bridge': '/videos/exercises/glute-bridge.mp4',
+  'Nordic Curl (solo eccentrica)': '/videos/exercises/nordic-hamstring-curl.mp4',
+  'Nordic Curl (completo)': '/videos/exercises/nordic-hamstring-curl.mp4',
+  'Plank': '/videos/exercises/plank.mp4',
+  'Bird Dog': '/videos/exercises/bird-dog.mp4',
+  'Dead Bug': '/videos/exercises/dead-bug.mp4',
+  // MANCANO: Single Leg Glute Bridge, RDL bodyweight, Sliding Leg Curl, Side Plank, Hollow Body, L-sit, Dragon Flag
+};
 
 /**
  * Formula di Brzycki per calcolare 1RM da peso e reps
@@ -230,7 +268,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
   const [reps, setReps] = useState('');
   const [weight, setWeight] = useState(''); // Per GYM mode (kg)
   const [showSummary, setShowSummary] = useState(false);
-  const [imagePreview, setImagePreview] = useState<{ url: string; name: string } | null>(null);
+  const [imagePreview, setImagePreview] = useState<{ url: string; name: string; isVideo?: boolean } | null>(null);
 
   const pattern = MOVEMENT_PATTERNS[currentPattern];
   const progress = ((currentPattern + 1) / MOVEMENT_PATTERNS.length) * 100;
@@ -261,9 +299,10 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
     }
   };
 
-  // Funzione per aprire preview immagine
-  const openImagePreview = (imageUrl: string, exerciseName: string) => {
-    setImagePreview({ url: imageUrl, name: exerciseName });
+  // Funzione per aprire preview immagine/video
+  const openImagePreview = (mediaUrl: string, exerciseName: string) => {
+    const isVideo = mediaUrl.endsWith('.mp4') || mediaUrl.endsWith('.webm');
+    setImagePreview({ url: mediaUrl, name: exerciseName, isVideo });
   };
 
   // Funzione per chiudere preview immagine
@@ -632,8 +671,10 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
                   <label className="text-white font-medium">Seleziona la variante più difficile che riesci a fare:</label>
                   <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2">
                     {pattern.progressions.map((prog) => {
+                      const videoUrl = SCREENING_VIDEOS[prog.name];
                       const imageUrl = getExerciseImageWithFallback(prog.name);
                       const isSelected = selectedVariant === prog.id;
+                      const hasVideo = !!videoUrl;
 
                       return (
                         <div key={prog.id} className="relative">
@@ -645,9 +686,43 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
                                 : 'border-slate-600 bg-slate-700/50 hover:border-slate-500 hover:bg-slate-700'
                             }`}
                           >
-                            {/* Immagine esercizio con pulsante zoom */}
+                            {/* Video o Immagine esercizio con pulsante zoom */}
                             <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0 group">
-                              {imageUrl ? (
+                              {hasVideo ? (
+                                <>
+                                  <video
+                                    src={videoUrl}
+                                    className="w-full h-full object-cover"
+                                    muted
+                                    loop
+                                    playsInline
+                                    autoPlay
+                                    onError={(e) => {
+                                      const target = e.target as HTMLVideoElement;
+                                      target.style.display = 'none';
+                                      const fallback = target.nextElementSibling as HTMLElement;
+                                      if (fallback) fallback.style.display = 'flex';
+                                    }}
+                                  />
+                                  <div className="w-full h-full items-center justify-center text-2xl hidden">
+                                    {imageUrl ? (
+                                      <img src={imageUrl} alt={prog.name} className="w-full h-full object-cover" />
+                                    ) : '🏋️'}
+                                  </div>
+                                  <div className="absolute bottom-0.5 right-0.5 bg-emerald-500/90 rounded px-1 py-0.5">
+                                    <Play className="w-2.5 h-2.5 text-white fill-white" />
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openImagePreview(videoUrl, prog.name);
+                                    }}
+                                    className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                  >
+                                    <ZoomIn className="w-6 h-6 text-white" />
+                                  </button>
+                                </>
+                              ) : imageUrl ? (
                                 <>
                                   <img
                                     src={imageUrl}
@@ -657,7 +732,6 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
                                       (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect fill="%23374151" width="64" height="64"/><text x="32" y="36" text-anchor="middle" fill="%239ca3af" font-size="24">🏋️</text></svg>';
                                     }}
                                   />
-                                  {/* Bottone zoom overlay */}
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -815,17 +889,29 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
                 </button>
               </div>
 
-              {/* Immagine grande */}
+              {/* Video o Immagine grande */}
               <div className="p-6">
                 <div className="relative rounded-xl overflow-hidden bg-slate-900">
-                  <img
-                    src={imagePreview.url}
-                    alt={imagePreview.name}
-                    className="w-full h-auto max-h-[70vh] object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><rect fill="%23374151" width="400" height="400"/><text x="200" y="220" text-anchor="middle" fill="%239ca3af" font-size="48">🏋️</text></svg>';
-                    }}
-                  />
+                  {imagePreview.isVideo ? (
+                    <video
+                      src={imagePreview.url}
+                      className="w-full h-auto max-h-[70vh] object-contain"
+                      controls
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                    />
+                  ) : (
+                    <img
+                      src={imagePreview.url}
+                      alt={imagePreview.name}
+                      className="w-full h-auto max-h-[70vh] object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><rect fill="%23374151" width="400" height="400"/><text x="200" y="220" text-anchor="middle" fill="%239ca3af" font-size="48">🏋️</text></svg>';
+                      }}
+                    />
+                  )}
                 </div>
               </div>
 

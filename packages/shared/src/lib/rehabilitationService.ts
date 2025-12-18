@@ -1,6 +1,6 @@
 /**
  * Rehabilitation Service
- * FitnessFlow/TeamFlow - Sistema di rieducazione motoria parallela
+ * TrainSmart/TeamFlow - Sistema di rieducazione motoria parallela
  *
  * Gestisce i programmi di rieducazione che affiancano il programma principale.
  * La rieducazione è attivabile dopo 2 sessioni consecutive con dolore.

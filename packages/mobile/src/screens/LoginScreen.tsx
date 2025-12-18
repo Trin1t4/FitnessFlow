@@ -40,7 +40,7 @@ export default function LoginScreen() {
       style={styles.container}
     >
       <View style={styles.content}>
-        <Text style={styles.title}>FitnessFlow</Text>
+        <Text style={styles.title}>TrainSmart</Text>
         <Text style={styles.subtitle}>Accedi al tuo account</Text>
 
         <View style={styles.form}>

@@ -1,6 +1,6 @@
 /**
  * Pain Tracking Service
- * FitnessFlow/TeamFlow - Sistema di tracking dolore post-workout
+ * TrainSmart/TeamFlow - Sistema di tracking dolore post-workout
  *
  * Gestisce la segnalazione del dolore e il trigger per la rieducazione motoria.
  * Dopo 2 sessioni consecutive con dolore nella stessa zona, propone la rieducazione.

@@ -1,5 +1,5 @@
 /**
- * Service layer exports for FitnessFlow
+ * Service layer exports for TrainSmart
  *
  * All services use dependency injection for the Supabase client.
  * Each platform (web/mobile) should initialize the services with their

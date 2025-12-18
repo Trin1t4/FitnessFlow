@@ -1,6 +1,6 @@
 // Supabase Edge Function: Send Team Invite Email
 // Triggered when a new team_invite is created
-// Supports both TeamFlow and FitnessFlow apps
+// Supports both TeamFlow and TrainSmart apps
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -25,14 +25,14 @@ const APP_CONFIG = {
     gradientTo: '#ea580c',
     fromEmail: 'TeamFlow <onboarding@resend.dev>', // Usa resend.dev per test, poi cambia con dominio verificato
   },
-  fitnessflow: {
-    name: 'FitnessFlow',
+  trainsmart: {
+    name: 'TrainSmart',
     tagline: 'Il tuo Personal Trainer AI',
-    url: 'https://fitnessflow.vercel.app', // Aggiorna con URL corretto
-    primaryColor: '#8b5cf6', // purple
-    gradientFrom: '#8b5cf6',
-    gradientTo: '#7c3aed',
-    fromEmail: 'FitnessFlow <onboarding@resend.dev>', // Usa resend.dev per test
+    url: 'https://trainsmart.me',
+    primaryColor: '#10b981', // emerald
+    gradientFrom: '#10b981',
+    gradientTo: '#059669',
+    fromEmail: 'TrainSmart <onboarding@resend.dev>', // Usa resend.dev per test
   }
 }
 
@@ -48,7 +48,7 @@ interface TeamInvitePayload {
     invited_by: string
     position?: string
     jersey_number?: number
-    source_app?: 'teamflow' | 'fitnessflow' // Per distinguere le app
+    source_app?: 'teamflow' | 'trainsmart' // Per distinguere le app
   }
 }
 

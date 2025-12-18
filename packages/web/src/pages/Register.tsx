@@ -96,21 +96,8 @@ export default function Register() {
       }
 
       if (data?.user) {
-        // Crea profilo utente nel database
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert({
-            user_id: data.user.id,
-            email: data.user.email,
-            onboarding_completed: false,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          // Non blocchiamo la registrazione se il profilo non viene creato
-        }
+        // Profile is created automatically by database trigger (on_auth_user_created_profile)
+        // No manual INSERT needed here - the trigger handles it with SECURITY DEFINER
 
         // Successo!
         setSuccess(true);

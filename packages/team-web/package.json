@@ -1,7 +1,7 @@
 {
-  "name": "@fitnessflow/team-web",
+  "name": "@trainsmart/team-web",
   "version": "1.0.0",
-  "description": "FitnessFlow Team Edition - Performance training for sports teams",
+  "description": "TrainSmart Team Edition - Performance training for sports teams",
   "type": "module",
   "scripts": {
     "dev": "vite",

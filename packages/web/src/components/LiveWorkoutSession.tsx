@@ -16,7 +16,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Play, Pause, SkipForward, X, Info, ThumbsDown, RefreshCw } from 'lucide-react';
+import { CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Play, Pause, SkipForward, X, Info, ThumbsDown, ArrowLeftRight } from 'lucide-react';
 import { toast } from 'sonner';
 import autoRegulationService from '../lib/autoRegulationService';
 import { supabase } from '../lib/supabaseClient';
@@ -2415,10 +2415,11 @@ export default function LiveWorkoutSession({
                   setCurrentAlternatives(alternatives);
                   setShowAlternativesModal(true);
                 }}
-                className="p-2 bg-slate-700/50 hover:bg-amber-500/20 border border-slate-600 hover:border-amber-500/50 rounded-lg transition-all group"
-                title="Postazione occupata"
+                className="flex items-center gap-1.5 px-3 py-2 bg-slate-700/50 hover:bg-amber-500/20 border border-slate-600 hover:border-amber-500/50 rounded-lg transition-all group"
+                title="Postazione occupata? Trova un'alternativa"
               >
-                <RefreshCw className="w-5 h-5 text-slate-400 group-hover:text-amber-400 transition-colors" />
+                <ArrowLeftRight className="w-4 h-4 text-slate-400 group-hover:text-amber-400 transition-colors" />
+                <span className="text-xs font-medium text-slate-400 group-hover:text-amber-400 transition-colors">Occupata</span>
               </button>
               {/* Dislike button */}
               <button

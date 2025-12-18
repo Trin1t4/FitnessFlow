@@ -1,6 +1,6 @@
 /**
  * Achievement Service
- * FitnessFlow/TrainFlow v4.1.0
+ * TrainSmart/TeamFlow v4.1.0
  *
  * Manages achievements/badges unlocking and tracking
  */

@@ -71,7 +71,45 @@ export interface ActivityLevel {
   sessionDuration: number; // minutes
 }
 
-export type PainArea = 'knee' | 'shoulder' | 'lower_back' | 'wrist' | 'ankle' | 'elbow' | 'hip' | 'neck';
+export type PainArea =
+  | 'wrist' | 'neck'
+
+  // ═══ GOMITO ═══
+  | 'elbow'           // Dolore generico o entrambi
+  | 'elbow_pull'      // Solo TIRATE (curl, pull-up, row)
+  | 'elbow_push'      // Solo SPINTE (french press, dips)
+
+  // ═══ SPALLA ═══
+  | 'shoulder'            // Generico o multipli
+  | 'shoulder_overhead'   // Solo SOPRA LA TESTA
+  | 'shoulder_push'       // Solo SPINTE orizzontali
+  | 'shoulder_rotation'   // Solo ROTAZIONI (cuffia)
+
+  // ═══ GINOCCHIO ═══
+  | 'knee'                // Generico o multipli
+  | 'knee_flexion'        // Dolore in FLESSIONE (squat profondo, leg curl)
+  | 'knee_extension'      // Dolore in ESTENSIONE (leg extension, calci)
+  | 'knee_load'           // Dolore sotto CARICO ASSIALE (squat, salti)
+
+  // ═══ ANCA ═══
+  | 'hip'                 // Generico o multipli
+  | 'hip_flexion'         // Dolore in FLESSIONE (squat, sit-up)
+  | 'hip_extension'       // Dolore in ESTENSIONE (hip thrust, ponte)
+  | 'hip_abduction'       // Dolore in ABDUZIONE (laterali)
+  | 'hip_rotation'        // Dolore in ROTAZIONE (piriforme)
+
+  // ═══ COLONNA LOMBARE ═══
+  | 'lower_back'          // Generico o multipli
+  | 'lower_back_flexion'  // Dolore in FLESSIONE (piegarsi avanti)
+  | 'lower_back_extension'// Dolore in ESTENSIONE (iperestensione)
+  | 'lower_back_load'     // Dolore sotto CARICO ASSIALE (squat, stacco)
+  | 'lower_back_rotation' // Dolore in ROTAZIONE (torsioni)
+
+  // ═══ CAVIGLIA ═══
+  | 'ankle'               // Generico o multipli
+  | 'ankle_dorsiflexion'  // Dolore in DORSIFLESSIONE (squat profondo)
+  | 'ankle_plantarflexion'// Dolore in PLANTARFLESSIONE (calf raise)
+  | 'ankle_stability';    // Problemi di STABILITÀ (inversione/eversione)
 
 export type PainSeverity = 'mild' | 'moderate' | 'severe';
 

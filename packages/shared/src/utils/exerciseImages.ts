@@ -291,31 +291,11 @@ export const EXERCISE_IMAGES: Record<string, {
     source: 'Spotebi',
     type: 'illustration'
   },
-  'Elevated Pike Push-up': {
-    url: `${SUPABASE_STORAGE_URL}/elevated-pike-push-up.jpg`,
-    source: 'IconScout',
-    type: 'illustration'
-  },
-  'Wall Walk': {
-    url: `${SUPABASE_STORAGE_URL}/wall-walk.jpg`,
-    source: 'IconScout',
-    type: 'illustration'
-  },
-  'Wall HSPU (ROM parziale)': {
-    url: `${SUPABASE_STORAGE_URL}/wall-hspu.jpg`,
-    source: 'IconScout',
-    type: 'illustration'
-  },
-  'Wall HSPU (ROM completo)': {
-    url: `${SUPABASE_STORAGE_URL}/wall-hspu.jpg`,
-    source: 'IconScout',
-    type: 'illustration'
-  },
-  'Freestanding HSPU': {
-    url: `${SUPABASE_STORAGE_URL}/handstand-push-up.jpg`,
-    source: 'IconScout',
-    type: 'illustration'
-  },
+  // NOTA: Questi esercizi usano VIDEO invece di immagini nei test iniziali
+  // I video sono disponibili in /videos/exercises/:
+  // - wall-handstand-push-up.mp4 (per Wall HSPU, Freestanding HSPU)
+  // - pike-push-up.mp4 (per Pike Push-up)
+  // Elevated Pike e Wall Walk: cercare immagini appropriate su Canva
 
   // === VERTICAL PULL (INVERTED ROW → PULL-UP) ===
   'Inverted Row': {
@@ -536,7 +516,8 @@ export const EXERCISE_IMAGE_FALLBACKS: Record<string, string> = {
   'Tricep Dips': 'https://spotebi.com/wp-content/uploads/2015/07/triceps-dips-exercise-illustration.jpg',
 
   // Shoulder Press
-  'Wall Handstand Push-up': 'https://spotebi.com/wp-content/uploads/2016/03/pike-push-up-exercise-illustration-spotebi.jpg',
+  // Wall Handstand Push-up: usa video locale invece di immagine sbagliata
+  // 'Wall Handstand Push-up': VIDEO DISPONIBILE - /videos/exercises/wall-handstand-push-up.mp4
   'Military Press (Barbell)': 'https://spotebi.com/wp-content/uploads/2016/08/barbell-military-press-exercise-illustration.jpg',
   'Military Press': 'https://spotebi.com/wp-content/uploads/2016/08/barbell-military-press-exercise-illustration.jpg',
   'Dumbbell Shoulder Press': 'https://spotebi.com/wp-content/uploads/2015/10/seated-dumbbell-shoulder-press-exercise-illustration.jpg',
@@ -617,9 +598,10 @@ export const EXERCISE_IMAGE_FALLBACKS: Record<string, string> = {
   'Inverted Row (Feet Elevated)': 'https://spotebi.com/wp-content/uploads/2016/01/inverted-row-exercise-illustration.jpg',
   'Deficit Push-up': 'https://spotebi.com/wp-content/uploads/2014/10/push-up-exercise-illustration.jpg',
   'One-Arm Push-up (Assisted)': 'https://spotebi.com/wp-content/uploads/2016/03/one-arm-tricep-push-up-exercise-illustration-spotebi.jpg',
-  'Elevated Pike Push-up': 'https://spotebi.com/wp-content/uploads/2016/03/pike-push-up-exercise-illustration-spotebi.jpg',
-  'Pike Push-up (Knee)': 'https://spotebi.com/wp-content/uploads/2016/03/pike-push-up-exercise-illustration-spotebi.jpg',
-  'Wall Shoulder Tap': 'https://spotebi.com/wp-content/uploads/2016/03/pike-push-up-exercise-illustration-spotebi.jpg',
+  // NOTA: Immagini rimosse perché usavano Pike Push-up per esercizi diversi (SBAGLIATO)
+  // 'Elevated Pike Push-up': l'utente ha i piedi su un rialzo, non è uguale a Pike standard
+  // 'Pike Push-up (Knee)': variante non usata nel sistema
+  // 'Wall Shoulder Tap': è un esercizio completamente diverso dal Pike
   'Pistol Squat (Assisted)': 'https://spotebi.com/wp-content/uploads/2015/07/skater-squats-exercise-illustration.jpg',
   'Band Row': 'https://spotebi.com/wp-content/uploads/2016/01/seated-cable-row-exercise-illustration.jpg',
   'Single Leg RDL (Bodyweight)': 'https://spotebi.com/wp-content/uploads/2015/04/single-leg-deadlift-exercise-illustration.jpg',
@@ -698,13 +680,13 @@ export const STATIC_EXERCISES = [
 
   // =====================================================
   // TEST SCREENING - VERTICAL PUSH (PIKE → HSPU)
+  // NOTA: La maggior parte usa VIDEO nei test iniziali
   // =====================================================
-  'Pike Push-up',
-  'Elevated Pike Push-up',
-  'Wall Walk',
-  'Wall HSPU (ROM parziale)',
-  'Wall HSPU (ROM completo)',
-  'Freestanding HSPU',
+  // 'Pike Push-up' → VIDEO: pike-push-up.mp4
+  // 'Wall HSPU' → VIDEO: wall-handstand-push-up.mp4
+  // 'Freestanding HSPU' → VIDEO: wall-handstand-push-up.mp4
+  'Elevated Pike Push-up', // Solo questo usa immagine (da cercare)
+  'Wall Walk', // Solo questo usa immagine (da cercare)
 
   // =====================================================
   // TEST SCREENING - VERTICAL PULL (ROW → PULL-UP)

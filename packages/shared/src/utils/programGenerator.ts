@@ -3,7 +3,7 @@
  * PROGRAM GENERATOR - CONSOLIDATED VERSION
  * ============================================================================
  *
- * Versione unificata del generatore programmi per FitnessFlow e TeamFlow.
+ * Versione unificata del generatore programmi per TrainSmart e TeamFlow.
  * Contiene TUTTA la logica di generazione programmi:
  * - Programmi standard (forza, massa, fat loss, etc.)
  * - Programmi performance sport-specifici (calcio, basket, tennis, etc.)
@@ -1837,9 +1837,10 @@ export function generateProgram(options: ProgramGeneratorOptions): Omit<Program,
 
     for (const painEntry of painAreas) {
       const painArea = painEntry.area;
-      const severity = painEntry.severity;
+      const severity = painEntry.severity || (painEntry.intensity >= 5 ? 'moderate' : 'mild');
 
-      if (isExerciseConflicting(exerciseName, painArea)) {
+      // Passa severity a isExerciseConflicting per attivare sostituzione con dolore 5+
+      if (isExerciseConflicting(exerciseName, painArea, severity)) {
         console.log(`Conflitto: ${exerciseName} carica zona dolente: ${painArea} (${severity})`);
 
         const deload = applyPainDeload(severity, finalSets, finalReps as number, location as any);
@@ -1894,13 +1895,16 @@ export function generateProgram(options: ProgramGeneratorOptions): Omit<Program,
     console.log(`${exerciseName}: ${finalSets}x${finalReps} @ ${volumeCalc.intensity} ${painNotes ? '(' + painNotes + ')' : ''}`);
   });
 
-  // Aggiungi esercizi correttivi per zone doloranti
+  // Aggiungi esercizi correttivi per zone doloranti (MAX 2 per non allungare troppo la sessione)
   const correctiveExercises: Exercise[] = [];
   for (const painEntry of painAreas) {
     const painArea = painEntry.area;
     const correctives = getCorrectiveExercises(painArea);
 
-    for (const corrective of correctives) {
+    // Limita a MAX 3 correttivi per zona per non aumentare troppo la durata
+    const selectedCorrectives = correctives.slice(0, 3);
+
+    for (const corrective of selectedCorrectives) {
       correctiveExercises.push({
         pattern: 'corrective',
         name: corrective,
@@ -1908,7 +1912,7 @@ export function generateProgram(options: ProgramGeneratorOptions): Omit<Program,
         reps: '10-15',
         rest: '30s',
         intensity: 'Low',
-        notes: `Correttivo per ${painArea} - Eseguire con focus sulla qualità`
+        notes: `Correttivo per ${painArea} - Eseguire a fine sessione`
       });
     }
   }
@@ -1920,6 +1924,25 @@ export function generateProgram(options: ProgramGeneratorOptions): Omit<Program,
   else if (frequency >= 4) split = 'UPPER/LOWER';
   else if (frequency >= 3) split = 'FULL BODY A/B';
 
+  // Verifica se ci sono esercizi sostituiti per dolore
+  const hasReplacedExercises = exercises.some(e => e.wasReplaced);
+  const hasCorrectives = correctiveExercises.length > 0;
+
+  // Costruisci le note con disclaimer se necessario
+  let programNotes = 'Programma personalizzato basato sulle TUE baseline.';
+
+  if (hasReplacedExercises || hasCorrectives) {
+    const painZones = painAreas.map(p => p.area).join(', ');
+    programNotes = `⚠️ PROGRAMMA ADATTATO PER DOLORE (${painZones})
+
+Alcuni esercizi sono stati sostituiti con alternative a minor impatto sulla zona dolente.
+Il focus è su VOLUME/RECUPERO invece che su forza massimale per permettere al corpo di allenarsi senza aggravare il problema.
+
+Quando il dolore scende sotto 3/10, potrai riprendere gli esercizi originali con progressione graduale.
+
+Gli esercizi correttivi a fine sessione aiutano a migliorare la mobilità e stabilità della zona interessata.`;
+  }
+
   return {
     name: `Programma ${level.toUpperCase()} - ${goal}`,
     split: split,
@@ -1927,7 +1950,7 @@ export function generateProgram(options: ProgramGeneratorOptions): Omit<Program,
     level,
     goal,
     frequency,
-    notes: `Programma personalizzato basato sulle TUE baseline. Parti da dove sei realmente, non da template generici.`
+    notes: programNotes
   };
 }
 

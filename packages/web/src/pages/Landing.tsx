@@ -143,78 +143,96 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* PAIN DETECT - Feature principale */}
-            <div className="bg-gradient-to-br from-red-900/30 to-slate-800/50 backdrop-blur-lg rounded-2xl p-8 border-2 border-red-500/50 hover:border-red-400 transition-colors md:col-span-2">
-              <div className="flex items-start gap-4">
-                <div className="w-14 h-14 bg-red-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Activity className="w-7 h-7 text-red-400" />
+          {/* PAIN DETECT - Feature principale (full width) */}
+          <div className="max-w-5xl mx-auto mb-8">
+            <div className="bg-gradient-to-br from-red-900/30 to-slate-800/50 backdrop-blur-lg rounded-2xl p-8 border-2 border-red-500/50 hover:border-red-400 transition-colors">
+              <div className="flex flex-col md:flex-row items-start gap-6">
+                <div className="w-16 h-16 bg-red-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Activity className="w-8 h-8 text-red-400" />
                 </div>
-                <div>
-                  <div className="inline-flex items-center gap-2 bg-red-500/20 rounded-full px-3 py-1 mb-2">
+                <div className="flex-1">
+                  <div className="inline-flex items-center gap-2 bg-red-500/20 rounded-full px-3 py-1 mb-3">
                     <span className="text-xs font-bold text-red-400">FEATURE PRINCIPALE</span>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">Pain Detect & AdaptFlow</h3>
-                  <p className="text-slate-300 mb-4">
-                    Segnali un dolore alla spalla? Il sistema <strong className="text-red-400">blocca automaticamente</strong> gli esercizi a rischio e li sostituisce con alternative sicure. Non devi improvvisare, non devi chiedere al "personal trainer" di turno.
+                  <h3 className="text-2xl font-bold text-white mb-3">Pain Detect & AdaptFlow</h3>
+                  <p className="text-slate-300 mb-4 text-lg">
+                    Segnali un dolore alla spalla? Il sistema <strong className="text-emerald-400">adatta automaticamente</strong> il tuo programma: riduce i carichi, sostituisce gli esercizi a rischio con alternative sicure. Niente improvvisazione.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="text-xs bg-slate-700/50 text-slate-300 px-2 py-1 rounded">Rilevamento zone doloranti</span>
-                    <span className="text-xs bg-slate-700/50 text-slate-300 px-2 py-1 rounded">Sostituzione automatica esercizi</span>
-                    <span className="text-xs bg-slate-700/50 text-slate-300 px-2 py-1 rounded">Deload intelligente</span>
+                    <span className="text-sm bg-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg">Rilevamento zone doloranti</span>
+                    <span className="text-sm bg-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg">Sostituzione automatica esercizi</span>
+                    <span className="text-sm bg-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg">Deload intelligente</span>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
+          {/* Features Grid - 2x3 perfettamente simmetrica */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {/* Assessment */}
-            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-8 border border-slate-700 hover:border-emerald-500/50 transition-colors">
-              <div className="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-6">
-                <Target className="w-7 h-7 text-emerald-400" />
+            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 border border-slate-700 hover:border-emerald-500/50 transition-colors">
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4">
+                <Target className="w-6 h-6 text-emerald-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Assessment Completo</h3>
-              <p className="text-slate-400">
+              <h3 className="text-lg font-bold text-white mb-2">Assessment Completo</h3>
+              <p className="text-slate-400 text-sm">
                 Quiz + test pratici per valutare il tuo livello reale. Non chiediamo solo "quanti anni ti alleni", ma testiamo forza e mobilità.
               </p>
             </div>
 
-            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-8 border border-slate-700 hover:border-emerald-500/50 transition-colors">
-              <div className="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-6">
-                <Brain className="w-7 h-7 text-emerald-400" />
+            {/* Sistema Adattivo */}
+            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 border border-slate-700 hover:border-emerald-500/50 transition-colors">
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4">
+                <Brain className="w-6 h-6 text-emerald-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Sistema Adattivo</h3>
-              <p className="text-slate-400">
+              <h3 className="text-lg font-bold text-white mb-2">Sistema Adattivo</h3>
+              <p className="text-slate-400 text-sm">
                 Il programma evolve in base ai tuoi feedback e RPE. Regole intelligenti, non scatole nere incomprensibili.
               </p>
             </div>
 
-            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-8 border border-slate-700 hover:border-emerald-500/50 transition-colors">
-              <div className="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-6">
-                <Smartphone className="w-7 h-7 text-emerald-400" />
+            {/* Video */}
+            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 border border-slate-700 hover:border-emerald-500/50 transition-colors">
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4">
+                <Smartphone className="w-6 h-6 text-emerald-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Video Dimostrativi</h3>
-              <p className="text-slate-400">
+              <h3 className="text-lg font-bold text-white mb-2">Video Dimostrativi</h3>
+              <p className="text-slate-400 text-sm">
                 Ogni esercizio con video che mostra la tecnica corretta. Non sai come fare un movimento? Guarda e impara.
               </p>
             </div>
 
-            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-8 border border-slate-700 hover:border-emerald-500/50 transition-colors">
-              <div className="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-6">
-                <TrendingUp className="w-7 h-7 text-emerald-400" />
+            {/* Progressione */}
+            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 border border-slate-700 hover:border-emerald-500/50 transition-colors">
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4">
+                <TrendingUp className="w-6 h-6 text-emerald-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Progressione Automatica</h3>
-              <p className="text-slate-400">
+              <h3 className="text-lg font-bold text-white mb-2">Progressione Automatica</h3>
+              <p className="text-slate-400 text-sm">
                 Aumento carichi basato sui tuoi risultati reali. Deload automatici quando serve. Il programma cresce con te.
               </p>
             </div>
 
-            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-8 border border-slate-700 hover:border-emerald-500/50 transition-colors">
-              <div className="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-6">
-                <Clock className="w-7 h-7 text-emerald-400" />
+            {/* Ovunque */}
+            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 border border-slate-700 hover:border-emerald-500/50 transition-colors">
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4">
+                <Clock className="w-6 h-6 text-emerald-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Ovunque tu sia</h3>
-              <p className="text-slate-400">
+              <h3 className="text-lg font-bold text-white mb-2">Ovunque tu sia</h3>
+              <p className="text-slate-400 text-sm">
                 Casa, palestra, parco. Con bilanciere o a corpo libero. Il programma si genera per la TUA situazione.
+              </p>
+            </div>
+
+            {/* Tracking */}
+            <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 border border-slate-700 hover:border-emerald-500/50 transition-colors">
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4">
+                <Zap className="w-6 h-6 text-emerald-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Tracking Intelligente</h3>
+              <p className="text-slate-400 text-sm">
+                Monitora progressi, PR e trend. Dashboard chiara che ti mostra dove stai andando e cosa migliorare.
               </p>
             </div>
           </div>
@@ -377,54 +395,54 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-3xl mx-auto space-y-6">
             {/* Step 1 */}
-            <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
-              <div className="flex-shrink-0 w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-emerald-500/50">
+            <div className="flex items-start gap-5">
+              <div className="flex-shrink-0 w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-lg shadow-emerald-500/40">
                 1
               </div>
-              <div className="flex-1 text-center md:text-left">
-                <h3 className="text-xl font-bold text-white mb-2">Completa l'Onboarding</h3>
-                <p className="text-slate-400">
+              <div className="flex-1 pt-1">
+                <h3 className="text-lg font-bold text-white mb-1">Completa l'Onboarding</h3>
+                <p className="text-slate-400 text-sm">
                   Rispondi a poche domande su obiettivi, attrezzatura disponibile, giorni di allenamento e eventuali dolori articolari.
                 </p>
               </div>
             </div>
 
             {/* Step 2 */}
-            <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
-              <div className="flex-shrink-0 w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-emerald-500/50">
+            <div className="flex items-start gap-5">
+              <div className="flex-shrink-0 w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-lg shadow-emerald-500/40">
                 2
               </div>
-              <div className="flex-1 text-center md:text-left">
-                <h3 className="text-xl font-bold text-white mb-2">Fai il Quiz Biomeccanico</h3>
-                <p className="text-slate-400">
+              <div className="flex-1 pt-1">
+                <h3 className="text-lg font-bold text-white mb-1">Fai il Quiz Biomeccanico</h3>
+                <p className="text-slate-400 text-sm">
                   Domande sulla tua storia sportiva, preferenze e capacità per capire il tuo livello di partenza.
                 </p>
               </div>
             </div>
 
             {/* Step 3 */}
-            <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
-              <div className="flex-shrink-0 w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-emerald-500/50">
+            <div className="flex items-start gap-5">
+              <div className="flex-shrink-0 w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-lg shadow-emerald-500/40">
                 3
               </div>
-              <div className="flex-1 text-center md:text-left">
-                <h3 className="text-xl font-bold text-white mb-2">Test di Movimento (Opzionale)</h3>
-                <p className="text-slate-400">
+              <div className="flex-1 pt-1">
+                <h3 className="text-lg font-bold text-white mb-1">Test di Movimento (Opzionale)</h3>
+                <p className="text-slate-400 text-sm">
                   Test pratici guidati per valutare forza e mobilità reale. Più dati = programma più preciso.
                 </p>
               </div>
             </div>
 
             {/* Step 4 */}
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="flex-shrink-0 w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-emerald-500/50">
+            <div className="flex items-start gap-5">
+              <div className="flex-shrink-0 w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-lg shadow-emerald-500/40">
                 4
               </div>
-              <div className="flex-1 text-center md:text-left">
-                <h3 className="text-xl font-bold text-white mb-2">Ricevi il Tuo Programma</h3>
-                <p className="text-slate-400">
+              <div className="flex-1 pt-1">
+                <h3 className="text-lg font-bold text-white mb-1">Ricevi il Tuo Programma</h3>
+                <p className="text-slate-400 text-sm">
                   Programma di 6 settimane generato istantaneamente. Inizia subito ad allenarti!
                 </p>
               </div>
@@ -446,26 +464,26 @@ export default function Landing() {
       {/* ===== LA MIA STORIA ===== */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-5 gap-8 items-center">
-              {/* Foto/Avatar - occupa 2 colonne */}
-              <div className="md:col-span-2 flex justify-center">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-12 gap-8 lg:gap-12 items-start">
+              {/* Foto/Avatar - 4 colonne su 12 */}
+              <div className="md:col-span-4 flex justify-center md:sticky md:top-8">
                 <div className="relative">
-                  <div className="w-48 h-48 md:w-64 md:h-64 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-3xl shadow-2xl shadow-emerald-500/30 flex items-center justify-center">
-                    <User className="w-24 h-24 md:w-32 md:h-32 text-white/80" />
+                  <div className="w-48 h-48 lg:w-56 lg:h-56 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-3xl shadow-2xl shadow-emerald-500/30 flex items-center justify-center">
+                    <User className="w-24 h-24 lg:w-28 lg:h-28 text-white/80" />
                   </div>
                   {/* Badge resilienza */}
-                  <div className="absolute -bottom-3 -right-3 bg-slate-800 border-2 border-emerald-500 rounded-xl px-4 py-2 shadow-lg">
-                    <div className="flex items-center gap-2">
-                      <Flame className="w-5 h-5 text-orange-400" />
-                      <span className="text-white font-bold text-sm">Resiliente</span>
+                  <div className="absolute -bottom-3 -right-3 bg-slate-800 border-2 border-emerald-500 rounded-xl px-3 py-1.5 shadow-lg">
+                    <div className="flex items-center gap-1.5">
+                      <Flame className="w-4 h-4 text-orange-400" />
+                      <span className="text-white font-bold text-xs">Resiliente</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Storia - occupa 3 colonne */}
-              <div className="md:col-span-3">
+              {/* Storia - 8 colonne su 12 */}
+              <div className="md:col-span-8">
                 <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-4 py-2 mb-4">
                   <Heart className="w-4 h-4 text-emerald-400" />
                   <span className="text-sm text-emerald-400 font-medium">La Storia Dietro TrainSmart</span>
@@ -524,85 +542,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ===== TESTIMONIALS ===== */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Cosa Dicono gli Utenti
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Testimonial 1 */}
-            <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
-              <div className="flex items-center gap-1 mb-4">
-                {[1,2,3,4,5].map(i => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                ))}
-              </div>
-              <Quote className="w-8 h-8 text-emerald-500/30 mb-2" />
-              <p className="text-slate-300 mb-4">
-                "Finalmente un'app che capisce che ho male alla spalla e mi dà esercizi alternativi. Non devo più improvvisare!"
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-white font-medium">Marco R.</p>
-                  <p className="text-slate-500 text-sm">Palestra, 3x settimana</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Testimonial 2 */}
-            <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
-              <div className="flex items-center gap-1 mb-4">
-                {[1,2,3,4,5].map(i => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                ))}
-              </div>
-              <Quote className="w-8 h-8 text-emerald-500/30 mb-2" />
-              <p className="text-slate-300 mb-4">
-                "Mi alleno a casa con poca attrezzatura. TrainSmart mi ha creato un programma completo solo con manubri e sbarra."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-white font-medium">Giulia S.</p>
-                  <p className="text-slate-500 text-sm">Home gym, 4x settimana</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Testimonial 3 */}
-            <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
-              <div className="flex items-center gap-1 mb-4">
-                {[1,2,3,4,5].map(i => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                ))}
-              </div>
-              <Quote className="w-8 h-8 text-emerald-500/30 mb-2" />
-              <p className="text-slate-300 mb-4">
-                "La progressione si adatta ai miei risultati. Ogni settimana vedo miglioramenti reali senza dover pensare a nulla."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-white font-medium">Alessandro M.</p>
-                  <p className="text-slate-500 text-sm">Palestra, 5x settimana</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ===== PRICING PREVIEW ===== */}
       <section className="py-20 bg-slate-800/30">
         <div className="container mx-auto px-4">
@@ -615,112 +554,111 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
             {/* Early Bird */}
-            <div className="bg-gradient-to-b from-amber-900/50 to-slate-800/50 rounded-2xl p-8 border-2 border-amber-500 relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">
-                EARLY BIRD - FINO A MARZO
+            <div className="bg-gradient-to-b from-amber-900/50 to-slate-800/50 rounded-2xl p-6 border-2 border-amber-500 relative flex flex-col">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">
+                EARLY BIRD
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Early Bird</h3>
+              <h3 className="text-lg font-bold text-white mb-2 mt-2">Early Bird</h3>
               <div className="mb-1">
-                <span className="text-lg text-slate-500 line-through">€19.90</span>
-                <p className="text-3xl font-bold text-amber-400">€12.90<span className="text-lg font-normal text-slate-400">/mese</span></p>
+                <span className="text-sm text-slate-500 line-through">€19.90</span>
+                <p className="text-2xl font-bold text-amber-400">€12.90<span className="text-sm font-normal text-slate-400">/mese</span></p>
               </div>
-              <p className="text-amber-300/80 text-sm mb-2">Prezzo bloccato per sempre</p>
-              <p className="text-slate-500 text-xs mb-6">+ Prelazione su tutti gli upgrade futuri</p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center gap-2 text-slate-300">
-                  <CheckCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+              <p className="text-amber-300/80 text-xs mb-4">Prezzo bloccato per sempre</p>
+              <ul className="space-y-2 mb-6 flex-1">
+                <li className="flex items-start gap-2 text-slate-300 text-sm">
+                  <CheckCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                   <span><strong className="text-emerald-400">6 settimane GRATIS</strong></span>
                 </li>
-                <li className="flex items-center gap-2 text-slate-300">
-                  <CheckCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                <li className="flex items-start gap-2 text-slate-300 text-sm">
+                  <CheckCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                   Programmi personalizzati
                 </li>
-                <li className="flex items-center gap-2 text-slate-300">
-                  <CheckCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
-                  Pain Detect
+                <li className="flex items-start gap-2 text-slate-300 text-sm">
+                  <CheckCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  Pain Detect & AdaptFlow
                 </li>
-                <li className="flex items-center gap-2 text-slate-300">
-                  <CheckCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
-                  Adattamento location e attrezzatura
+                <li className="flex items-start gap-2 text-slate-300 text-sm">
+                  <CheckCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  Adattamento location
                 </li>
-                <li className="flex items-center gap-2 text-slate-300">
-                  <CheckCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                <li className="flex items-start gap-2 text-slate-300 text-sm">
+                  <CheckCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                   Tracking progressi
                 </li>
               </ul>
               <Link
                 to="/register"
-                className="block w-full text-center py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-lg transition shadow-lg shadow-amber-500/30"
+                className="block w-full text-center py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-lg transition shadow-lg shadow-amber-500/30 text-sm"
               >
                 Blocca il Prezzo
               </Link>
             </div>
 
             {/* Pro - Coming Soon */}
-            <div className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700 relative opacity-70">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+            <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 relative opacity-60 flex flex-col">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-600 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">
                 COMING SOON
               </div>
-              <h3 className="text-xl font-bold text-slate-400 mb-2">Pro</h3>
-              <p className="text-3xl font-bold text-slate-400 mb-1">€24.90<span className="text-lg font-normal text-slate-500">/mese</span></p>
-              <p className="text-slate-500 text-sm mb-6">Con analisi video tecnica</p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center gap-2 text-slate-400">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+              <h3 className="text-lg font-bold text-slate-400 mb-2 mt-2">Pro</h3>
+              <p className="text-2xl font-bold text-slate-400 mb-1">€24.90<span className="text-sm font-normal text-slate-500">/mese</span></p>
+              <p className="text-slate-500 text-xs mb-4">Con analisi video tecnica</p>
+              <ul className="space-y-2 mb-6 flex-1">
+                <li className="flex items-start gap-2 text-slate-400 text-sm">
+                  <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0 mt-0.5" />
                   Tutto del piano Early Bird
                 </li>
-                <li className="flex items-center gap-2 text-slate-400">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <li className="flex items-start gap-2 text-slate-400 text-sm">
+                  <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0 mt-0.5" />
                   2 analisi video al mese
                 </li>
-                <li className="flex items-center gap-2 text-slate-400">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
-                  Feedback tecnica con Gemini
+                <li className="flex items-start gap-2 text-slate-400 text-sm">
+                  <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0 mt-0.5" />
+                  Feedback tecnica AI
                 </li>
-                <li className="flex items-center gap-2 text-slate-400">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <li className="flex items-start gap-2 text-slate-400 text-sm">
+                  <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0 mt-0.5" />
                   Supporto prioritario
                 </li>
               </ul>
               <button
                 disabled
-                className="block w-full text-center py-3 bg-slate-700 text-slate-500 font-medium rounded-lg cursor-not-allowed"
+                className="block w-full text-center py-2.5 bg-slate-700 text-slate-500 font-medium rounded-lg cursor-not-allowed text-sm"
               >
                 Prossimamente
               </button>
             </div>
 
             {/* Coach - Coming Soon */}
-            <div className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700 relative opacity-70">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+            <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 relative opacity-60 flex flex-col">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-600 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">
                 COMING SOON
               </div>
-              <h3 className="text-xl font-bold text-slate-400 mb-2">Coach</h3>
-              <p className="text-3xl font-bold text-slate-400 mb-1">€39.90<span className="text-lg font-normal text-slate-500">/mese</span></p>
-              <p className="text-slate-500 text-sm mb-6">Coaching 1:1</p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center gap-2 text-slate-400">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+              <h3 className="text-lg font-bold text-slate-400 mb-2 mt-2">Coach</h3>
+              <p className="text-2xl font-bold text-slate-400 mb-1">€39.90<span className="text-sm font-normal text-slate-500">/mese</span></p>
+              <p className="text-slate-500 text-xs mb-4">Coaching 1:1</p>
+              <ul className="space-y-2 mb-6 flex-1">
+                <li className="flex items-start gap-2 text-slate-400 text-sm">
+                  <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0 mt-0.5" />
                   Tutto del piano Pro
                 </li>
-                <li className="flex items-center gap-2 text-slate-400">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <li className="flex items-start gap-2 text-slate-400 text-sm">
+                  <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0 mt-0.5" />
                   Analisi video illimitate
                 </li>
-                <li className="flex items-center gap-2 text-slate-400">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <li className="flex items-start gap-2 text-slate-400 text-sm">
+                  <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0 mt-0.5" />
                   Chat supporto dedicata
                 </li>
-                <li className="flex items-center gap-2 text-slate-400">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <li className="flex items-start gap-2 text-slate-400 text-sm">
+                  <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0 mt-0.5" />
                   Consulenza tecnica diretta
                 </li>
               </ul>
               <button
                 disabled
-                className="block w-full text-center py-3 bg-slate-700 text-slate-500 font-medium rounded-lg cursor-not-allowed"
+                className="block w-full text-center py-2.5 bg-slate-700 text-slate-500 font-medium rounded-lg cursor-not-allowed text-sm"
               >
                 Prossimamente
               </button>
@@ -802,7 +740,7 @@ export default function Landing() {
             Pronto a iniziare?
           </h2>
           <p className="text-slate-400 mb-8 max-w-xl mx-auto">
-            Unisciti a migliaia di persone che si allenano in modo più intelligente con TrainSmart.
+            Inizia ad allenarti in modo più intelligente con TrainSmart.
           </p>
           <Link
             to="/register"
@@ -815,24 +753,24 @@ export default function Landing() {
       </section>
 
       {/* ===== FOOTER ===== */}
-      <footer className="py-12 border-t border-slate-800">
+      <footer className="py-10 border-t border-slate-800">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-8">
             {/* Brand */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Dumbbell className="w-6 h-6 text-emerald-500" />
-                <span className="text-xl font-bold text-white">TrainSmart</span>
+            <div className="col-span-2 sm:col-span-1">
+              <div className="flex items-center gap-2 mb-3">
+                <Dumbbell className="w-5 h-5 text-emerald-500" />
+                <span className="text-lg font-bold text-white">TrainSmart</span>
               </div>
-              <p className="text-slate-500 text-sm">
+              <p className="text-slate-500 text-xs">
                 Allenamento personalizzato basato sulla scienza.
               </p>
             </div>
 
             {/* Links */}
             <div>
-              <h4 className="text-white font-semibold mb-4">Prodotto</h4>
-              <ul className="space-y-2 text-slate-400 text-sm">
+              <h4 className="text-white font-semibold mb-3 text-sm">Prodotto</h4>
+              <ul className="space-y-1.5 text-slate-400 text-xs">
                 <li><Link to="/pricing" className="hover:text-white transition">Prezzi</Link></li>
                 <li><Link to="/about" className="hover:text-white transition">Chi siamo</Link></li>
               </ul>
@@ -840,8 +778,8 @@ export default function Landing() {
 
             {/* Legal */}
             <div>
-              <h4 className="text-white font-semibold mb-4">Legale</h4>
-              <ul className="space-y-2 text-slate-400 text-sm">
+              <h4 className="text-white font-semibold mb-3 text-sm">Legale</h4>
+              <ul className="space-y-1.5 text-slate-400 text-xs">
                 <li><Link to="/privacy-policy" className="hover:text-white transition">Privacy Policy</Link></li>
                 <li><Link to="/terms-of-service" className="hover:text-white transition">Termini di Servizio</Link></li>
                 <li><Link to="/cookie-policy" className="hover:text-white transition">Cookie Policy</Link></li>
@@ -850,17 +788,17 @@ export default function Landing() {
 
             {/* Contact */}
             <div>
-              <h4 className="text-white font-semibold mb-4">Contatti</h4>
-              <ul className="space-y-2 text-slate-400 text-sm">
+              <h4 className="text-white font-semibold mb-3 text-sm">Contatti</h4>
+              <ul className="space-y-1.5 text-slate-400 text-xs">
                 <li>
-                  <a href="mailto:info@trainsmart.me" className="flex items-center gap-2 hover:text-white transition">
-                    <Mail className="w-4 h-4" />
+                  <a href="mailto:info@trainsmart.me" className="flex items-center gap-1.5 hover:text-white transition">
+                    <Mail className="w-3.5 h-3.5" />
                     info@trainsmart.me
                   </a>
                 </li>
                 <li>
-                  <a href="https://instagram.com/trainsmart" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-white transition">
-                    <Instagram className="w-4 h-4" />
+                  <a href="https://instagram.com/trainsmart" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-white transition">
+                    <Instagram className="w-3.5 h-3.5" />
                     @trainsmart
                   </a>
                 </li>
@@ -868,9 +806,9 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between text-slate-500 text-sm">
+          <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-slate-500 text-xs gap-2">
             <p>© {new Date().getFullYear()} TrainSmart. Tutti i diritti riservati.</p>
-            <p className="mt-2 md:mt-0">Made with ❤️ in Italy</p>
+            <p>Made with ❤️ in Italy</p>
           </div>
         </div>
       </footer>

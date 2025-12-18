@@ -1,6 +1,6 @@
 /**
  * Streak Service
- * FitnessFlow/TrainFlow v4.1.0
+ * TrainSmart/TeamFlow v4.1.0
  *
  * Manages workout streaks tracking and statistics
  */

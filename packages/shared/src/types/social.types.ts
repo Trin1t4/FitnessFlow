@@ -1,6 +1,6 @@
 /**
  * Social Features Types
- * FitnessFlow/TrainFlow v4.1.0
+ * TrainSmart/TeamFlow v4.1.0
  */
 
 // ============================================================

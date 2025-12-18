@@ -1,5 +1,5 @@
-// FitnessFlow Service Worker
-const CACHE_NAME = 'fitnessflow-v1';
+// TrainSmart Service Worker
+const CACHE_NAME = 'trainsmart-v1';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately
@@ -122,7 +122,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'FitnessFlow', options)
+    self.registration.showNotification(data.title || 'TrainSmart', options)
   );
 });
 
