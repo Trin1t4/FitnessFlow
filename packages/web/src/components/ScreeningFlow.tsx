@@ -277,17 +277,20 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
   let MOVEMENT_PATTERNS;
   let testType;
 
+  // BETA: Solo 2 test - lower_push (squat) e horizontal_push (push/bench)
+  const BETA_PATTERN_IDS = ['lower_push', 'horizontal_push'];
+
   if (!isGymMode) {
     // Calisthenics / Corpo libero
-    MOVEMENT_PATTERNS = CALISTHENICS_PATTERNS;
+    MOVEMENT_PATTERNS = CALISTHENICS_PATTERNS.filter(p => BETA_PATTERN_IDS.includes(p.id));
     testType = 'CALISTHENICS';
   } else if (isMachinesMode) {
     // Palestra con macchine isotoniche
-    MOVEMENT_PATTERNS = GYM_PATTERNS_MACHINES;
+    MOVEMENT_PATTERNS = GYM_PATTERNS_MACHINES.filter(p => BETA_PATTERN_IDS.includes(p.id));
     testType = 'GYM_MACHINES';
   } else {
     // Palestra con pesi liberi (bilanciere/manubri)
-    MOVEMENT_PATTERNS = GYM_PATTERNS_FREEWEIGHTS;
+    MOVEMENT_PATTERNS = GYM_PATTERNS_FREEWEIGHTS.filter(p => BETA_PATTERN_IDS.includes(p.id));
     testType = 'GYM_FREEWEIGHTS';
   }
 

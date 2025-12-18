@@ -778,7 +778,7 @@ export default function BiomechanicsQuiz() {
               onClick={handleNext}
               className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 rounded-lg font-semibold shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition"
             >
-              {state.answers.length >= 6 || !selectNextQuestion({...state, askedQuestions: [...state.askedQuestions, currentQuestion.id]}, QUESTIONS)
+              {state.answers.length >= 3 || !selectNextQuestion({...state, askedQuestions: [...state.askedQuestions, currentQuestion.id]}, QUESTIONS)
                 ? 'Vedi Risultato →'
                 : 'Prossima Domanda →'
               }
