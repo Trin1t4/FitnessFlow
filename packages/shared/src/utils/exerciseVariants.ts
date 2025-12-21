@@ -21,7 +21,7 @@ export const LOWER_PUSH_VARIANTS: ExerciseVariant[] = [
   // Bodyweight progressions (dall'utente più debole al più forte)
   {
     id: 'squat_basic',
-    name: 'Bodyweight Squat',
+    name: 'Squat a Corpo Libero',
     difficulty: 3,
     equipment: 'bodyweight',
     primary: ['quadriceps', 'glutes'],
@@ -29,7 +29,7 @@ export const LOWER_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'squat_pause',
-    name: 'Pause Squat (Bodyweight)',
+    name: 'Squat con Pausa',
     difficulty: 4,
     equipment: 'bodyweight',
     primary: ['quadriceps', 'glutes'],
@@ -37,7 +37,7 @@ export const LOWER_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'squat_jump',
-    name: 'Jump Squat',
+    name: 'Squat Jump',
     difficulty: 4,
     equipment: 'bodyweight',
     primary: ['quadriceps', 'glutes'],
@@ -53,7 +53,7 @@ export const LOWER_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'lunge_reverse',
-    name: 'Reverse Lunge',
+    name: 'Affondi Indietro',
     difficulty: 4,
     equipment: 'bodyweight',
     primary: ['quadriceps', 'glutes'],
@@ -61,7 +61,7 @@ export const LOWER_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'bulgarian_split',
-    name: 'Bulgarian Split Squat',
+    name: 'Squat Bulgaro',
     difficulty: 5,
     equipment: 'both',
     primary: ['quadriceps', 'glutes'],
@@ -102,7 +102,7 @@ export const LOWER_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'leg_press',
-    name: 'Leg Press',
+    name: 'Pressa',
     difficulty: 4,
     equipment: 'gym',
     primary: ['quadriceps', 'glutes'],
@@ -110,7 +110,7 @@ export const LOWER_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'squat_back',
-    name: 'Back Squat',
+    name: 'Squat con Bilanciere',
     difficulty: 5,
     equipment: 'gym',
     primary: ['quadriceps', 'glutes'],
@@ -118,7 +118,7 @@ export const LOWER_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'squat_front',
-    name: 'Front Squat',
+    name: 'Squat Frontale',
     difficulty: 6,
     equipment: 'gym',
     primary: ['quadriceps'],
@@ -142,7 +142,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   // Bodyweight progressions
   {
     id: 'hinge_basic',
-    name: 'Bodyweight Hip Hinge',
+    name: 'Hip Hinge a Corpo Libero',
     difficulty: 2,
     equipment: 'bodyweight',
     primary: ['hamstrings', 'glutes'],
@@ -150,7 +150,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'glute_bridge',
-    name: 'Glute Bridge',
+    name: 'Ponte Glutei',
     difficulty: 2,
     equipment: 'bodyweight',
     primary: ['glutes', 'hamstrings'],
@@ -158,7 +158,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'single_leg_bridge',
-    name: 'Single Leg Glute Bridge',
+    name: 'Ponte Glutei a Una Gamba',
     difficulty: 4,
     equipment: 'bodyweight',
     primary: ['glutes', 'hamstrings'],
@@ -166,7 +166,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'single_leg_rdl',
-    name: 'Single Leg RDL (Bodyweight)',
+    name: 'Stacco Rumeno a Una Gamba',
     difficulty: 5,
     equipment: 'bodyweight',
     primary: ['hamstrings', 'glutes'],
@@ -174,7 +174,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'hip_thrust_elevated',
-    name: 'Hip Thrust (Elevated)',
+    name: 'Hip Thrust Rialzato',
     difficulty: 5,
     equipment: 'bodyweight',
     primary: ['glutes', 'hamstrings'],
@@ -182,7 +182,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'nordic_eccentric',
-    name: 'Nordic Curl (Eccentric Only)',
+    name: 'Nordic Curl (Solo Eccentrica)',
     difficulty: 5,
     equipment: 'bodyweight',
     primary: ['hamstrings'],
@@ -198,7 +198,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'nordic_curl',
-    name: 'Nordic Hamstring Curl',
+    name: 'Nordic Curl',
     difficulty: 7,
     equipment: 'bodyweight',
     primary: ['hamstrings'],
@@ -207,7 +207,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   // Gym progressions
   {
     id: 'leg_curl',
-    name: 'Leg Curl (Machine)',
+    name: 'Leg Curl',
     difficulty: 3,
     equipment: 'gym',
     primary: ['hamstrings'],
@@ -215,7 +215,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'deadlift_trap_bar',
-    name: 'Trap Bar Deadlift',
+    name: 'Stacco con Trap Bar',
     difficulty: 4,
     equipment: 'gym',
     primary: ['quadriceps', 'glutes', 'hamstrings'],
@@ -223,7 +223,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'deadlift_romanian',
-    name: 'Romanian Deadlift (RDL)',
+    name: 'Stacco Rumeno',
     difficulty: 5,
     equipment: 'gym',
     primary: ['hamstrings', 'glutes'],
@@ -231,7 +231,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'deadlift_sumo',
-    name: 'Sumo Deadlift',
+    name: 'Stacco Sumo',
     difficulty: 5,
     equipment: 'gym',
     primary: ['glutes', 'hamstrings', 'adductors'],
@@ -239,7 +239,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'deadlift_conventional',
-    name: 'Conventional Deadlift',
+    name: 'Stacco da Terra',
     difficulty: 6,
     equipment: 'gym',
     primary: ['hamstrings', 'glutes', 'erectors'],
@@ -247,7 +247,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'deadlift_deficit',
-    name: 'Deficit Deadlift',
+    name: 'Stacco in Deficit',
     difficulty: 7,
     equipment: 'gym',
     primary: ['hamstrings', 'glutes', 'erectors'],
@@ -261,7 +261,7 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
 export const HORIZONTAL_PUSH_VARIANTS: ExerciseVariant[] = [
   {
     id: 'pushup_standard',
-    name: 'Standard Push-up',
+    name: 'Piegamenti',
     difficulty: 4,
     equipment: 'bodyweight',
     primary: ['pectorals', 'triceps'],
@@ -269,7 +269,7 @@ export const HORIZONTAL_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'pushup_diamond',
-    name: 'Diamond Push-up',
+    name: 'Piegamenti Diamante',
     difficulty: 6,
     equipment: 'bodyweight',
     primary: ['triceps', 'pectorals'],
@@ -285,7 +285,7 @@ export const HORIZONTAL_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'bench_flat',
-    name: 'Flat Barbell Bench Press',
+    name: 'Panca Piana con Bilanciere',
     difficulty: 5,
     equipment: 'gym',
     primary: ['pectorals', 'triceps'],
@@ -293,7 +293,7 @@ export const HORIZONTAL_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'bench_incline',
-    name: 'Incline Bench Press',
+    name: 'Panca Inclinata',
     difficulty: 5,
     equipment: 'gym',
     primary: ['upper_pectorals', 'front_delts'],
@@ -301,7 +301,7 @@ export const HORIZONTAL_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'bench_decline',
-    name: 'Decline Bench Press',
+    name: 'Panca Declinata',
     difficulty: 4,
     equipment: 'gym',
     primary: ['lower_pectorals', 'triceps'],
@@ -309,7 +309,7 @@ export const HORIZONTAL_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'dumbbell_press',
-    name: 'Dumbbell Bench Press',
+    name: 'Panca con Manubri',
     difficulty: 5,
     equipment: 'gym',
     primary: ['pectorals', 'triceps'],
@@ -317,7 +317,7 @@ export const HORIZONTAL_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'dips_chest',
-    name: 'Chest Dips',
+    name: 'Dip alle Parallele',
     difficulty: 6,
     equipment: 'both',
     primary: ['lower_pectorals', 'triceps'],
@@ -339,7 +339,7 @@ export const VERTICAL_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'handstand_wall',
-    name: 'Wall Handstand Push-up',
+    name: 'Verticale al Muro Push-up',
     difficulty: 8,
     equipment: 'bodyweight',
     primary: ['front_delts', 'triceps'],
@@ -347,7 +347,7 @@ export const VERTICAL_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'military_press',
-    name: 'Military Press (Barbell)',
+    name: 'Lento Avanti',
     difficulty: 6,
     equipment: 'gym',
     primary: ['front_delts', 'triceps'],
@@ -355,7 +355,7 @@ export const VERTICAL_PUSH_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'overhead_press_db',
-    name: 'Dumbbell Shoulder Press',
+    name: 'Shoulder Press con Manubri',
     difficulty: 5,
     equipment: 'gym',
     primary: ['front_delts', 'triceps'],
@@ -385,7 +385,7 @@ export const VERTICAL_PUSH_VARIANTS: ExerciseVariant[] = [
 export const VERTICAL_PULL_VARIANTS: ExerciseVariant[] = [
   {
     id: 'pullup_standard',
-    name: 'Standard Pull-up',
+    name: 'Trazioni alla Sbarra',
     difficulty: 7,
     equipment: 'both',
     primary: ['lats', 'biceps'],
@@ -393,7 +393,7 @@ export const VERTICAL_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'pullup_wide',
-    name: 'Wide Grip Pull-up',
+    name: 'Trazioni Presa Larga',
     difficulty: 8,
     equipment: 'both',
     primary: ['lats', 'teres_major'],
@@ -401,7 +401,7 @@ export const VERTICAL_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'pullup_chinup',
-    name: 'Chin-up (Supinated)',
+    name: 'Chin-up (Supinato)',
     difficulty: 6,
     equipment: 'both',
     primary: ['biceps', 'lats'],
@@ -409,7 +409,7 @@ export const VERTICAL_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'pullup_neutral',
-    name: 'Neutral Grip Pull-up',
+    name: 'Trazioni Presa Neutra',
     difficulty: 6,
     equipment: 'both',
     primary: ['lats', 'biceps'],
@@ -417,7 +417,7 @@ export const VERTICAL_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'lat_pulldown',
-    name: 'Lat Pulldown (Machine)',
+    name: 'Lat Machine',
     difficulty: 4,
     equipment: 'gym',
     primary: ['lats', 'biceps'],
@@ -425,7 +425,7 @@ export const VERTICAL_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'assisted_pullup',
-    name: 'Assisted Pull-up',
+    name: 'Trazioni Assistite',
     difficulty: 4,
     equipment: 'gym',
     primary: ['lats', 'biceps'],
@@ -440,7 +440,7 @@ export const VERTICAL_PULL_VARIANTS: ExerciseVariant[] = [
 export const HORIZONTAL_PULL_VARIANTS: ExerciseVariant[] = [
   {
     id: 'row_inverted',
-    name: 'Inverted Row',
+    name: 'Rematore Inverso',
     difficulty: 5,
     equipment: 'both',
     primary: ['mid_back', 'biceps'],
@@ -448,7 +448,7 @@ export const HORIZONTAL_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'row_barbell',
-    name: 'Barbell Row',
+    name: 'Rematore con Bilanciere',
     difficulty: 6,
     equipment: 'gym',
     primary: ['lats', 'mid_back'],
@@ -456,7 +456,7 @@ export const HORIZONTAL_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'row_dumbbell',
-    name: 'Dumbbell Row',
+    name: 'Rematore con Manubrio',
     difficulty: 5,
     equipment: 'gym',
     primary: ['lats', 'mid_back'],
@@ -464,7 +464,7 @@ export const HORIZONTAL_PULL_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'row_cable',
-    name: 'Seated Cable Row',
+    name: 'Pulley Basso',
     difficulty: 4,
     equipment: 'gym',
     primary: ['mid_back', 'lats'],
@@ -494,7 +494,7 @@ export const CORE_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'plank_side',
-    name: 'Side Plank',
+    name: 'Plank Laterale',
     difficulty: 4,
     equipment: 'bodyweight',
     primary: ['obliques', 'transverse'],
@@ -502,7 +502,7 @@ export const CORE_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'leg_raise',
-    name: 'Hanging Leg Raise',
+    name: 'Alzate Gambe alla Sbarra',
     difficulty: 6,
     equipment: 'both',
     primary: ['lower_abs', 'hip_flexors'],
@@ -518,7 +518,7 @@ export const CORE_VARIANTS: ExerciseVariant[] = [
   },
   {
     id: 'crunch_cable',
-    name: 'Cable Crunch',
+    name: 'Crunch ai Cavi',
     difficulty: 4,
     equipment: 'gym',
     primary: ['rectus_abdominis'],
@@ -792,18 +792,18 @@ export const PREGNANCY_SAFE_VARIANTS: ExerciseVariant[] = [
  */
 export const ACCESSORY_VARIANTS = {
   triceps: [
-    { id: 'tricep_dips', name: 'Tricep Dips', difficulty: 5, equipment: 'both' as const },
-    { id: 'tricep_pushdown', name: 'Tricep Pushdown', difficulty: 3, equipment: 'gym' as const },
-    { id: 'skull_crusher', name: 'Skull Crushers', difficulty: 5, equipment: 'gym' as const }
+    { id: 'tricep_dips', name: 'Dip Tricipiti', difficulty: 5, equipment: 'both' as const },
+    { id: 'tricep_pushdown', name: 'Pushdown ai Cavi', difficulty: 3, equipment: 'gym' as const },
+    { id: 'skull_crusher', name: 'French Press', difficulty: 5, equipment: 'gym' as const }
   ],
   biceps: [
-    { id: 'bicep_curl', name: 'Barbell Curl', difficulty: 3, equipment: 'gym' as const },
-    { id: 'hammer_curl', name: 'Hammer Curl', difficulty: 3, equipment: 'gym' as const },
+    { id: 'bicep_curl', name: 'Curl con Bilanciere', difficulty: 3, equipment: 'gym' as const },
+    { id: 'hammer_curl', name: 'Curl a Martello', difficulty: 3, equipment: 'gym' as const },
     { id: 'chin_up', name: 'Chin-up', difficulty: 6, equipment: 'both' as const }
   ],
   calves: [
-    { id: 'calf_raise', name: 'Standing Calf Raise', difficulty: 2, equipment: 'both' as const },
-    { id: 'calf_seated', name: 'Seated Calf Raise', difficulty: 2, equipment: 'gym' as const }
+    { id: 'calf_raise', name: 'Calf Raise in Piedi', difficulty: 2, equipment: 'both' as const },
+    { id: 'calf_seated', name: 'Calf Raise Seduto', difficulty: 2, equipment: 'gym' as const }
   ]
 };
 

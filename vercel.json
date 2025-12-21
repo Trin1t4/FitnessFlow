@@ -2,6 +2,12 @@
   "installCommand": "npm install",
   "buildCommand": "cd packages/web && npm run build",
   "outputDirectory": "packages/web/dist",
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "beta": true
+    }
+  },
   "functions": {
     "api/*.js": {
       "maxDuration": 30

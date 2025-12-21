@@ -51,6 +51,7 @@ interface Exercise {
   notes?: string;
   weight?: number | string; // Peso suggerito in kg
   targetRir?: number; // RIR target programmato (0-4)
+  supersetGroup?: number; // ID gruppo superset (esercizi con stesso ID vanno eseguiti in sequenza senza pausa)
 }
 
 // Helper: Extract BASE target RIR from exercise notes (e.g., "RIR 2" or "RIR 0")
@@ -286,6 +287,39 @@ export default function LiveWorkoutSession({
   // Calculate adjusted sets (may be modified by auto-regulation)
   const [adjustedSets, setAdjustedSets] = useState<Record<string, number>>({});
   const currentTargetSets = adjustedSets[currentExercise?.name] || currentExercise?.sets || 3;
+
+  // ========================================================================
+  // SUPERSET HELPERS
+  // ========================================================================
+
+  // Check if current exercise is part of a superset
+  const isInSuperset = currentExercise?.supersetGroup !== undefined;
+
+  // Check if current exercise is the last in its superset group
+  const isLastInSupersetGroup = (): boolean => {
+    if (!isInSuperset || !currentExercise) return true;
+
+    const currentGroup = currentExercise.supersetGroup;
+    // Find the next exercise with the same superset group
+    const nextWithSameGroup = exercises
+      .slice(currentExerciseIndex + 1)
+      .find(ex => ex.supersetGroup === currentGroup);
+
+    return !nextWithSameGroup;
+  };
+
+  // Get the next exercise in the current superset group
+  const getNextSupersetExercise = (): Exercise | null => {
+    if (!isInSuperset || !currentExercise) return null;
+
+    const currentGroup = currentExercise.supersetGroup;
+    return exercises
+      .slice(currentExerciseIndex + 1)
+      .find(ex => ex.supersetGroup === currentGroup) || null;
+  };
+
+  // State to track accumulated RPE for superset (to calculate average at the end)
+  const [supersetRPEAccumulator, setSupersetRPEAccumulator] = useState<number[]>([]);
 
   // Fetch user data: gender, bodyweight, and test baselines for accurate strength matching
   useEffect(() => {
@@ -953,6 +987,60 @@ export default function LiveWorkoutSession({
       setSetLogs(prev => ({ ...prev, [currentExercise.name]: [] }));
     }
 
+    // ========================================================================
+    // SUPERSET LOGIC: Se è il primo esercizio di un superset, passa direttamente
+    // al secondo senza mostrare il feedback RPE (verrà raccolto alla fine)
+    // ========================================================================
+    if (isInSuperset && !isLastInSupersetGroup()) {
+      // Salva il log base senza RPE (verrà completato alla fine del superset)
+      const basicSetLog: SetLog = {
+        set_number: currentSet,
+        reps_completed: currentReps,
+        weight_used: currentWeight || undefined,
+        rpe: 0, // Placeholder, verrà aggiornato alla fine del superset
+        rir_perceived: 0,
+        adjusted: false
+      };
+
+      setSetLogs(prev => ({
+        ...prev,
+        [currentExercise.name]: [...(prev[currentExercise.name] || []), basicSetLog]
+      }));
+
+      // Passa al prossimo esercizio del superset (senza timer, senza feedback)
+      const nextSuperset = getNextSupersetExercise();
+      if (nextSuperset) {
+        const nextIndex = exercises.findIndex(ex => ex.name === nextSuperset.name);
+        if (nextIndex !== -1) {
+          setCurrentExerciseIndex(nextIndex);
+          // Mantieni lo stesso numero di set (es. set 1 di A → set 1 di B)
+          toast.info(`⚡ Superset: ${nextSuperset.name}`, { duration: 2000 });
+        }
+      }
+
+      // Reset input per prossimo esercizio
+      setCurrentReps(0);
+      setCurrentWeight(0);
+      return;
+    }
+
+    // ========================================================================
+    // TIMER AUTOMATICO: Parte SUBITO quando l'utente conferma i dati della serie
+    // (non dopo il feedback RPE - così l'utente può riposare mentre compila)
+    // ========================================================================
+    const shouldStartTimer = currentSet < currentTargetSets || currentExerciseIndex < totalExercises - 1;
+
+    if (shouldStartTimer) {
+      let restSeconds = parseRestTimeToSeconds(currentExercise.rest);
+      if (menstrualPhase === 'menopause') {
+        restSeconds = Math.round(restSeconds * 1.2); // +20% rest per menopausa
+      }
+      setRestTimeRemaining(restSeconds);
+      setRestTimerActive(true);
+      console.log(`⏱️ Rest timer started: ${restSeconds}s`);
+    }
+
+    // Esercizio normale o ultimo del superset: mostra input RPE
     setShowRPEInput(true);
   };
 
@@ -1063,13 +1151,15 @@ export default function LiveWorkoutSession({
       const wentTooHard = Math.abs(rirDelta);
 
       if (wentTooHard >= 2) {
-        // Significativamente oltre il target
+        // Significativamente oltre il target - ridurre carico AUTOMATICAMENTE
         setSuggestion({
           type: 'reduce',
-          message: `⚠️ Ultimo set: RIR ${perceivedRIR} vs target ${targetRIR} - Hai spinto ${wentTooHard} RIR oltre il programmato. Riduci peso 5% per la prossima sessione.`,
+          message: `⚠️ Ultimo set: RIR ${perceivedRIR} vs target ${targetRIR} - Hai spinto ${wentTooHard} RIR oltre il programmato. Peso -5% applicato automaticamente.`,
           newRest: increaseRest(currentExercise.rest),
           weightAdjustment: -5
         });
+        // Auto-apply weight adjustment
+        autoApplyWeightAdjustment(-5);
       } else {
         // Leggermente oltre (1 RIR) - accettabile se target era già vicino al cedimento
         if (targetRIR <= 1) {
@@ -1091,12 +1181,15 @@ export default function LiveWorkoutSession({
       const tooEasy = rirDelta;
 
       if (tooEasy >= 2) {
-        // Significativamente sotto il target - aumentare carico
+        // Significativamente sotto il target - aumentare carico AUTOMATICAMENTE
+        const weightIncrease = targetRIR === 0 ? 7.5 : 5;
         setSuggestion({
           type: 'increase',
-          message: `💪 Ultimo set: RIR ${perceivedRIR} vs target ${targetRIR} - Avevi ancora ${tooEasy} rep in più! Aumenta peso 5% per la prossima sessione.`,
-          weightAdjustment: targetRIR === 0 ? 7.5 : 5
+          message: `💪 Ultimo set: RIR ${perceivedRIR} vs target ${targetRIR} - Avevi ancora ${tooEasy} rep in più! Peso +${weightIncrease}% applicato automaticamente.`,
+          weightAdjustment: weightIncrease
         });
+        // Auto-apply weight adjustment
+        autoApplyWeightAdjustment(weightIncrease);
       } else {
         // Leggermente sotto (1 RIR)
         if (targetRIR <= 1) {
@@ -1126,6 +1219,30 @@ export default function LiveWorkoutSession({
           message: `🔥 PERFETTO! RIR ${perceivedRIR} sull'ultimo set - Carico calibrato alla perfezione. Continua così!`,
         });
       }
+    }
+  };
+
+  // Auto-apply weight adjustment without user confirmation
+  const autoApplyWeightAdjustment = async (percentChange: number) => {
+    if (!currentExercise) return;
+
+    const currentWeight = typeof currentExercise.weight === 'number'
+      ? currentExercise.weight
+      : parseFloat(String(currentExercise.weight)) || 0;
+
+    if (currentWeight <= 0) return;
+
+    const newWeight = Math.round(currentWeight * (1 + percentChange / 100) * 2) / 2;
+
+    // Update local state
+    setAdjustedWeights(prev => ({ ...prev, [currentExercise.name]: newWeight }));
+
+    // Persist to database
+    try {
+      await persistWeightAdjustment(currentExercise.name, newWeight, percentChange);
+      console.log(`[Auto-Regulation] Weight adjusted: ${currentExercise.name} ${currentWeight}kg → ${newWeight}kg (${percentChange > 0 ? '+' : ''}${percentChange}%)`);
+    } catch (error) {
+      console.error('[Auto-Regulation] Failed to persist:', error);
     }
   };
 
@@ -1264,6 +1381,99 @@ export default function LiveWorkoutSession({
     const contextAdj = calculateContextAdjustment(stressLevel, sleepQuality, nutritionQuality, hydration);
     const adjustedRPE = Math.max(1, Math.min(10, currentRPE + contextAdj));
 
+    // ========================================================================
+    // AUTO-REGOLAZIONE CARICO BASATA SU REPS COMPLETATE VS TARGET
+    // - Troppe poche reps = carico troppo alto → riduci
+    // - Troppe reps = carico troppo basso → aumenta
+    // ========================================================================
+    const repsDelta = currentReps - targetReps; // Positivo = eccesso, Negativo = deficit
+    let weightAdjusted = false;
+
+    const currentWeightNum = typeof currentExercise.weight === 'number'
+      ? currentExercise.weight
+      : parseFloat(String(currentExercise.weight)) || 0;
+
+    // CASO 1: CARICO TROPPO ALTO (cliente fa meno reps del previsto)
+    if (repsDelta <= -4) {
+      // DEFICIT SIGNIFICATIVO (>=4 reps in meno): Riduci carico IMMEDIATAMENTE
+      // Es: 6 reps su 10 previste = troppo pesante
+      if (currentWeightNum > 0) {
+        const newWeight = Math.round(currentWeightNum * 0.9 * 2) / 2; // -10%, arrotondato a 0.5kg
+        setAdjustedWeights(prev => ({ ...prev, [currentExercise.name]: newWeight }));
+        setCurrentWeight(newWeight); // Applica subito per i prossimi set
+        weightAdjusted = true;
+
+        toast.error(
+          `⚠️ Carico ridotto: ${currentWeightNum}kg → ${newWeight}kg`,
+          {
+            description: `Hai completato ${currentReps}/${targetReps} reps. Il carico era troppo alto.`,
+            duration: 5000
+          }
+        );
+        console.log(`[AUTO-REGULATION] Immediate weight reduction: ${currentWeightNum}kg → ${newWeight}kg (${currentReps}/${targetReps} reps)`);
+      }
+    } else if (repsDelta <= -2) {
+      // DEFICIT LIEVE (2-3 reps in meno): Monitora, ritarerà dalla prossima sessione
+      toast.info(
+        `📊 Monitoraggio carico`,
+        {
+          description: `${currentReps}/${targetReps} reps. Il sistema valuterà per la prossima sessione.`,
+          duration: 4000
+        }
+      );
+      console.log(`[AUTO-REGULATION] Monitoring deficit: ${currentReps}/${targetReps} reps`);
+    }
+
+    // CASO 2: CARICO TROPPO BASSO (cliente fa più reps del previsto)
+    // Logica: se target 10 @ RIR 2 = 12RM, ma cliente fa 15 @ RIR 2 = 17RM
+    // Deve aumentare il peso per riportarlo a 12RM
+    else if (repsDelta >= 5) {
+      // ECCESSO SIGNIFICATIVO (>=5 reps in più): Aumenta carico IMMEDIATAMENTE
+      // Es: 15 reps su 10 previste = troppo leggero
+      if (currentWeightNum > 0) {
+        const newWeight = Math.round(currentWeightNum * 1.10 * 2) / 2; // +10%, arrotondato a 0.5kg
+        setAdjustedWeights(prev => ({ ...prev, [currentExercise.name]: newWeight }));
+        setCurrentWeight(newWeight); // Applica subito per i prossimi set
+        weightAdjusted = true;
+
+        toast.success(
+          `💪 Carico aumentato: ${currentWeightNum}kg → ${newWeight}kg`,
+          {
+            description: `Hai completato ${currentReps}/${targetReps} reps. Ottimo! Il carico era troppo leggero.`,
+            duration: 5000
+          }
+        );
+        console.log(`[AUTO-REGULATION] Immediate weight increase: ${currentWeightNum}kg → ${newWeight}kg (${currentReps}/${targetReps} reps)`);
+      }
+    } else if (repsDelta >= 3) {
+      // ECCESSO MODERATO (3-4 reps in più): Aumenta automaticamente (+5%)
+      if (currentWeightNum > 0) {
+        const newWeight = Math.round(currentWeightNum * 1.05 * 2) / 2; // +5%, arrotondato a 0.5kg
+        setAdjustedWeights(prev => ({ ...prev, [currentExercise.name]: newWeight }));
+        setCurrentWeight(newWeight);
+        weightAdjusted = true;
+
+        toast.success(
+          `📈 Carico aumentato: ${currentWeightNum}kg → ${newWeight}kg`,
+          {
+            description: `${currentReps}/${targetReps} reps completate. Progressione applicata.`,
+            duration: 4000
+          }
+        );
+        console.log(`[AUTO-REGULATION] Moderate weight increase: ${currentWeightNum}kg → ${newWeight}kg (${currentReps}/${targetReps} reps)`);
+      }
+    } else if (repsDelta >= 1) {
+      // ECCESSO LIEVE (1-2 reps in più): Monitora, aumenterà dalla prossima sessione (+2-3%)
+      toast.info(
+        `📊 Ottimo lavoro!`,
+        {
+          description: `${currentReps}/${targetReps} reps. Leggero aumento previsto per la prossima sessione.`,
+          duration: 4000
+        }
+      );
+      console.log(`[AUTO-REGULATION] Monitoring surplus: ${currentReps}/${targetReps} reps - will increase next session`);
+    }
+
     // Log the set with RIR
     const newSetLog: SetLog = {
       set_number: currentSet,
@@ -1272,13 +1482,15 @@ export default function LiveWorkoutSession({
       rpe: currentRPE,
       rpe_adjusted: adjustedRPE,
       rir_perceived: currentRIR,
-      adjusted: false
+      adjusted: weightAdjusted
     };
 
     setSetLogs(prev => ({
       ...prev,
       [currentExercise.name]: [...(prev[currentExercise.name] || []), newSetLog]
     }));
+
+    // NOTA: Il timer ora parte in handleSetComplete, non qui (per partire subito dopo i dati)
 
     // Pain tracking integration
     if (currentPainLevel > 0) {
@@ -1399,8 +1611,8 @@ export default function LiveWorkoutSession({
 
     // Analyze exercise progression (especially for home workouts)
     // Only on last set to avoid too many interruptions
-    const totalSetsPlanned = currentExercise.sets;
-    if (currentSet === totalSetsPlanned) {
+    // FIX: Use currentTargetSets instead of currentExercise.sets to match UI
+    if (currentSet === currentTargetSets) {
       analyzeExerciseProgression();
     }
 
@@ -1625,29 +1837,58 @@ export default function LiveWorkoutSession({
   };
 
   // Proceed to next set or exercise
+  // NOTA: Il timer ora parte in handleRPESubmit, non qui
   const proceedToNextSet = () => {
     if (!currentExercise) return;
 
-    // Check if more sets remaining
+    // ========================================================================
+    // SUPERSET LOGIC: Se siamo nell'ultimo esercizio di un superset,
+    // torna al primo esercizio del gruppo per il prossimo set
+    // ========================================================================
+    if (isInSuperset && isLastInSupersetGroup()) {
+      // Trova il primo esercizio del superset group
+      const currentGroup = currentExercise.supersetGroup;
+      const firstInGroup = exercises.find(ex => ex.supersetGroup === currentGroup);
+
+      if (firstInGroup && currentSet < currentTargetSets) {
+        // Torna al primo esercizio del superset per il prossimo set
+        const firstIndex = exercises.findIndex(ex => ex.name === firstInGroup.name);
+        if (firstIndex !== -1) {
+          setCurrentExerciseIndex(firstIndex);
+          setCurrentSet(prev => prev + 1);
+          toast.info(`🔄 Set ${currentSet + 1} - Superset`, { duration: 2000 });
+          return;
+        }
+      }
+    }
+
+    // Check if more sets remaining (esercizi normali)
     if (currentSet < currentTargetSets) {
       setCurrentSet(prev => prev + 1);
-
-      // Start rest timer (aumentato +20% per menopausa)
-      let restSeconds = parseRestTimeToSeconds(currentExercise.rest);
-      if (menstrualPhase === 'menopause') {
-        restSeconds = Math.round(restSeconds * 1.2); // +20% rest per menopausa
-        console.log('🧘‍♀️ Menopause: increased rest time by 20%');
-      }
-      setRestTimeRemaining(restSeconds);
-      setRestTimerActive(true);
+      // Timer già avviato in handleRPESubmit
     } else {
       // Move to next exercise
       if (currentExerciseIndex < totalExercises - 1) {
-        setCurrentExerciseIndex(prev => prev + 1);
-        setCurrentSet(1);
-        toast.success(`✅ ${currentExercise.name} completato!`, {
-          description: 'Prossimo esercizio'
-        });
+        // Se è superset, salta tutti gli esercizi del gruppo già completati
+        let nextIndex = currentExerciseIndex + 1;
+        if (isInSuperset) {
+          const currentGroup = currentExercise.supersetGroup;
+          // Trova il prossimo esercizio che NON è nel gruppo corrente
+          while (nextIndex < totalExercises && exercises[nextIndex].supersetGroup === currentGroup) {
+            nextIndex++;
+          }
+        }
+
+        if (nextIndex < totalExercises) {
+          setCurrentExerciseIndex(nextIndex);
+          setCurrentSet(1);
+          toast.success(`✅ ${currentExercise.name} completato!`, {
+            description: 'Prossimo esercizio'
+          });
+        } else {
+          // Workout complete!
+          handleWorkoutComplete();
+        }
       } else {
         // Workout complete!
         handleWorkoutComplete();
@@ -2444,7 +2685,7 @@ export default function LiveWorkoutSession({
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-4 gap-3 text-center">
             <div>
               <p className="text-slate-400 text-sm">Target</p>
               <p className="text-emerald-400 font-bold text-xl">{targetReps} reps</p>
@@ -2452,6 +2693,12 @@ export default function LiveWorkoutSession({
             <div>
               <p className="text-slate-400 text-sm">Sets</p>
               <p className="text-blue-400 font-bold text-xl">{currentSet}/{currentTargetSets}</p>
+            </div>
+            <div>
+              <p className="text-slate-400 text-sm">RIR</p>
+              <p className="text-orange-400 font-bold text-xl">
+                {currentExercise.targetRir ?? extractBaseTargetRIR(currentExercise.notes, currentExercise.intensity)}
+              </p>
             </div>
             <div>
               <p className="text-slate-400 text-sm">Rest</p>

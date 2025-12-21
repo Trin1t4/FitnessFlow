@@ -128,7 +128,7 @@ interface ExerciseRowProps {
 }
 
 function ExerciseRow({ exercise, index, isCorrective = false }: ExerciseRowProps) {
-  const [showDescription, setShowDescription] = React.useState(true); // ✅ Always show description by default
+  const [showDescription, setShowDescription] = React.useState(false); // Collapsed by default for mobile
   const [imageError, setImageError] = React.useState(false);
   const exerciseInfo = getExerciseDescription(exercise.name);
 
@@ -141,7 +141,7 @@ function ExerciseRow({ exercise, index, isCorrective = false }: ExerciseRowProps
     lower_push: 'bg-green-600',
     lower_pull: 'bg-yellow-600',
     horizontal_push: 'bg-blue-600',
-    horizontal_pull: 'bg-cyan-600', // Row pattern
+    horizontal_pull: 'bg-cyan-600',
     vertical_push: 'bg-purple-600',
     vertical_pull: 'bg-pink-600',
     core: 'bg-orange-600',
@@ -157,102 +157,107 @@ function ExerciseRow({ exercise, index, isCorrective = false }: ExerciseRowProps
       transition={{ delay: index * 0.05 }}
       className={`rounded-lg ${isCorrective ? 'bg-gray-700/50' : 'bg-gray-700'}`}
     >
-      {/* Main Row */}
-      <div className="flex items-center gap-3 p-3">
-        {/* Exercise Image (for static exercises) */}
-        {exerciseImage && !imageError ? (
-          <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-600">
-            <img
-              src={exerciseImage}
-              alt={exercise.name}
-              className="w-full h-full object-cover"
-              onError={() => setImageError(true)}
-              loading="lazy"
+      {/* Main Content - Clickable to expand */}
+      <div
+        className="p-3 cursor-pointer"
+        onClick={() => setShowDescription(!showDescription)}
+      >
+        {/* Mobile: Stack layout | Desktop: Row layout */}
+        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+          {/* Top row: Image + Name + Pattern */}
+          <div className="flex items-center gap-3">
+            {/* Exercise Image */}
+            {exerciseImage && !imageError ? (
+              <div className="flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-lg overflow-hidden bg-gray-600">
+                <img
+                  src={exerciseImage}
+                  alt={exercise.name}
+                  className="w-full h-full object-cover"
+                  onError={() => setImageError(true)}
+                  loading="lazy"
+                />
+              </div>
+            ) : exerciseImage && imageError ? (
+              <div className="flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-lg bg-gray-600 flex items-center justify-center">
+                <ImageIcon className="w-5 h-5 text-gray-400" />
+              </div>
+            ) : null}
+
+            {/* Exercise Name + Pattern */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-white font-medium text-sm md:text-base truncate max-w-[180px] md:max-w-none">
+                  {exercise.name}
+                </p>
+                <div className={`${patternColor} rounded px-1.5 py-0.5 text-[10px] md:text-xs font-medium text-white uppercase tracking-wider`}>
+                  {exercise.pattern.replace('_', ' ')}
+                </div>
+              </div>
+              {exercise.notes && (
+                <p className="text-xs text-gray-400 mt-0.5 truncate">{exercise.notes}</p>
+              )}
+            </div>
+
+            {/* Expand indicator */}
+            <ChevronDown
+              className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${
+                showDescription ? 'rotate-180' : ''
+              }`}
             />
           </div>
-        ) : exerciseImage && imageError ? (
-          <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-600 flex items-center justify-center">
-            <ImageIcon className="w-6 h-6 text-gray-400" />
-          </div>
-        ) : null}
 
-        {/* Pattern Badge */}
-        <div className={`${patternColor} rounded px-2 py-1 text-xs font-medium text-white uppercase tracking-wider min-w-[100px] text-center`}>
-          {exercise.pattern.replace('_', ' ')}
-        </div>
-
-        {/* Exercise Info */}
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <p className="text-white font-medium">{exercise.name}</p>
-            {exerciseInfo && (
-              <button
-                onClick={() => setShowDescription(!showDescription)}
-                className="text-gray-400 hover:text-blue-400 transition-colors"
-                title="Mostra spiegazione"
-              >
-                <Info className="w-4 h-4" />
-              </button>
+          {/* Volume Info - Grid on mobile, flex on desktop */}
+          <div className="grid grid-cols-4 md:flex md:items-center gap-2 md:gap-3 text-center bg-gray-800/50 rounded-lg p-2 md:p-0 md:bg-transparent">
+            <div>
+              <p className="text-gray-500 text-[10px] md:text-xs">Sets</p>
+              <p className="text-white font-bold text-sm md:text-base">{exercise.sets}</p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-[10px] md:text-xs">Reps</p>
+              <p className="text-white font-bold text-sm md:text-base">{exercise.reps}</p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-[10px] md:text-xs">Rest</p>
+              <p className="text-white font-bold text-sm md:text-base">{exercise.rest}</p>
+            </div>
+            {exercise.weight ? (
+              <div>
+                <p className="text-gray-500 text-[10px] md:text-xs">Peso</p>
+                <p className="text-amber-400 font-bold text-sm md:text-base">{exercise.weight}</p>
+              </div>
+            ) : exercise.intensity ? (
+              <div>
+                <p className="text-gray-500 text-[10px] md:text-xs">Int.</p>
+                <p className="text-blue-400 font-bold text-sm md:text-base">{exercise.intensity}</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-gray-500 text-[10px] md:text-xs">RIR</p>
+                <p className="text-green-400 font-bold text-sm md:text-base">2-3</p>
+              </div>
             )}
           </div>
-          {exercise.notes && (
-            <p className="text-xs text-gray-400 mt-1">{exercise.notes}</p>
-          )}
-        </div>
 
-        {/* Volume Info */}
-        <div className="flex items-center gap-4 text-sm">
-          <div className="text-center">
-            <p className="text-gray-400 text-xs">Sets</p>
-            <p className="text-white font-bold">{exercise.sets}</p>
+          {/* Desktop only: Baseline + Replaced indicator */}
+          <div className="hidden md:flex items-center gap-2">
+            {exercise.baseline && (
+              <div className="text-xs text-green-400 flex items-center gap-1">
+                <Activity className="w-3 h-3" />
+                <span>Base: {exercise.baseline.maxReps}r</span>
+              </div>
+            )}
+            {exercise.wasReplaced && (
+              <div className="bg-yellow-600 rounded px-2 py-1 text-xs font-medium text-white">
+                Sost.
+              </div>
+            )}
           </div>
-          <div className="text-center">
-            <p className="text-gray-400 text-xs">Reps</p>
-            <p className="text-white font-bold">{exercise.reps}</p>
-          </div>
-          {exercise.weight && (
-            <div className="text-center">
-              <p className="text-gray-400 text-xs">Peso</p>
-              <p className="text-amber-400 font-bold">{exercise.weight}</p>
-            </div>
-          )}
-          <div className="text-center">
-            <p className="text-gray-400 text-xs">Rest</p>
-            <p className="text-white font-bold">{exercise.rest}</p>
-          </div>
-          {exercise.intensity && (
-            <div className="text-center">
-              <p className="text-gray-400 text-xs">Intensità</p>
-              <p className="text-blue-400 font-bold">{exercise.intensity}</p>
-            </div>
-          )}
         </div>
-
-        {/* Baseline indicator - larghezza fissa per allineamento */}
-        <div className="min-w-[120px] text-right">
-          {exercise.baseline ? (
-            <div className="text-xs text-green-400 flex items-center justify-end gap-1">
-              <Activity className="w-3 h-3" />
-              <span>Baseline: {exercise.baseline.maxReps}r</span>
-            </div>
-          ) : (
-            <div className="text-xs text-gray-500 italic">
-              No baseline
-            </div>
-          )}
-        </div>
-
-        {/* Replaced indicator */}
-        {exercise.wasReplaced && (
-          <div className="bg-yellow-600 rounded px-2 py-1 text-xs font-medium text-white">
-            Sostituito
-          </div>
-        )}
       </div>
 
-      {/* Description Panel */}
+      {/* Description Panel - Expandable with max-height for mobile */}
       <AnimatePresence>
-        {showDescription && exerciseInfo && (
+        {showDescription && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -260,17 +265,17 @@ function ExerciseRow({ exercise, index, isCorrective = false }: ExerciseRowProps
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-3 pb-3 pt-0 border-t border-gray-600 mt-0">
+            <div className="px-3 pb-3 border-t border-gray-600 max-h-[50vh] overflow-y-auto">
               <div className="bg-gray-800 rounded-lg p-3 mt-3">
                 {/* Description */}
-                {exerciseInfo.description && (
+                {exerciseInfo?.description && (
                   <p className="text-sm text-gray-300 mb-3">
                     {exerciseInfo.description}
                   </p>
                 )}
 
                 {/* Technique Cues */}
-                {exerciseInfo.technique && exerciseInfo.technique.length > 0 && (
+                {exerciseInfo?.technique && exerciseInfo.technique.length > 0 && (
                   <div>
                     <p className="text-xs text-blue-400 font-medium mb-2 uppercase tracking-wider">
                       Tecnica
@@ -284,6 +289,32 @@ function ExerciseRow({ exercise, index, isCorrective = false }: ExerciseRowProps
                       ))}
                     </ul>
                   </div>
+                )}
+
+                {/* Mobile only: Show baseline if present */}
+                {exercise.baseline && (
+                  <div className="md:hidden mt-3 pt-3 border-t border-gray-700">
+                    <div className="text-xs text-green-400 flex items-center gap-1">
+                      <Activity className="w-3 h-3" />
+                      <span>Baseline: {exercise.baseline.maxReps} reps</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mobile only: Show replaced indicator if present */}
+                {exercise.wasReplaced && (
+                  <div className="md:hidden mt-2">
+                    <span className="bg-yellow-600 rounded px-2 py-1 text-xs font-medium text-white">
+                      Esercizio sostituito per adattamento
+                    </span>
+                  </div>
+                )}
+
+                {/* No description available */}
+                {!exerciseInfo && (
+                  <p className="text-sm text-gray-500 italic">
+                    Descrizione non disponibile per questo esercizio.
+                  </p>
                 )}
               </div>
             </div>

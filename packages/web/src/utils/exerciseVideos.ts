@@ -68,6 +68,8 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   'Negative Pull-up (solo eccentrica)': 'standard-pull-up.mp4',
   'Negative Pull-ups (5-10s)': 'standard-pull-up.mp4',
   'Pull-ups / Chin-ups': 'standard-pull-up.mp4',
+  'Chin-up': 'chin-up.mp4',
+  'Chin-ups': 'chin-up.mp4',
   'Band-Assisted Pull-up': 'assisted-pull-up.mp4',
   'Assisted Pull-up': 'assisted-pull-up.mp4',
   'Trazioni Assistite': 'assisted-pull-up.mp4',
@@ -78,15 +80,26 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   'Push-up su Ginocchia': 'standard-push-up.mp4',
   'Push-up Ginocchia': 'standard-push-up.mp4',
   'Decline Push-up': 'decline-push-up.mp4',
+  'Incline Push-up': 'incline-push-up.mp4',
+  'Diamond Push-up': 'diamond-push-up.mp4',
+  'Wall Push-up': 'wall-push-up.mp4',
+  'Wall Push Up': 'wall-push-up.mp4',
 
   // === SQUAT varianti ===
   'Air Squat': 'bodyweight-squat.mp4',
   'Squat': 'bodyweight-squat.mp4',
   'Squat Assistito': 'bodyweight-squat.mp4',
   'Squat Completo': 'bodyweight-squat.mp4',
+  'Bodyweight Squat': 'bodyweight-squat.mp4',
   'Modified Squat': 'modified-squat.mp4',
   'Squat Modificato': 'modified-squat.mp4',
   'Deep Squat Hold': 'deep-squat-hold.mp4',
+  'Goblet Squat': 'goblet-squat.mp4',
+  'Front Squat': 'front-squat.mp4',
+  'Back Squat': 'back-squat.mp4',
+  'Bulgarian Split Squat': 'bulgarian-split-squat.mp4',
+  'Split Squat Bulgaro': 'bulgarian-split-squat.mp4',
+  'Pistol Squat': 'pistol-squat.mp4',
 
   // === LEG CURL varianti ===
   'Slider Leg Curl': 'standing-leg-curl.mp4',
@@ -98,7 +111,9 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   // === HIP THRUST / GLUTE ===
   'Hip Thrust': 'hip-thrust.mp4',
   'Hip Thrust (Elevated)': 'hip-thrust.mp4',
+  'Glute Bridge': 'glute-bridge.mp4',
   'Single Leg Glute Bridge': 'glute-bridge.mp4',
+  'Ponte Glutei': 'glute-bridge.mp4',
 
   // === DEADLIFT varianti ===
   'Romanian Deadlift (RDL)': 'romanian-deadlift.mp4',
@@ -154,11 +169,13 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   'Front Raises': 'front-raise.mp4',
 
   // === CORE ===
+  'Plank': 'plank.mp4',
   'Side Plank': 'side-plank-modified.mp4',
   'Side Plank (Modified)': 'side-plank-modified.mp4',
   'Pallof Press': 'pallof-press.mp4',
   'Pallof Press (Kneeling)': 'pallof-press-kneeling.mp4',
   'Half Kneeling Chop': 'half-kneeling-chop.mp4',
+  'Dead Bug': 'dead-bug.mp4',
   'Dead Bug Progression': 'dead-bug-progression.mp4',
   'Dead Bug Heel Slides': 'dead-bug-heel-slides.mp4',
   'Bear Hold': 'bear-hold.mp4',
@@ -190,6 +207,7 @@ const VIDEO_OVERRIDES: Record<string, string> = {
 
   // === MOBILITY / CORRECTIVE ===
   'Cat-Cow': 'cat-cow.mp4',
+  'Bird Dog': 'bird-dog.mp4',
   'Bird Dog (Modified)': 'bird-dog-modified.mp4',
   'Clamshells': 'clamshells.mp4',
   'Clamshell': 'clamshells.mp4',

@@ -201,121 +201,310 @@ serve(async (req) => {
  * Get exercise-specific prompt for Gemini
  */
 function getExercisePrompt(exerciseName: string): string {
-  const basePrompt = `You are an expert strength and conditioning coach with 15 years of experience analyzing exercise technique.
+  const normalizedName = normalizeExerciseName(exerciseName);
 
-Analyze this ${exerciseName} video frame-by-frame and provide detailed biomechanical feedback.
+  const basePrompt = `Sei un preparatore atletico esperto con 15 anni di esperienza nell'analisi della tecnica degli esercizi.
 
-**Analysis Focus:**
-1. **Joint Alignment** - Check proper alignment of knees, hips, shoulders, spine
-2. **Range of Motion** - Evaluate depth, bar path, movement symmetry
-3. **Tempo & Control** - Assess eccentric/concentric phases, stability
-4. **Form Degradation** - Identify reps where technique breaks down
-5. **Safety Risks** - Detect injury risk patterns
+Analizza questo video di ${normalizedName} frame-by-frame e fornisci feedback biomeccanico dettagliato IN ITALIANO.
+
+**Focus dell'Analisi:**
+1. **Allineamento Articolare** - Verifica allineamento corretto di ginocchia, anche, spalle, colonna
+2. **Range of Motion** - Valuta profondità, traiettoria, simmetria del movimento
+3. **Tempo e Controllo** - Valuta fasi eccentrica/concentrica, stabilità
+4. **Degradazione della Forma** - Identifica le reps dove la tecnica cede
+5. **Rischi per la Sicurezza** - Rileva pattern che aumentano il rischio infortuni
 
 ${getExerciseSpecificCues(exerciseName)}
 
-**Output Format:**
-Return your analysis as valid JSON (no markdown, no code blocks):
+**Formato Output:**
+Restituisci l'analisi come JSON valido (no markdown, no code blocks):
 {
-  "overall_score": <number 1-10>,
+  "overall_score": <numero 1-10>,
   "issues": [
     {
-      "name": "<issue_identifier>",
+      "name": "<identificatore_problema>",
       "severity": "low|medium|high",
-      "description": "<detailed observation>",
-      "timestamp_seconds": [<when it occurs>]
+      "description": "<osservazione dettagliata IN ITALIANO>",
+      "timestamp_seconds": [<quando accade in secondi>]
     }
   ],
   "corrections": [
-    "<specific actionable cue 1>",
-    "<specific actionable cue 2>",
-    "<specific actionable cue 3>"
+    "<cue correttiva specifica e azionabile IN ITALIANO 1>",
+    "<cue correttiva specifica e azionabile IN ITALIANO 2>",
+    "<cue correttiva specifica e azionabile IN ITALIANO 3>"
   ],
   "safety_warnings": [
-    "<warning if injury risk detected>"
+    "<avviso se rilevato rischio infortunio IN ITALIANO>"
   ],
   "load_recommendation": "increase_5_percent|maintain|decrease_10_percent|decrease_20_percent"
 }
 
-**Scoring Guidelines:**
-- 9-10: Excellent form, minor refinements only
-- 7-8: Good form, some technical improvements needed
-- 5-6: Moderate issues, load reduction recommended
-- 3-4: Significant form breakdown, immediate corrections needed
-- 1-2: Dangerous execution, stop and relearn movement
+**Linee Guida Punteggio:**
+- 9-10: Forma eccellente, solo piccoli affinamenti
+- 7-8: Buona forma, alcuni miglioramenti tecnici necessari
+- 5-6: Problemi moderati, riduzione carico consigliata
+- 3-4: Cedimento significativo della forma, correzioni immediate necessarie
+- 1-2: Esecuzione pericolosa, fermarsi e reimparare il movimento
 
-Be specific, actionable, and encouraging in your feedback.`;
+Sii specifico, azionabile e incoraggiante nel feedback. RISPONDI SEMPRE IN ITALIANO.`;
 
   return basePrompt;
+}
+
+/**
+ * Normalize exercise name to match cue keys
+ * Supports Italian and English variants
+ */
+function normalizeExerciseName(exerciseName: string): string {
+  const name = exerciseName.toLowerCase().trim();
+
+  // SQUAT VARIANTS
+  if (name.includes('back squat') || name.includes('squat con bilanciere') ||
+      name.includes('squat bilanciere') || name === 'barbell squat') {
+    return 'Back Squat';
+  }
+  if (name.includes('front squat') || name.includes('squat frontale')) {
+    return 'Front Squat';
+  }
+  if (name.includes('goblet squat') || name.includes('squat con kettlebell') ||
+      name.includes('squat con manubrio')) {
+    return 'Goblet Squat';
+  }
+  if (name.includes('bulgarian') || name.includes('split squat') ||
+      name.includes('affondi bulgari') || name.includes('squat bulgaro')) {
+    return 'Bulgarian Split Squat';
+  }
+  if (name.includes('overhead squat') || name.includes('squat overhead')) {
+    return 'Overhead Squat';
+  }
+  if (name.includes('box squat') || name.includes('squat al box')) {
+    return 'Box Squat';
+  }
+  if (name.includes('squat') && !name.includes('pistol')) {
+    return 'Back Squat'; // Default squat
+  }
+  if (name.includes('pistol') || name.includes('squat a una gamba')) {
+    return 'Pistol Squat';
+  }
+
+  // BENCH VARIANTS
+  if (name.includes('bench press') || name.includes('panca piana') ||
+      name.includes('distensioni su panca') || name.includes('panca con bilanciere')) {
+    return 'Bench Press';
+  }
+  if (name.includes('incline') || name.includes('panca inclinata')) {
+    return 'Incline Bench Press';
+  }
+
+  // DEADLIFT VARIANTS
+  if (name.includes('deadlift') && !name.includes('romanian') && !name.includes('rumeno') ||
+      name.includes('stacco da terra') || name.includes('stacco classico')) {
+    return 'Deadlift';
+  }
+  if (name.includes('romanian') || name.includes('rdl') || name.includes('stacco rumeno')) {
+    return 'Romanian Deadlift';
+  }
+  if (name.includes('sumo') || name.includes('stacco sumo')) {
+    return 'Sumo Deadlift';
+  }
+
+  // PRESS VARIANTS
+  if (name.includes('overhead press') || name.includes('military press') ||
+      name.includes('lento avanti') || name.includes('shoulder press') ||
+      name.includes('press sopra la testa')) {
+    return 'Overhead Press';
+  }
+
+  // PULL VARIANTS
+  if (name.includes('pull-up') || name.includes('pullup') || name.includes('trazioni') ||
+      name.includes('chin-up') || name.includes('chinup')) {
+    return 'Pull-Up';
+  }
+  if (name.includes('row') || name.includes('rematore') || name.includes('rowing')) {
+    return 'Barbell Row';
+  }
+
+  // LUNGE VARIANTS
+  if (name.includes('lunge') || name.includes('affondo') || name.includes('affondi')) {
+    return 'Lunge';
+  }
+
+  // HIP HINGE
+  if (name.includes('hip thrust') || name.includes('ponte glutei')) {
+    return 'Hip Thrust';
+  }
+
+  return exerciseName; // Return original if no match
 }
 
 /**
  * Exercise-specific technical cues
  */
 function getExerciseSpecificCues(exerciseName: string): string {
+  const normalizedName = normalizeExerciseName(exerciseName);
+
   const cues: Record<string, string> = {
     "Back Squat": `
-**Back Squat Specific Checks:**
-- Knee tracking: Check for valgus (inward collapse) or varus (outward bow)
-- Lumbar spine: Must stay neutral (no rounding or hyperextension)
-- Depth: Hip crease below knee line for parallel, assess if safe
-- Bar path: Should be vertical over midfoot
-- Weight distribution: Pressure through heels, not toes
-- Torso angle: Consistent throughout movement
-- Common errors: Knees caving, butt wink, forward lean, heel lift`,
+**Back Squat / Squat con Bilanciere - Controlli Specifici:**
+- Knee tracking: Verifica valgus (ginocchia verso interno) o varus (verso esterno)
+- Colonna lombare: Deve rimanere NEUTRA (no arrotondamento, no iper-estensione)
+- Profondità: Cresta iliaca sotto la linea delle ginocchia per parallelo
+- Traiettoria bilanciere: Verticale sopra il centro del piede
+- Distribuzione peso: Pressione sui talloni, non sulle punte
+- Angolo del busto: Costante durante tutto il movimento
+- Errori comuni: Ginocchia che cedono, butt wink, inclinazione avanti, talloni che si alzano`,
+
+    "Front Squat": `
+**Front Squat / Squat Frontale - Controlli Specifici:**
+- Posizione rack: Gomiti ALTI, bilanciere sulle spalle anteriori
+- Colonna toracica: Deve rimanere estesa (petto alto)
+- Profondità: Può andare più profondo del back squat se la mobilità lo permette
+- Knee tracking: Ginocchia in linea con le punte dei piedi
+- Core bracing: Addominali contratti per evitare crollo in avanti
+- Errori comuni: Gomiti che cadono, busto che crolla avanti, perdita bilanciere`,
+
+    "Goblet Squat": `
+**Goblet Squat / Squat con Kettlebell - Controlli Specifici:**
+- Posizione peso: Kettlebell/manubrio tenuto al petto, gomiti verso il basso
+- Postura: Petto alto, sguardo avanti
+- Profondità: Gomiti che toccano l'interno delle ginocchia a fondo squat
+- Knee tracking: Ginocchia che seguono la direzione delle punte
+- Balance: Peso distribuito su tutto il piede
+- Errori comuni: Peso che cade avanti, schiena arrotondata, ginocchia cave`,
+
+    "Bulgarian Split Squat": `
+**Bulgarian Split Squat / Affondi Bulgari - Controlli Specifici:**
+- Setup: Piede posteriore elevato, tibia anteriore quasi verticale
+- Knee tracking: Ginocchio anteriore sopra la caviglia, non oltre le punte
+- Torso: Leggera inclinazione avanti OK, ma colonna neutra
+- Hip drop: Movimento controllato verso il basso, non in avanti
+- Balance: Stabilità durante tutto il movimento
+- Errori comuni: Ginocchio anteriore che crolla, troppo peso avanti, instabilità`,
+
+    "Overhead Squat": `
+**Overhead Squat - Controlli Specifici:**
+- Posizione braccia: Bilanciere sopra la testa, braccia bloccate
+- Mobilità spalle: Bilanciere leggermente dietro la testa
+- Core stability: Massimo bracing richiesto
+- Profondità: Limitata dalla mobilità, non forzare
+- Traiettoria: Bilanciere rimane sulla linea del centro del piede
+- Errori comuni: Braccia che cedono avanti, perdita equilibrio, busto che crolla`,
+
+    "Box Squat": `
+**Box Squat / Squat al Box - Controlli Specifici:**
+- Seduta: Sedersi completamente sul box, non toccare e ripartire
+- Pausa: Momento di pausa in basso con tensione mantenuta
+- Shin angle: Tibie verticali o leggermente inclinate indietro
+- Hip drive: Risalita guidata dai glutei
+- Controllo eccentrico: Discesa controllata, non cadere sul box
+- Errori comuni: Rimbalzare, perdere tensione, tibie troppo avanti`,
+
+    "Pistol Squat": `
+**Pistol Squat / Squat a Una Gamba - Controlli Specifici:**
+- Balance: Peso centrato sul piede d'appoggio
+- Gamba libera: Estesa in avanti, non tocca terra
+- Profondità: Gluteo che tocca il tallone (full ROM)
+- Controllo: Discesa e risalita controllate, no momentum
+- Knee tracking: Ginocchio segue la punta del piede
+- Errori comuni: Cadere di lato, ginocchio che crolla, tallone che si alza`,
+
+    "Lunge": `
+**Lunge / Affondi - Controlli Specifici:**
+- Passo: Lunghezza appropriata (90° entrambe le ginocchia a fondo)
+- Knee tracking: Ginocchio anteriore sopra caviglia, non oltre le punte
+- Torso: Verticale o leggera inclinazione, non collassato
+- Ginocchio posteriore: Sfiora il pavimento senza sbattere
+- Balance: Peso distribuito 50/50 o leggermente avanti
+- Errori comuni: Passo troppo corto/lungo, ginocchio che crolla, instabilità`,
 
     "Bench Press": `
-**Bench Press Specific Checks:**
-- Elbow angle: 45-75° from torso (not 90° flare)
-- Bar path: Straight line to nipple area, not too high
-- Wrist position: Neutral, not bent back
-- Shoulder position: Retracted and depressed throughout
-- Leg drive: Feet planted, using leg drive effectively
-- Arch: Natural thoracic arch, not excessive lumbar
-- Common errors: Elbows flared, bar bouncing, butt lift, wrists collapsing`,
+**Bench Press / Panca Piana - Controlli Specifici:**
+- Angolo gomiti: 45-75° dal busto (NON 90° a T)
+- Traiettoria bilanciere: Linea retta verso i capezzoli
+- Posizione polsi: Neutri, non piegati indietro
+- Posizione spalle: Retratte e depresse per tutto il movimento
+- Leg drive: Piedi piantati, usare la spinta delle gambe
+- Arco: Arco toracico naturale, non eccessivo a livello lombare
+- Errori comuni: Gomiti aperti, bilanciere che rimbalza, glutei che si alzano, polsi che cedono`,
+
+    "Incline Bench Press": `
+**Incline Bench Press / Panca Inclinata - Controlli Specifici:**
+- Angolo panca: Idealmente 30-45 gradi
+- Traiettoria: Bilanciere verso la clavicola
+- Setup spalle: Sempre retratte nonostante l'inclinazione
+- Gomiti: Angolo 45-60° dal busto
+- Arco: Ridotto rispetto alla panca piana
+- Errori comuni: Angolo panca troppo alto, spalle che escono, rimbalzo sul petto`,
 
     "Deadlift": `
-**Deadlift Specific Checks:**
-- Starting position: Shoulders over bar, hips higher than knees
-- Lumbar spine: Neutral throughout entire pull (critical safety)
-- Bar path: Straight vertical line, close to shins/thighs
-- Hip hinge: Moving hips back, not squatting down
-- Lockout: Full hip extension, avoid overextending back
-- Shoulder blades: Over or slightly in front of bar at start
-- Common errors: Rounded back, hips too low, bar drifting away, hitching`,
+**Deadlift / Stacco da Terra - Controlli Specifici:**
+- Posizione partenza: Spalle sopra il bilanciere, anche più alte delle ginocchia
+- Colonna lombare: NEUTRA per tutta la tirata (sicurezza critica!)
+- Traiettoria bilanciere: Linea verticale dritta, vicino a tibie/cosce
+- Hip hinge: Anche che vanno indietro, non squattare verso il basso
+- Lockout: Estensione completa delle anche, evitare iper-estensione
+- Scapole: Sopra o leggermente davanti al bilanciere alla partenza
+- Errori comuni: Schiena arrotondata, anche troppo basse, bilanciere che si allontana, hitching`,
+
+    "Sumo Deadlift": `
+**Sumo Deadlift / Stacco Sumo - Controlli Specifici:**
+- Stance: Piedi larghi, punte verso l'esterno (45-80°)
+- Posizione anche: Più basse rispetto allo stacco classico
+- Ginocchia: Spinte verso l'esterno, in linea con le punte
+- Torso: Più verticale rispetto al conventional
+- Presa: Braccia dritte, tra le gambe
+- Errori comuni: Ginocchia che cedono dentro, anche che salgono prima delle spalle, perdita posizione`,
 
     "Overhead Press": `
-**Overhead Press Specific Checks:**
-- Bar path: Vertical line, head moves back slightly
-- Core bracing: Tight abs, avoid excessive back arch
-- Lockout: Full arm extension, shrug shoulders at top
-- Elbow position: Under wrists throughout press
-- Hip position: Neutral, not thrusting forward
-- Common errors: Leaning back too much, bar drifting forward, incomplete lockout`,
+**Overhead Press / Lento Avanti - Controlli Specifici:**
+- Traiettoria: Linea verticale, testa si sposta leggermente indietro
+- Core bracing: Addominali contratti, evitare arco lombare eccessivo
+- Lockout: Estensione completa braccia, scrollare spalle in alto
+- Posizione gomiti: Sotto i polsi durante tutta la spinta
+- Posizione anche: Neutra, non spingere in avanti
+- Errori comuni: Inclinarsi troppo indietro, bilanciere che va avanti, lockout incompleto`,
 
     "Pull-Up": `
-**Pull-Up Specific Checks:**
-- Starting position: Full arm extension (dead hang)
-- Shoulder engagement: Active shoulders, not passive hang
-- Pull path: Pull elbows down and back, not forward
-- Chin clearance: Chin clearly over bar
-- Control: Smooth eccentric, no swinging/kipping
-- Common errors: Half reps, excessive swing, chin not over bar, shrugged shoulders`,
+**Pull-Up / Trazioni alla Sbarra - Controlli Specifici:**
+- Posizione partenza: Braccia completamente distese (dead hang)
+- Attivazione spalle: Spalle attive, non hang passivo
+- Traiettoria trazione: Gomiti verso il basso e indietro, non avanti
+- Mento: Chiaramente sopra la sbarra
+- Controllo: Eccentrica fluida, no swing/kipping
+- Errori comuni: Mezze reps, swing eccessivo, mento non sopra, spalle alzate`,
 
     "Romanian Deadlift": `
-**Romanian Deadlift Specific Checks:**
-- Hip hinge: Hips move back, knees slightly bent
-- Back position: Neutral spine maintained throughout
-- Bar path: Stays close to legs, travels down shins
-- Depth: Stop when hamstring stretch felt, back stays flat
-- Lockout: Full hip extension using glutes
-- Common errors: Squatting motion, back rounding, bar too far from body, knees too bent`,
+**Romanian Deadlift / Stacco Rumeno - Controlli Specifici:**
+- Hip hinge: Anche che vanno indietro, ginocchia leggermente flesse
+- Posizione schiena: Colonna neutra mantenuta sempre
+- Traiettoria bilanciere: Rimane vicino alle gambe, scende lungo le tibie
+- Profondità: Fermarsi quando si sente lo stretch dei femorali, schiena resta piatta
+- Lockout: Estensione completa delle anche usando i glutei
+- Errori comuni: Movimento di squat, schiena che arrotonda, bilanciere lontano dal corpo, ginocchia troppo piegate`,
+
+    "Barbell Row": `
+**Barbell Row / Rematore con Bilanciere - Controlli Specifici:**
+- Hip hinge: Busto inclinato 45-60° circa
+- Colonna: Neutra, no arrotondamento
+- Traiettoria: Bilanciere verso l'ombelico/basso sterno
+- Scapole: Retrazione completa in alto
+- Gomiti: Vicini al corpo, non larghi
+- Errori comuni: Usare momentum, schiena che arrotonda, ROM incompleto, troppo verticali`,
+
+    "Hip Thrust": `
+**Hip Thrust / Ponte Glutei - Controlli Specifici:**
+- Setup: Scapole appoggiate sulla panca, piedi a terra
+- Posizione piedi: Larghezza anche, tibie verticali a fine movimento
+- Estensione: Completa estensione delle anche in alto
+- Mento: Leggermente verso il petto (sguardo avanti, non in alto)
+- Controllo: Pausa in alto, squeeze dei glutei
+- Errori comuni: Iper-estensione lombare, piedi troppo avanti/indietro, arco cervicale`,
   };
 
-  return cues[exerciseName] || `
-**General Exercise Analysis:**
-- Check for proper form and movement pattern
-- Identify any compensations or imbalances
-- Assess control and stability throughout range of motion
-- Note any safety concerns or injury risks`;
+  return cues[normalizedName] || `
+**Analisi Generale Esercizio:**
+- Verifica forma corretta e pattern di movimento
+- Identifica compensazioni o squilibri
+- Valuta controllo e stabilità durante tutto il ROM
+- Nota eventuali rischi per la sicurezza o infortuni`;
 }

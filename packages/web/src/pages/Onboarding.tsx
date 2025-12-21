@@ -6,10 +6,14 @@ import { useTranslation } from '../lib/i18n';
 import AnagraficaStep from '../components/onboarding/AnagraficaStep';
 import PersonalInfoStep from '../components/onboarding/PersonalInfoStep';
 import LocationStep from '../components/onboarding/LocationStep';
-import ActivityStep from '../components/onboarding/ActivityStep';
 import GoalStep from '../components/onboarding/GoalStep';
-import PainStep from '../components/onboarding/PainStep';
 import MedicalDisclaimer from '../components/onboarding/MedicalDisclaimer';
+
+// BETA: Onboarding semplificato - solo 4 step essenziali
+// 1. Anagrafica (nome, cognome, data nascita)
+// 2. Personal Info (genere, età, altezza, peso)
+// 3. Location (casa/palestra)
+// 4. Goal (obiettivo)
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -48,7 +52,8 @@ export default function Onboarding() {
     );
   }
 
-  const totalSteps = 6;
+  // BETA: 4 step invece di 6
+  const totalSteps = 4;
   const progress = (currentStep / totalSteps) * 100;
 
   const updateData = (stepData: Partial<OnboardingData>) => {
@@ -153,7 +158,7 @@ export default function Onboarding() {
           console.error('[ONBOARDING] ❌ LOCATION IS MISSING! LocationStep.tsx has a bug!');
           alert(t('onboarding.error.location_missing'));
           setIsSaving(false);
-          setCurrentStep(3); // Torna al step della location (ora è step 3)
+          setCurrentStep(3); // Torna al step della location (step 3 nella versione beta)
           return;
         }
 
@@ -195,6 +200,7 @@ export default function Onboarding() {
     nextStep();
   };
 
+  // BETA: Solo 4 step essenziali
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -204,11 +210,7 @@ export default function Onboarding() {
       case 3:
         return <LocationStep data={data} onNext={handleStepComplete} />;
       case 4:
-        return <ActivityStep data={data} onNext={handleStepComplete} />;
-      case 5:
         return <GoalStep data={data} onNext={handleStepComplete} />;
-      case 6:
-        return <PainStep data={data} onNext={handleStepComplete} />;
       default:
         return null;
     }

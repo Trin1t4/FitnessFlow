@@ -11,7 +11,10 @@ import { motion } from 'framer-motion';
 import WeeklySplitView from './WeeklySplitView';
 import WorkoutLogger from './WorkoutLogger';
 import LiveWorkoutSession from './LiveWorkoutSession';
-import PainProgressChart from './PainProgressChart';
+import PainTrackingChart from './PainTrackingChart';
+import StrengthProgressChart from './StrengthProgressChart';
+import ScientificProgressPanel from './ScientificProgressPanel';
+import AllTimePersonalRecords from './AllTimePersonalRecords';
 import DeloadSuggestionModal from './DeloadSuggestionModal';
 import RetestNotification from './RetestNotification';
 import DeloadWeekNotification from './DeloadWeekNotification';
@@ -1429,10 +1432,24 @@ export default function Dashboard() {
           />
         )}
 
-        {/* Pain Progress Chart */}
+        {/* Pain & Progress Charts - Separated */}
         {hasProgram && (program?.user_id || dataStatus.screening?.userId) && (
-          <div className="mb-6 md:mb-8">
-            <PainProgressChart userId={program?.user_id || dataStatus.screening?.userId || ''} />
+          <div className="space-y-4 mb-6 md:mb-8">
+            {/* Grafico Dolore - Separato */}
+            <PainTrackingChart userId={program?.user_id || dataStatus.screening?.userId || ''} />
+
+            {/* Grafico Progressione Forza - Separato */}
+            <StrengthProgressChart userId={program?.user_id || dataStatus.screening?.userId || ''} />
+
+            {/* Pannello Progressi Scientifici - Singolo Esercizio */}
+            <ScientificProgressPanel
+              userId={program?.user_id || dataStatus.screening?.userId || ''}
+              userWeight={dataStatus.screening?.weight || 75}
+              userGender={dataStatus.screening?.gender === 'female' ? 'F' : 'M'}
+            />
+
+            {/* Tutti i Personal Records - Vista Riassuntiva */}
+            <AllTimePersonalRecords userId={program?.user_id || dataStatus.screening?.userId || ''} />
           </div>
         )}
 

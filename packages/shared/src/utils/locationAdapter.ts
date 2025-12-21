@@ -64,51 +64,87 @@ const PATTERN_VARIANTS: Record<string, ExerciseVariant[]> = {
 
 /**
  * Mappa inversa: macchina -> bodyweight
+ * Include alias italiani per supporto i18n
  */
 const BODYWEIGHT_ALTERNATIVES: Record<string, string> = {
-  'leg press': 'Bodyweight Squat',
-  'leg curl machine': 'Nordic Hamstring Curl',
-  'leg curl (machine)': 'Nordic Hamstring Curl',
-  'hip thrust machine': 'Glute Bridge',
-  'chest press machine': 'Standard Push-up',
+  // English keys
+  'leg press': 'Squat a Corpo Libero',
+  'leg curl machine': 'Nordic Curl',
+  'leg curl (machine)': 'Nordic Curl',
+  'hip thrust machine': 'Ponte Glutei',
+  'chest press machine': 'Piegamenti',
   'shoulder press machine': 'Pike Push-up',
-  'lat pulldown machine': 'Standard Pull-up',
-  'lat pulldown (machine)': 'Standard Pull-up',
-  'assisted pull-up': 'Negative Pull-up',
-  'seated cable row': 'Inverted Row',
-  'seated row machine': 'Inverted Row',
+  'lat pulldown machine': 'Trazioni alla Sbarra',
+  'lat pulldown (machine)': 'Trazioni alla Sbarra',
+  'assisted pull-up': 'Trazioni Negative',
+  'seated cable row': 'Superman Row',
+  'seated row machine': 'Superman Row',
   'ab crunch machine': 'Plank',
   'cable crunch': 'Plank',
-  'back squat': 'Bodyweight Squat',
-  'front squat': 'Bodyweight Squat',
-  'goblet squat': 'Bodyweight Squat',
-  'conventional deadlift': 'Bodyweight Hip Hinge',
-  'romanian deadlift (rdl)': 'Bodyweight Hip Hinge',
-  'sumo deadlift': 'Bodyweight Hip Hinge',
-  'trap bar deadlift': 'Bodyweight Hip Hinge',
-  'flat barbell bench press': 'Standard Push-up',
-  'incline bench press': 'Decline Push-up',
-  'decline bench press': 'Standard Push-up',
-  'dumbbell bench press': 'Standard Push-up',
+  'back squat': 'Squat a Corpo Libero',
+  'front squat': 'Squat a Corpo Libero',
+  'goblet squat': 'Squat a Corpo Libero',
+  'conventional deadlift': 'Hip Hinge a Corpo Libero',
+  'romanian deadlift (rdl)': 'Hip Hinge a Corpo Libero',
+  'sumo deadlift': 'Hip Hinge a Corpo Libero',
+  'trap bar deadlift': 'Hip Hinge a Corpo Libero',
+  'flat barbell bench press': 'Piegamenti',
+  'incline bench press': 'Piegamenti Declinati',
+  'decline bench press': 'Piegamenti',
+  'dumbbell bench press': 'Piegamenti',
   'military press (barbell)': 'Pike Push-up',
   'dumbbell shoulder press': 'Pike Push-up',
   'arnold press': 'Pike Push-up',
   'push press': 'Pike Push-up',
-  'barbell row': 'Inverted Row',
-  'dumbbell row': 'Inverted Row',
-  't-bar row': 'Inverted Row',
-  'tricep pushdown': 'Diamond Push-up',
-  'skull crushers': 'Diamond Push-up',
-  'barbell curl': 'Chin-up (Supinated)',
-  'hammer curl': 'Neutral Grip Pull-up',
-  'seated calf raise': 'Standing Calf Raise',
-  'pallof press': 'Side Plank'
+  'barbell row': 'Superman Row',
+  'dumbbell row': 'Superman Row',
+  't-bar row': 'Superman Row',
+  'tricep pushdown': 'Piegamenti Diamante',
+  'skull crushers': 'Piegamenti Diamante',
+  'barbell curl': 'Chin-up (Supinato)',
+  'hammer curl': 'Trazioni Presa Neutra',
+  'seated calf raise': 'Calf Raise in Piedi',
+  'pallof press': 'Plank Laterale',
+  // Italian keys (alias)
+  'pressa': 'Squat a Corpo Libero',
+  'leg curl': 'Nordic Curl',
+  'chest press': 'Piegamenti',
+  'lat machine': 'Trazioni alla Sbarra',
+  'lat pulldown': 'Trazioni alla Sbarra',
+  'pulley basso': 'Superman Row',
+  'pulley': 'Superman Row',
+  'crunch ai cavi': 'Plank',
+  'squat con bilanciere': 'Squat a Corpo Libero',
+  'squat frontale': 'Squat a Corpo Libero',
+  // 'goblet squat' già definito sopra (riga 86)
+  'stacco da terra': 'Hip Hinge a Corpo Libero',
+  'stacco rumeno': 'Hip Hinge a Corpo Libero',
+  'stacco sumo': 'Hip Hinge a Corpo Libero',
+  'stacco con trap bar': 'Hip Hinge a Corpo Libero',
+  'panca piana': 'Piegamenti',
+  'panca piana con bilanciere': 'Piegamenti',
+  'panca inclinata': 'Piegamenti Declinati',
+  'panca declinata': 'Piegamenti',
+  'panca con manubri': 'Piegamenti',
+  'lento avanti': 'Pike Push-up',
+  'shoulder press': 'Pike Push-up',
+  'shoulder press con manubri': 'Pike Push-up',
+  'rematore con bilanciere': 'Superman Row',
+  'rematore con manubrio': 'Superman Row',
+  'rematore': 'Superman Row',
+  'pushdown ai cavi': 'Piegamenti Diamante',
+  'french press': 'Piegamenti Diamante',
+  'curl con bilanciere': 'Chin-up (Supinato)',
+  'curl a martello': 'Trazioni Presa Neutra',
+  'calf raise seduto': 'Calf Raise in Piedi'
+  // 'pallof press' già definito sopra (riga 107)
 };
 
 /**
- * Esercizi che richiedono sbarra
+ * Esercizi che richiedono sbarra (English + Italian)
  */
 const PULLUP_BAR_EXERCISES = [
+  // English
   'standard pull-up',
   'pull-up',
   'wide grip pull-up',
@@ -116,21 +152,39 @@ const PULLUP_BAR_EXERCISES = [
   'chin-up (supinated)',
   'neutral grip pull-up',
   'negative pull-up',
-  'hanging leg raise'
+  'hanging leg raise',
+  // Italian
+  'trazioni alla sbarra',
+  'trazioni',
+  'trazioni presa larga',
+  'chin-up',
+  'chin-up (supinato)',
+  'trazioni presa neutra',
+  'trazioni negative',
+  'alzate gambe alla sbarra'
 ];
 
 /**
- * Alternative senza sbarra
+ * Alternative senza sbarra (English + Italian)
  */
 const NO_PULLUP_BAR_ALTERNATIVES: Record<string, string> = {
-  'standard pull-up': 'Inverted Row',
-  'pull-up': 'Inverted Row',
-  'wide grip pull-up': 'Inverted Row',
-  'chin-up': 'Inverted Row',
-  'chin-up (supinated)': 'Inverted Row',
-  'neutral grip pull-up': 'Inverted Row',
-  'negative pull-up': 'Inverted Row',
-  'hanging leg raise': 'Lying Leg Raise'
+  // English
+  'standard pull-up': 'Superman Row',
+  'pull-up': 'Superman Row',
+  'wide grip pull-up': 'Prone Y-raise',
+  'chin-up': 'Superman Row',
+  'chin-up (supinated)': 'Superman Row',
+  'neutral grip pull-up': 'Superman Row',
+  'negative pull-up': 'Prone Y-raise',
+  'hanging leg raise': 'Alzate Gambe a Terra',
+  // Italian
+  'trazioni alla sbarra': 'Superman Row',
+  'trazioni': 'Superman Row',
+  'trazioni presa larga': 'Prone Y-raise',
+  'chin-up (supinato)': 'Superman Row',
+  'trazioni presa neutra': 'Superman Row',
+  'trazioni negative': 'Prone Y-raise',
+  'alzate gambe alla sbarra': 'Alzate Gambe a Terra'
 };
 
 /**
@@ -200,24 +254,25 @@ const RELATIVE_STRENGTH_ALTERNATIVES: Record<string, { minRatio: number; exercis
     { minRatio: 0, exercise: 'Wall Shoulder Tap', notes: 'Principiante' }
   ],
   // VERTICAL PULL - Basato su lat pulldown/weighted pull-up come riferimento
-  // Chi fa lat pulldown pesante dovrebbe fare varianti pull-up avanzate
+  // NOTA: Senza sbarra, usiamo esercizi a terra per la schiena
   'vertical_pull': [
-    { minRatio: 1.2, exercise: 'Archer Pull-up', notes: 'Elite - 1.2x+ BW lat pulldown' },
-    { minRatio: 1.0, exercise: 'L-Sit Pull-up', notes: 'Avanzato - 1x BW' },
-    { minRatio: 0.75, exercise: 'Pull-up', notes: 'Intermedio - 0.75x BW' },
-    { minRatio: 0.5, exercise: 'Chin-up', notes: 'Intermedio base - 0.5x BW' },
-    { minRatio: 0.25, exercise: 'Australian Pull-up (Feet Elevated)', notes: 'Base - 0.25x BW' },
-    { minRatio: 0, exercise: 'Australian Pull-up', notes: 'Principiante' }
+    { minRatio: 1.2, exercise: 'Prone Y-T-W Raise', notes: 'Elite - combinazione completa' },
+    { minRatio: 1.0, exercise: 'Superman Hold + Row', notes: 'Avanzato - isometrico + dinamico' },
+    { minRatio: 0.75, exercise: 'Prone Y-raise Tempo', notes: 'Intermedio - tempo 3-1-3' },
+    { minRatio: 0.5, exercise: 'Superman Row', notes: 'Intermedio base' },
+    { minRatio: 0.25, exercise: 'Prone Y-raise', notes: 'Base' },
+    { minRatio: 0, exercise: 'Prone I-raise', notes: 'Principiante' }
   ],
   // HORIZONTAL PULL (row come riferimento - bent over row/cable row)
+  // NOTA: Senza attrezzatura, progressione basata su varianti prone/superman
   'horizontal_pull': [
-    { minRatio: 1.2, exercise: 'Front Lever Row', notes: 'Elite - 1.2x+ BW row' },
-    { minRatio: 1.0, exercise: 'Archer Row', notes: 'Molto avanzato - 1x+ BW row' },
-    { minRatio: 0.85, exercise: 'One-Arm Inverted Row', notes: 'Avanzato - 0.85x BW' },
-    { minRatio: 0.7, exercise: 'Inverted Row (Feet Elevated)', notes: 'Intermedio-avanzato - 0.7x BW' },
-    { minRatio: 0.5, exercise: 'Inverted Row', notes: 'Intermedio - 0.5x BW' },
-    { minRatio: 0.3, exercise: 'Inverted Row (Knee Bent)', notes: 'Base - 0.3x BW' },
-    { minRatio: 0, exercise: 'Band Row', notes: 'Principiante' }
+    { minRatio: 1.2, exercise: 'Prone Y-T-W Raise', notes: 'Elite - combinazione completa' },
+    { minRatio: 1.0, exercise: 'Superman Hold + Row', notes: 'Molto avanzato - isometrico' },
+    { minRatio: 0.85, exercise: 'Superman Row Tempo', notes: 'Avanzato - tempo 3-1-3' },
+    { minRatio: 0.7, exercise: 'Superman Row', notes: 'Intermedio-avanzato' },
+    { minRatio: 0.5, exercise: 'Prone Y-raise', notes: 'Intermedio' },
+    { minRatio: 0.3, exercise: 'Prone I-raise', notes: 'Base' },
+    { minRatio: 0, exercise: 'Reverse Snow Angel', notes: 'Principiante' }
   ]
 };
 

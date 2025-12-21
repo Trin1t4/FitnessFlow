@@ -44,7 +44,8 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
     rings: data.equipment?.rings || false,
     parallelBars: data.equipment?.parallelBars || false,
     rack: (data.equipment as any)?.rack || false,
-    cables: (data.equipment as any)?.cables || false
+    cables: (data.equipment as any)?.cables || false,
+    sturdyTable: (data.equipment as any)?.sturdyTable || false
   });
 
   const toggleEquipment = (key: string) => {
@@ -166,6 +167,71 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
               <p className="text-xs text-slate-400 mt-1">{t('onboarding.location.smallEquipmentDesc')}</p>
             </button>
           </div>
+
+          {/* Opzioni bodyweight - cosa hai a casa */}
+          {trainingType === 'bodyweight' && (
+            <div className="mt-4 p-4 bg-slate-800/50 rounded-lg border border-slate-600">
+              <p className="text-sm text-white font-medium mb-3">Cosa hai a disposizione?</p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => toggleEquipment('pullupBar')}
+                  className={`w-full p-3 rounded-lg border text-left flex items-center gap-3 ${
+                    equipment.pullupBar
+                      ? 'border-emerald-500 bg-emerald-500/10'
+                      : 'border-slate-600 hover:border-slate-500'
+                  }`}
+                >
+                  {equipment.pullupBar ? (
+                    <CheckCircle className="w-5 h-5 text-emerald-400" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-slate-500" />
+                  )}
+                  <div>
+                    <p className="text-white text-sm font-medium">Barra per trazioni</p>
+                    <p className="text-xs text-slate-400">Da porta o fissa</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => toggleEquipment('sturdyTable')}
+                  className={`w-full p-3 rounded-lg border text-left flex items-center gap-3 ${
+                    (equipment as any).sturdyTable
+                      ? 'border-emerald-500 bg-emerald-500/10'
+                      : 'border-slate-600 hover:border-slate-500'
+                  }`}
+                >
+                  {(equipment as any).sturdyTable ? (
+                    <CheckCircle className="w-5 h-5 text-emerald-400" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-slate-500" />
+                  )}
+                  <div>
+                    <p className="text-white text-sm font-medium">Tavolo robusto</p>
+                    <p className="text-xs text-slate-400">Per Inverted Row e simili</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => toggleEquipment('loopBands')}
+                  className={`w-full p-3 rounded-lg border text-left flex items-center gap-3 ${
+                    equipment.loopBands
+                      ? 'border-emerald-500 bg-emerald-500/10'
+                      : 'border-slate-600 hover:border-slate-500'
+                  }`}
+                >
+                  {equipment.loopBands ? (
+                    <CheckCircle className="w-5 h-5 text-emerald-400" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-slate-500" />
+                  )}
+                  <div>
+                    <p className="text-white text-sm font-medium">Elastici / Bande</p>
+                    <p className="text-xs text-slate-400">Loop bands o resistance bands</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -117,6 +117,881 @@ export const LEVEL_CONFIG = {
 };
 
 // ============================================================================
+// SUPERSET CONFIGURATION
+// ============================================================================
+
+/**
+ * Coppie di gruppi muscolari antagonisti per superset
+ * Usate per: fat loss, toning, poco tempo disponibile
+ */
+export const ANTAGONIST_SUPERSET_PAIRS: Record<string, string> = {
+  // Upper body antagonisti
+  'chest': 'back',
+  'back': 'chest',
+  'biceps': 'triceps',
+  'triceps': 'biceps',
+  'front_delt': 'rear_delt',
+  'rear_delt': 'front_delt',
+  // Lower body antagonisti
+  'quadriceps': 'hamstrings',
+  'hamstrings': 'quadriceps',
+  'hip_flexors': 'glutes',
+  'glutes': 'hip_flexors',
+};
+
+/**
+ * Coppie pre-exhaustion per superset (isolamento → compound)
+ * Usate per: ipertrofia con focus specifico
+ */
+export const PRE_EXHAUSTION_PAIRS: Record<string, { isolation: string[], compound: string[] }> = {
+  'chest': {
+    isolation: ['Croci ai Cavi', 'Pec Deck', 'Croci con Manubri', 'Croci Inclinato'],
+    compound: ['Panca Piana', 'Panca Inclinata', 'Panca con Manubri', 'Piegamenti']
+  },
+  'back': {
+    isolation: ['Pulldown a Braccia Tese', 'Pullover', 'Croci Inverse'],
+    compound: ['Trazioni', 'Lat Machine', 'Rematore con Bilanciere', 'Pulley Basso']
+  },
+  'quadriceps': {
+    isolation: ['Leg Extension', 'Sissy Squat'],
+    compound: ['Squat', 'Pressa', 'Hack Squat', 'Affondi Bulgari']
+  },
+  'hamstrings': {
+    isolation: ['Leg Curl', 'Nordic Curl'],
+    compound: ['Stacco Rumeno', 'Stacco a Gambe Tese', 'Good Morning']
+  },
+  'shoulders': {
+    isolation: ['Alzate Laterali', 'Alzate Frontali', 'Croci Inverse'],
+    compound: ['Lento Avanti', 'Military Press', 'Arnold Press', 'Pike Push-up']
+  },
+  'glutes': {
+    isolation: ['Slanci Glutei', 'Abduzioni Anca', 'Clamshell'],
+    compound: ['Hip Thrust', 'Ponte Glutei', 'Stacco Sumo', 'Step Up']
+  },
+  'biceps': {
+    isolation: ['Curl Concentrato', 'Curl alla Panca Scott'],
+    compound: ['Trazioni Supine', 'Rematore Supino', 'Curl con Bilanciere EZ']
+  },
+  'triceps': {
+    isolation: ['Kickback Tricipiti', 'French Press'],
+    compound: ['Panca Presa Stretta', 'Dip alle Parallele', 'Piegamenti Diamante']
+  }
+};
+
+/**
+ * Post-exhaustion pairs (compound → isolation)
+ * Stesso mapping ma invertito nell'uso
+ */
+export const POST_EXHAUSTION_PAIRS = PRE_EXHAUSTION_PAIRS;
+
+/**
+ * Determina se usare superset in base a goal, livello, tempo e focus
+ */
+export function shouldUseSupersets(
+  goal: string,
+  level: string,
+  sessionDuration?: number,
+  muscularFocus?: string | string[]
+): { use: boolean; type: 'antagonist' | 'pre_exhaustion' | 'post_exhaustion' | 'none'; reason: string } {
+  // Principianti: MAI superset
+  if (level === 'beginner') {
+    return { use: false, type: 'none', reason: 'Principiante - focus su tecnica base' };
+  }
+
+  const normalizedGoal = goal.toLowerCase();
+  const hasFocus = muscularFocus && (Array.isArray(muscularFocus) ? muscularFocus.length > 0 : muscularFocus !== '');
+  const hasLimitedTime = sessionDuration && sessionDuration <= 45;
+
+  // Fat loss / Toning: superset antagonisti per efficienza metabolica
+  if (['fat_loss', 'dimagrimento', 'toning', 'tonificazione'].includes(normalizedGoal)) {
+    return { use: true, type: 'antagonist', reason: 'Fat loss/Toning - superset antagonisti per efficienza metabolica' };
+  }
+
+  // Poco tempo: superset antagonisti per risparmiare tempo
+  if (hasLimitedTime) {
+    return { use: true, type: 'antagonist', reason: 'Sessione breve - superset antagonisti per ottimizzare tempo' };
+  }
+
+  // Ipertrofia con focus specifico: pre/post exhaustion stesso gruppo
+  if (['muscle_gain', 'massa', 'ipertrofia', 'hypertrophy'].includes(normalizedGoal) && hasFocus) {
+    // Alterna tra pre e post exhaustion
+    const usePreExhaustion = Math.random() > 0.5;
+    return {
+      use: true,
+      type: usePreExhaustion ? 'pre_exhaustion' : 'post_exhaustion',
+      reason: `Ipertrofia con focus - ${usePreExhaustion ? 'pre' : 'post'}-exhaustion per massimizzare volume`
+    };
+  }
+
+  // Ipertrofia senza focus: superset antagonisti per volume generale
+  if (['muscle_gain', 'massa', 'ipertrofia', 'hypertrophy'].includes(normalizedGoal)) {
+    return { use: true, type: 'antagonist', reason: 'Ipertrofia generale - superset antagonisti per volume' };
+  }
+
+  // Forza: NO superset (serve recupero completo)
+  if (['strength', 'forza'].includes(normalizedGoal)) {
+    return { use: false, type: 'none', reason: 'Forza - recupero completo necessario' };
+  }
+
+  return { use: false, type: 'none', reason: 'Default - nessun superset' };
+}
+
+/**
+ * Trova il pattern antagonista per un dato pattern
+ */
+function getAntagonistPattern(pattern: string): string | null {
+  const patternLower = pattern.toLowerCase();
+
+  // Mapping pattern → gruppo muscolare
+  const patternToMuscle: Record<string, string> = {
+    'horizontal_push': 'chest',
+    'horizontal_pull': 'back',
+    'vertical_push': 'shoulders',
+    'vertical_pull': 'back',
+    'hip_hinge': 'hamstrings',
+    'squat': 'quadriceps',
+    'lunge': 'quadriceps',
+    'biceps': 'biceps',
+    'triceps': 'triceps',
+    'chest': 'chest',
+    'back': 'back',
+  };
+
+  const muscle = patternToMuscle[patternLower];
+  if (!muscle) return null;
+
+  const antagonist = ANTAGONIST_SUPERSET_PAIRS[muscle];
+  if (!antagonist) return null;
+
+  // Mapping gruppo muscolare → pattern
+  const muscleToPattern: Record<string, string> = {
+    'chest': 'horizontal_push',
+    'back': 'horizontal_pull',
+    'biceps': 'biceps',
+    'triceps': 'triceps',
+    'quadriceps': 'squat',
+    'hamstrings': 'hip_hinge',
+    'shoulders': 'vertical_push',
+    'glutes': 'hip_hinge',
+  };
+
+  return muscleToPattern[antagonist] || null;
+}
+
+/**
+ * Applica supersetGroup agli esercizi in base alla configurazione
+ */
+export function applySupersetGroups(
+  exercises: any[],
+  supersetConfig: { use: boolean; type: 'antagonist' | 'pre_exhaustion' | 'post_exhaustion' | 'none'; reason: string },
+  muscularFocus?: string | string[]
+): any[] {
+  if (!supersetConfig.use || supersetConfig.type === 'none') {
+    return exercises;
+  }
+
+  const result = [...exercises];
+  let supersetGroupId = 1;
+
+  if (supersetConfig.type === 'antagonist') {
+    // Trova coppie antagoniste tra gli esercizi
+    const paired = new Set<number>();
+
+    for (let i = 0; i < result.length; i++) {
+      if (paired.has(i)) continue;
+
+      const exercise = result[i];
+      const antagonistPattern = getAntagonistPattern(exercise.pattern || '');
+
+      if (!antagonistPattern) continue;
+
+      // Cerca un esercizio con pattern antagonista non ancora accoppiato
+      for (let j = i + 1; j < result.length; j++) {
+        if (paired.has(j)) continue;
+
+        const candidate = result[j];
+        if (candidate.pattern?.toLowerCase().includes(antagonistPattern) ||
+            antagonistPattern.includes(candidate.pattern?.toLowerCase())) {
+          // Trovata coppia antagonista
+          result[i] = { ...result[i], supersetGroup: supersetGroupId };
+          result[j] = { ...result[j], supersetGroup: supersetGroupId };
+          paired.add(i);
+          paired.add(j);
+          supersetGroupId++;
+          break;
+        }
+      }
+    }
+  } else if (supersetConfig.type === 'pre_exhaustion' || supersetConfig.type === 'post_exhaustion') {
+    // Focus su gruppo specifico con pre/post exhaustion
+    const focusGroups = Array.isArray(muscularFocus) ? muscularFocus : [muscularFocus];
+
+    for (const focus of focusGroups) {
+      if (!focus) continue;
+
+      const focusLower = focus.toLowerCase();
+      const pairs = PRE_EXHAUSTION_PAIRS[focusLower];
+      if (!pairs) continue;
+
+      // Trova esercizi del focus group
+      const focusExercises = result.filter(ex =>
+        ex.pattern?.toLowerCase().includes(focusLower) ||
+        ex.name?.toLowerCase().includes(focusLower)
+      );
+
+      // Trova isolation e compound
+      let isolationIdx = -1;
+      let compoundIdx = -1;
+
+      for (let i = 0; i < result.length; i++) {
+        const exName = result[i].name?.toLowerCase() || '';
+
+        if (isolationIdx === -1 && pairs.isolation.some(iso => exName.includes(iso.toLowerCase()))) {
+          isolationIdx = i;
+        }
+        if (compoundIdx === -1 && pairs.compound.some(comp => exName.includes(comp.toLowerCase()))) {
+          compoundIdx = i;
+        }
+      }
+
+      if (isolationIdx !== -1 && compoundIdx !== -1) {
+        if (supersetConfig.type === 'pre_exhaustion') {
+          // Isolation prima del compound
+          result[isolationIdx] = { ...result[isolationIdx], supersetGroup: supersetGroupId };
+          result[compoundIdx] = { ...result[compoundIdx], supersetGroup: supersetGroupId };
+        } else {
+          // Compound prima dell'isolation (post-exhaustion)
+          result[compoundIdx] = { ...result[compoundIdx], supersetGroup: supersetGroupId };
+          result[isolationIdx] = { ...result[isolationIdx], supersetGroup: supersetGroupId };
+        }
+        supersetGroupId++;
+      }
+    }
+  }
+
+  return result;
+}
+
+// ============================================================================
+// ADVANCED TRAINING TECHNIQUES
+// ============================================================================
+
+/**
+ * Configurazione tecniche avanzate di intensificazione
+ */
+export const INTENSIFICATION_TECHNIQUES = {
+  // Drop Sets - riduzione carico senza pausa
+  drop_set: {
+    name: 'Drop Set',
+    description: 'Riduzione carico 20-30% senza pausa, continua fino a cedimento',
+    applicableTo: ['isolation', 'machine'], // Più sicuro su isolamento/macchine
+    minLevel: 'intermediate',
+    goals: ['muscle_gain', 'massa', 'ipertrofia', 'hypertrophy'],
+    notation: 'DS',
+    implementation: { drops: 2, reductionPercent: 25 }
+  },
+
+  // Myo-Reps - serie attivazione + mini-set
+  myo_reps: {
+    name: 'Myo-Reps',
+    description: 'Serie attivazione 12-15 reps, poi 3-5 mini-set da 3-5 reps con 5-10sec pausa',
+    applicableTo: ['isolation', 'accessory'],
+    minLevel: 'intermediate',
+    goals: ['muscle_gain', 'massa', 'ipertrofia', 'hypertrophy'],
+    notation: 'MR',
+    implementation: { activationReps: '12-15', miniSets: 4, miniReps: '3-5', restBetween: 10 }
+  },
+
+  // Rest-Pause - pausa breve, altre reps
+  rest_pause: {
+    name: 'Rest-Pause',
+    description: 'Serie a cedimento, 10-15sec pausa, altre reps a cedimento x2-3',
+    applicableTo: ['compound', 'isolation'],
+    minLevel: 'intermediate',
+    goals: ['muscle_gain', 'massa', 'ipertrofia', 'strength', 'forza'],
+    notation: 'RP',
+    implementation: { pauseSeconds: 12, additionalSets: 2 }
+  },
+
+  // Cluster Sets - mini-pause intra-set
+  cluster_set: {
+    name: 'Cluster Set',
+    description: 'Set suddiviso in mini-cluster con 10-15sec pausa (es: 2+2+2 invece di 6)',
+    applicableTo: ['compound'],
+    minLevel: 'advanced',
+    goals: ['strength', 'forza'],
+    notation: 'CL',
+    implementation: { repsPerCluster: 2, clusters: 3, restBetweenClusters: 12 }
+  },
+
+  // Mechanical Drop Set - cambio angolo
+  mechanical_drop_set: {
+    name: 'Mechanical Drop Set',
+    description: 'Cambio angolo/variante per continuare senza ridurre peso',
+    applicableTo: ['compound', 'isolation'],
+    minLevel: 'intermediate',
+    goals: ['muscle_gain', 'massa', 'ipertrofia'],
+    notation: 'MDS',
+    sequences: {
+      'chest': ['Panca Inclinata', 'Panca Piana', 'Panca Declinata'],
+      'shoulders': ['Lento Avanti', 'Panca Inclinata', 'Alzate Laterali'],
+      'back': ['Trazioni Larghe', 'Trazioni Neutre', 'Trazioni Strette'],
+      'biceps': ['Curl Inclinato', 'Curl in Piedi', 'Curl alla Panca Scott'],
+      'triceps': ['Estensioni Sopra la Testa', 'Pushdown', 'Panca Presa Stretta']
+    }
+  }
+};
+
+/**
+ * Configurazione tecniche Time Under Tension (TUT)
+ */
+export const TUT_TECHNIQUES = {
+  // Tempo Training - velocità controllata
+  tempo: {
+    name: 'Tempo Training',
+    description: 'Controllo velocità eccentrica/concentrica/pause',
+    patterns: {
+      hypertrophy: '3-1-2-0', // 3sec ecc, 1sec pause, 2sec conc, 0 pause top
+      strength: '2-1-X-0',    // 2sec ecc, 1sec pause, esplosivo, 0 pause
+      control: '4-2-2-1',     // massimo controllo
+      eccentric: '5-1-1-0'    // focus eccentrica
+    },
+    minLevel: 'beginner', // Tutti possono usare tempo
+    goals: ['all']
+  },
+
+  // Eccentric Focus - negative lente
+  eccentric_focus: {
+    name: 'Eccentric Focus',
+    description: 'Fase eccentrica 4-6 secondi per massimo danno muscolare',
+    tempo: '5-1-1-0',
+    minLevel: 'intermediate',
+    goals: ['muscle_gain', 'massa', 'ipertrofia', 'strength', 'forza'],
+    notation: 'ECC',
+    eccentricSeconds: 5
+  },
+
+  // Pause Reps - pausa nel punto difficile
+  pause_reps: {
+    name: 'Pause Reps',
+    description: '2-3 sec pausa nel punto più difficile (elimina stretch reflex)',
+    pausePosition: 'bottom', // o 'mid' per alcuni esercizi
+    pauseSeconds: 3,
+    minLevel: 'intermediate',
+    goals: ['strength', 'forza', 'muscle_gain'],
+    notation: 'PR'
+  },
+
+  // 1.5 Reps - rep completa + mezza
+  one_and_half_reps: {
+    name: '1.5 Reps',
+    description: 'Rep completa + mezza rep nel range più difficile',
+    minLevel: 'intermediate',
+    goals: ['muscle_gain', 'massa', 'ipertrofia'],
+    notation: '1.5',
+    countsAs: 1 // Ogni 1.5 rep conta come 1 rep per il volume
+  },
+
+  // Isometric Holds
+  isometric_hold: {
+    name: 'Isometric Hold',
+    description: 'Pausa isometrica 3-5 sec nel punto di massima contrazione',
+    holdPosition: 'peak_contraction',
+    holdSeconds: 4,
+    minLevel: 'beginner',
+    goals: ['muscle_gain', 'toning', 'rehabilitation'],
+    notation: 'ISO'
+  }
+};
+
+/**
+ * Configurazione Giant Sets e Tri-sets
+ */
+export const MULTI_EXERCISE_SETS = {
+  // Giant Set - 4+ esercizi
+  giant_set: {
+    name: 'Giant Set',
+    description: '4+ esercizi di fila senza pausa per stesso gruppo o full body',
+    minExercises: 4,
+    maxExercises: 6,
+    restBetweenExercises: 0,
+    restBetweenRounds: 90,
+    minLevel: 'intermediate',
+    goals: ['fat_loss', 'dimagrimento', 'toning', 'conditioning'],
+    notation: 'GS'
+  },
+
+  // Tri-set stesso gruppo
+  tri_set_same_muscle: {
+    name: 'Tri-Set (Stesso Muscolo)',
+    description: '3 esercizi stesso muscolo, angoli diversi',
+    exercises: 3,
+    restBetweenExercises: 0,
+    restBetweenRounds: 120,
+    minLevel: 'intermediate',
+    goals: ['muscle_gain', 'massa', 'ipertrofia'],
+    notation: 'TS',
+    patterns: {
+      'chest': ['Panca Inclinata', 'Panca Piana', 'Croci ai Cavi'],
+      'back': ['Trazioni', 'Rematore', 'Pullover'],
+      'shoulders': ['Lento Avanti', 'Alzate Laterali', 'Alzate Posteriori'],
+      'quadriceps': ['Squat', 'Pressa', 'Leg Extension'],
+      'hamstrings': ['Stacco Rumeno', 'Leg Curl', 'Good Morning'],
+      'biceps': ['Curl Bilanciere', 'Curl Inclinato', 'Curl Concentrato'],
+      'triceps': ['Panca Presa Stretta', 'Pushdown', 'Estensioni Sopra la Testa']
+    }
+  },
+
+  // Superset Agonisti - 2 esercizi stesso muscolo
+  agonist_superset: {
+    name: 'Agonist Superset',
+    description: '2 esercizi stesso muscolo per massimo pump',
+    exercises: 2,
+    restBetweenExercises: 0,
+    restBetweenRounds: 90,
+    minLevel: 'intermediate',
+    goals: ['muscle_gain', 'massa', 'ipertrofia'],
+    notation: 'AS'
+  }
+};
+
+/**
+ * Configurazione Contrast Training (per performance/sport)
+ */
+export const CONTRAST_TRAINING = {
+  name: 'Allenamento a Contrasto',
+  description: 'Esercizio pesante seguito da esplosivo (PAP - Post-Activation Potentiation)',
+  minLevel: 'intermediate',
+  goals: ['performance', 'sport', 'power'],
+  pairs: {
+    'squat': { heavy: 'Squat con Bilanciere', explosive: 'Squat Jump' },
+    'deadlift': { heavy: 'Stacco Trap Bar', explosive: 'Salto in Lungo' },
+    'bench': { heavy: 'Panca Piana', explosive: 'Piegamenti Esplosivi' },
+    'pull': { heavy: 'Trazioni Zavorrate', explosive: 'Lancio Palla Medica' },
+    'lunge': { heavy: 'Affondi Camminati', explosive: 'Split Jump' }
+  },
+  protocol: {
+    heavySets: 3,
+    heavyReps: '3-5',
+    heavyRest: 30, // Prima dell'esplosivo
+    explosiveSets: 3,
+    explosiveReps: '5-8',
+    explosiveRest: 180 // Prima del prossimo round
+  }
+};
+
+/**
+ * Configurazione Finisher Metabolici
+ */
+export const METABOLIC_FINISHERS = {
+  // AMRAP - As Many Reps/Rounds As Possible
+  amrap: {
+    name: 'AMRAP',
+    description: 'Quante più reps/round possibili in tempo limite',
+    duration: { min: 5, max: 12 },
+    minLevel: 'beginner',
+    goals: ['fat_loss', 'conditioning', 'toning'],
+    notation: 'AMRAP',
+    exercises: ['Burpees', 'Scalatori', 'Squat Jump', 'Piegamenti', 'Swing con Kettlebell']
+  },
+
+  // EMOM - Every Minute On the Minute
+  emom: {
+    name: 'EMOM',
+    description: 'Esercizio ogni minuto, riposo = tempo rimanente',
+    duration: { min: 8, max: 15 },
+    minLevel: 'beginner',
+    goals: ['fat_loss', 'conditioning', 'toning', 'strength'],
+    notation: 'EMOM',
+    repsPerMinute: '8-12'
+  },
+
+  // Tabata
+  tabata: {
+    name: 'Tabata',
+    description: '20sec lavoro, 10sec riposo x 8 round',
+    rounds: 8,
+    workSeconds: 20,
+    restSeconds: 10,
+    minLevel: 'intermediate',
+    goals: ['fat_loss', 'conditioning'],
+    notation: 'TAB'
+  },
+
+  // Ladder
+  ladder: {
+    name: 'Ladder',
+    description: 'Reps crescenti o decrescenti (1-2-3-4-5-4-3-2-1)',
+    minLevel: 'beginner',
+    goals: ['fat_loss', 'conditioning', 'muscle_gain'],
+    notation: 'LAD',
+    patterns: {
+      ascending: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      descending: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+      pyramid: [1, 2, 3, 4, 5, 5, 4, 3, 2, 1]
+    }
+  }
+};
+
+/**
+ * Configurazione Warm-up Dinamico Specifico
+ */
+export const DYNAMIC_WARMUP = {
+  patterns: {
+    // Warm-up per pattern di movimento
+    'squat': {
+      exercises: ['Cerchi delle Anche', 'Slanci Gambe', 'Squat a Corpo Libero', 'Goblet Squat Isometrico'],
+      duration: 5,
+      sets: 1,
+      reps: '10-15'
+    },
+    'hip_hinge': {
+      exercises: ['Hip Hinge', 'Good Morning Leggero', 'Stacco con Bastone', 'Ponte Glutei'],
+      duration: 5,
+      sets: 1,
+      reps: '10-15'
+    },
+    'horizontal_push': {
+      exercises: ['Cerchi Braccia', 'Aperture con Elastico', 'Piegamenti Plus', 'Piegamenti Inclinati'],
+      duration: 5,
+      sets: 1,
+      reps: '10-15'
+    },
+    'horizontal_pull': {
+      exercises: ['Cerchi Braccia', 'Aperture con Elastico', 'Retrazioni Scapolari', 'Face Pull Leggero'],
+      duration: 5,
+      sets: 1,
+      reps: '10-15'
+    },
+    'vertical_push': {
+      exercises: ['Cerchi Spalle', 'Wall Slides', 'Alzate Y-T-W', 'Pike Isometrico'],
+      duration: 5,
+      sets: 1,
+      reps: '10-15'
+    },
+    'vertical_pull': {
+      exercises: ['Sospensione Passiva', 'Trazioni Scapolari', 'Pulldown con Elastico', 'Sospensione Attiva'],
+      duration: 5,
+      sets: 1,
+      reps: '10-15'
+    }
+  },
+
+  // Warm-up generale per full body
+  general: {
+    exercises: ['Jumping Jacks', 'Corsa sul Posto', 'Cerchi Braccia', 'Cerchi Anche', 'Slanci Gambe', 'Rotazioni Busto'],
+    duration: 5,
+    sets: 1,
+    reps: '20-30'
+  }
+};
+
+/**
+ * Configurazione Active Recovery tra set
+ */
+export const ACTIVE_RECOVERY = {
+  enabled: true,
+  minRestForActivation: 90, // Usa active recovery solo se riposo >= 90sec
+  exercises: {
+    'upper': ['Aperture con Elastico', 'Face Pull Leggero', 'Cerchi Braccia', 'Rotazione Toracica'],
+    'lower': ['Cerchi Anca', 'Slanci Gambe', 'Cerchi Caviglie', 'Attivazione Glutei'],
+    'core': ['Dead Bug', 'Bird Dog', 'Plank Isometrico', 'Plank Laterale']
+  },
+  duration: 30, // secondi di active recovery
+  intensity: 'very_light'
+};
+
+/**
+ * Configurazione Deload Automatico
+ */
+export const AUTO_DELOAD = {
+  triggers: {
+    // Trigger basati su RPE trend
+    highRPETrend: {
+      threshold: 8.5, // RPE medio > 8.5
+      consecutiveSessions: 3, // Per 3+ sessioni
+      action: 'deload_week'
+    },
+    // Trigger basati su performance
+    performanceDecline: {
+      repsDeclinePercent: 15, // Calo reps > 15%
+      weightDeclinePercent: 10, // Calo peso > 10%
+      consecutiveSessions: 2,
+      action: 'deload_week'
+    },
+    // Trigger basati su recupero
+    poorRecovery: {
+      sorenessLevel: 7, // Dolore muscolare persistente > 7/10
+      sleepQualityThreshold: 5, // Qualità sonno < 5/10
+      consecutiveDays: 4,
+      action: 'light_session'
+    }
+  },
+  deloadProtocol: {
+    volumeReduction: 40, // -40% volume
+    intensityReduction: 10, // -10% intensità
+    durationWeeks: 1,
+    focusOn: ['technique', 'mobility', 'recovery']
+  }
+};
+
+/**
+ * Configurazione Progressione Adattiva
+ */
+export const ADAPTIVE_PROGRESSION = {
+  // Tipi di progressione
+  types: {
+    linear: {
+      description: 'Aumento costante ogni sessione',
+      weightIncrement: { upper: 1.25, lower: 2.5 }, // kg
+      repsIncrement: 1,
+      applicableTo: ['beginner', 'intermediate']
+    },
+    double_progression: {
+      description: 'Prima aumenta reps, poi peso quando raggiungi top range',
+      repsRange: { min: 8, max: 12 },
+      weightIncrementOnMax: { upper: 1.25, lower: 2.5 },
+      applicableTo: ['beginner', 'intermediate', 'advanced']
+    },
+    wave: {
+      description: 'Progressione a onde (3 settimane up, 1 deload)',
+      weeklyIntensityProgression: [85, 90, 95, 70], // % of working max
+      applicableTo: ['intermediate', 'advanced']
+    },
+    dup: {
+      description: 'Daily Undulating Periodization',
+      dailyVariation: {
+        day1: { reps: '3-5', intensity: 'heavy' },
+        day2: { reps: '8-12', intensity: 'moderate' },
+        day3: { reps: '12-15', intensity: 'light' }
+      },
+      applicableTo: ['intermediate', 'advanced']
+    },
+    autoregulated: {
+      description: 'Basato su RPE/RIR del giorno',
+      targetRPE: 8,
+      adjustmentPerRPEPoint: 2.5, // % peso
+      applicableTo: ['intermediate', 'advanced']
+    }
+  },
+
+  // Logica di selezione progressione
+  selectProgression: (level: string, goal: string, experience: number) => {
+    if (level === 'beginner') return 'linear';
+    if (goal === 'strength' || goal === 'forza') return 'wave';
+    if (goal === 'muscle_gain' || goal === 'ipertrofia') return 'double_progression';
+    if (experience > 24) return 'autoregulated'; // 24+ mesi
+    return 'double_progression';
+  }
+};
+
+/**
+ * Logica contestuale per tecniche
+ */
+export const CONTEXTUAL_LOGIC = {
+  // Palestra affollata - più superset per efficienza
+  crowdedGym: {
+    preferSupersets: true,
+    avoidMachineHogging: true,
+    preferBodyweight: true,
+    suggestOffPeakTimes: true
+  },
+
+  // Poca attrezzatura a casa
+  limitedEquipment: {
+    preferSameEquipmentSupersets: true, // Superset con stessa attrezzatura
+    useMoreBodyweight: true,
+    longerTUT: true, // Compensa carico basso con TUT alto
+    moreReps: true // Range reps più alto
+  },
+
+  // Poco tempo
+  timeLimited: {
+    useSupersets: true,
+    useGiantSets: true,
+    shorterRest: true,
+    prioritizeCompounds: true,
+    skipIsolation: true
+  }
+};
+
+/**
+ * Determina quali tecniche applicare in base al contesto
+ */
+export function selectTechniques(
+  goal: string,
+  level: string,
+  sessionDuration?: number,
+  muscularFocus?: string | string[],
+  equipment?: any,
+  context?: { crowded?: boolean; limitedEquipment?: boolean }
+): {
+  superset: ReturnType<typeof shouldUseSupersets>;
+  intensification: string[];
+  tut: string[];
+  finisher: string | null;
+  warmup: string[];
+  activeRecovery: boolean;
+  progression: string;
+} {
+  const superset = shouldUseSupersets(goal, level, sessionDuration, muscularFocus);
+
+  // Seleziona tecniche di intensificazione
+  const intensification: string[] = [];
+  if (level !== 'beginner') {
+    const goalLower = goal.toLowerCase();
+
+    if (['muscle_gain', 'massa', 'ipertrofia'].includes(goalLower)) {
+      intensification.push('drop_set', 'myo_reps');
+      if (level === 'advanced') intensification.push('rest_pause', 'mechanical_drop_set');
+    }
+    if (['strength', 'forza'].includes(goalLower) && level === 'advanced') {
+      intensification.push('cluster_set', 'rest_pause');
+    }
+  }
+
+  // Seleziona tecniche TUT
+  const tut: string[] = ['tempo']; // Tempo sempre disponibile
+  if (level !== 'beginner') {
+    const goalLower = goal.toLowerCase();
+    if (['muscle_gain', 'massa', 'ipertrofia'].includes(goalLower)) {
+      tut.push('eccentric_focus', 'one_and_half_reps', 'isometric_hold');
+    }
+    if (['strength', 'forza'].includes(goalLower)) {
+      tut.push('pause_reps', 'eccentric_focus');
+    }
+  }
+
+  // Seleziona finisher
+  let finisher: string | null = null;
+  const goalLower = goal.toLowerCase();
+  if (['fat_loss', 'dimagrimento', 'toning', 'conditioning'].includes(goalLower)) {
+    finisher = level === 'beginner' ? 'amrap' : (Math.random() > 0.5 ? 'tabata' : 'emom');
+  }
+
+  // Warm-up patterns basati sugli esercizi del giorno
+  const warmup = ['general']; // Sempre warm-up generale
+
+  // Active recovery se riposo lungo
+  const activeRecovery = level !== 'beginner' && (sessionDuration || 60) >= 45;
+
+  // Progressione
+  const progression = ADAPTIVE_PROGRESSION.selectProgression(level, goal, 12); // Default 12 mesi esperienza
+
+  return {
+    superset,
+    intensification,
+    tut,
+    finisher,
+    warmup,
+    activeRecovery,
+    progression
+  };
+}
+
+/**
+ * Genera warm-up dinamico basato sugli esercizi del giorno
+ */
+export function generateDynamicWarmup(exercises: any[]): any[] {
+  const patterns = new Set<string>();
+
+  // Estrai i pattern dagli esercizi
+  exercises.forEach(ex => {
+    if (ex.pattern) patterns.add(ex.pattern.toLowerCase());
+  });
+
+  const warmupExercises: any[] = [];
+
+  // Aggiungi warm-up generale
+  warmupExercises.push({
+    name: 'General Warm-up',
+    type: 'warmup',
+    exercises: DYNAMIC_WARMUP.general.exercises,
+    duration: DYNAMIC_WARMUP.general.duration,
+    notes: 'Riscaldamento generale cardiovascolare e mobilità'
+  });
+
+  // Aggiungi warm-up specifico per ogni pattern
+  patterns.forEach(pattern => {
+    const patternWarmup = DYNAMIC_WARMUP.patterns[pattern as keyof typeof DYNAMIC_WARMUP.patterns];
+    if (patternWarmup) {
+      warmupExercises.push({
+        name: `Warm-up ${pattern.replace('_', ' ')}`,
+        type: 'warmup',
+        exercises: patternWarmup.exercises,
+        sets: patternWarmup.sets,
+        reps: patternWarmup.reps,
+        notes: `Attivazione specifica per ${pattern}`
+      });
+    }
+  });
+
+  return warmupExercises;
+}
+
+/**
+ * Genera finisher metabolico
+ */
+export function generateMetabolicFinisher(type: string, level: string): any {
+  const finisher = METABOLIC_FINISHERS[type as keyof typeof METABOLIC_FINISHERS];
+  if (!finisher) return null;
+
+  const duration = level === 'beginner'
+    ? finisher.duration?.min || 5
+    : level === 'intermediate'
+      ? Math.round((finisher.duration?.min || 5 + finisher.duration?.max || 10) / 2)
+      : finisher.duration?.max || 10;
+
+  return {
+    name: finisher.name,
+    type: 'finisher',
+    notation: finisher.notation,
+    duration: `${duration} min`,
+    description: finisher.description,
+    exercises: finisher.exercises || [],
+    notes: `Finisher metabolico - ${finisher.name}`
+  };
+}
+
+/**
+ * Applica notazione tecniche agli esercizi
+ */
+export function applyTechniqueNotation(
+  exercise: any,
+  techniques: { intensification: string[]; tut: string[] },
+  setNumber: number,
+  totalSets: number
+): any {
+  const result = { ...exercise };
+  const notations: string[] = [];
+
+  // Applica intensificazione solo sull'ultimo set
+  if (setNumber === totalSets && techniques.intensification.length > 0) {
+    const technique = techniques.intensification[Math.floor(Math.random() * techniques.intensification.length)];
+    const techConfig = INTENSIFICATION_TECHNIQUES[technique as keyof typeof INTENSIFICATION_TECHNIQUES];
+    if (techConfig) {
+      notations.push(techConfig.notation);
+      result.lastSetTechnique = technique;
+    }
+  }
+
+  // Applica TUT sempre se selezionato
+  if (techniques.tut.includes('tempo')) {
+    const tempoPattern = TUT_TECHNIQUES.tempo.patterns.hypertrophy;
+    result.tempo = tempoPattern;
+    notations.push(`T:${tempoPattern}`);
+  }
+
+  if (notations.length > 0) {
+    result.notes = result.notes
+      ? `${result.notes} | ${notations.join(' ')}`
+      : notations.join(' ');
+  }
+
+  return result;
+}
+
+// ============================================================================
 // CONSTANTS - GOAL CONFIGURATIONS
 // ============================================================================
 
@@ -579,18 +1454,18 @@ export const PERFORMANCE_SPORT_CONFIGS: Record<string, any> = {
       portiere: {
         priority: ['esplosività_laterale', 'salto_verticale', 'core_stability'],
         exercises: [
-          'Lateral Bound',
-          'Box Jump Lateral',
-          'Single Leg Hop',
-          'Plank Lateral Shift',
-          'Medicine Ball Slam Lateral'
+          'Balzo Laterale',
+          'Box Jump Laterale',
+          'Salto Monopodalico',
+          'Plank con Spostamento Laterale',
+          'Lancio Palla Medica Laterale'
         ]
       },
       difensore: {
         priority: ['forza_massimale', 'accelerazione', 'duelli_aerei'],
         exercises: [
           'Squat Jump',
-          'Broad Jump',
+          'Salto in Lungo',
           'Box Jump',
           'Nordic Curl',
           'Push Press'
@@ -599,21 +1474,21 @@ export const PERFORMANCE_SPORT_CONFIGS: Record<string, any> = {
       centrocampista: {
         priority: ['endurance_anaerobica', 'cambio_direzione', 'accelerazione'],
         exercises: [
-          'Lateral Shuffle',
-          'Cone Drill',
-          'Burpee Broad Jump',
-          'Jump Squat',
-          'HIIT Intervals'
+          'Shuffle Laterale',
+          'Slalom tra Coni',
+          'Burpee con Salto',
+          'Squat Jump',
+          'Intervalli HIIT'
         ]
       },
       attaccante: {
         priority: ['accelerazione_esplosiva', 'salto_verticale', 'sprint'],
         exercises: [
-          'Depth Jump',
-          'Sprint Start',
-          'Single Leg Bound',
+          'Salto in Profondità',
+          'Partenza Sprint',
+          'Balzo Monopodalico',
           'Box Jump',
-          'Power Clean (se gym)'
+          'Girata al Petto (se palestra)'
         ]
       }
     }
@@ -626,21 +1501,21 @@ export const PERFORMANCE_SPORT_CONFIGS: Record<string, any> = {
       playmaker: {
         priority: ['accelerazione', 'cambio_direzione', 'endurance'],
         exercises: [
-          'Lateral Bound',
-          'Cone Drill',
-          'Jump Squat',
-          'Sprint Intervals',
+          'Balzo Laterale',
+          'Slalom tra Coni',
+          'Squat Jump',
+          'Sprint Intervallati',
           'Box Jump'
         ]
       },
       ala: {
         priority: ['salto_verticale', 'accelerazione', 'forza_esplosiva'],
         exercises: [
-          'Depth Jump',
+          'Salto in Profondità',
           'Box Jump',
-          'Broad Jump',
-          'Single Leg Bound',
-          'Clap Push-up'
+          'Salto in Lungo',
+          'Balzo Monopodalico',
+          'Piegamenti Esplosivi'
         ]
       },
       centro: {
@@ -649,8 +1524,8 @@ export const PERFORMANCE_SPORT_CONFIGS: Record<string, any> = {
           'Box Jump',
           'Nordic Curl',
           'Push Press',
-          'Squat Jump pesante',
-          'Plank con peso'
+          'Squat Jump Pesante',
+          'Plank con Sovraccarico'
         ]
       }
     }
@@ -663,20 +1538,20 @@ export const PERFORMANCE_SPORT_CONFIGS: Record<string, any> = {
       singolo: {
         priority: ['endurance_anaerobica', 'cambio_direzione', 'rotazione_core'],
         exercises: [
-          'Lateral Shuffle',
-          'Medicine Ball Rotation',
-          'Jump Squat',
-          'Plank Rotation',
-          'Sprint Intervals'
+          'Shuffle Laterale',
+          'Rotazione con Palla Medica',
+          'Squat Jump',
+          'Plank con Rotazione',
+          'Sprint Intervallati'
         ]
       },
       doppio: {
         priority: ['esplosività', 'forza_core', 'reattività'],
         exercises: [
-          'Lateral Bound',
-          'Medicine Ball Slam',
+          'Balzo Laterale',
+          'Lancio Palla Medica',
           'Box Jump',
-          'Plank Shoulder Taps',
+          'Plank con Tocco Spalla',
           'Burpees'
         ]
       }
@@ -690,11 +1565,11 @@ export const PERFORMANCE_SPORT_CONFIGS: Record<string, any> = {
       schiacciatore: {
         priority: ['salto_verticale_massimo', 'esplosività_spalle', 'atterraggio'],
         exercises: [
-          'Depth Jump',
+          'Salto in Profondità',
           'Box Jump Alto',
-          'Plyometric Push-up',
-          'Nordic Curl Atterraggio',
-          'Medicine Ball Overhead Slam'
+          'Piegamenti Pliometrici',
+          'Nordic Curl per Atterraggio',
+          'Lancio Palla Medica Sopra la Testa'
         ]
       },
       centrale: {
@@ -702,18 +1577,18 @@ export const PERFORMANCE_SPORT_CONFIGS: Record<string, any> = {
         exercises: [
           'Box Jump',
           'Squat Jump',
-          'Broad Jump',
-          'Single Leg Hop',
-          'Plank Hold'
+          'Salto in Lungo',
+          'Salto Monopodalico',
+          'Plank Isometrico'
         ]
       },
       libero: {
         priority: ['reattività', 'accelerazione_laterale', 'endurance'],
         exercises: [
-          'Lateral Shuffle',
-          'Cone Drill',
+          'Shuffle Laterale',
+          'Slalom tra Coni',
           'Burpees',
-          'Jump Squat Veloce',
+          'Squat Jump Veloce',
           'Plank Dinamico'
         ]
       }
@@ -727,21 +1602,21 @@ export const PERFORMANCE_SPORT_CONFIGS: Record<string, any> = {
       velocista: {
         priority: ['esplosività', 'forza_gambe', 'core_stability'],
         exercises: [
-          'Jump Squat',
+          'Squat Jump',
           'Box Jump',
-          'Plank Hold',
-          'Flutter Kicks',
-          'Medicine Ball Slam'
+          'Plank Isometrico',
+          'Calci Flutter',
+          'Lancio Palla Medica'
         ]
       },
       fondista: {
         priority: ['endurance', 'efficienza_movimento', 'core'],
         exercises: [
           'Plank Dinamico',
-          'Flutter Kicks Extended',
+          'Calci Flutter Prolungati',
           'Hollow Body Hold',
-          'Squat Endurance',
-          'Swimming Kicks'
+          'Squat Resistenza',
+          'Calci Stile Nuoto'
         ]
       }
     }
@@ -757,18 +1632,18 @@ export const PERFORMANCE_SPORT_CONFIGS: Record<string, any> = {
           'Squat Pesante',
           'Push Press',
           'Nordic Curl',
-          'Plank Pesante',
-          'Sled Push'
+          'Plank con Sovraccarico',
+          'Spinta Slitta'
         ]
       },
       trequarti: {
         priority: ['accelerazione', 'cambio_direzione', 'sprint'],
         exercises: [
-          'Sprint Start',
-          'Lateral Bound',
+          'Partenza Sprint',
+          'Balzo Laterale',
           'Box Jump',
-          'Cone Drill',
-          'Broad Jump'
+          'Slalom tra Coni',
+          'Salto in Lungo'
         ]
       }
     }
@@ -783,89 +1658,89 @@ export const MOTOR_RECOVERY_GOALS: Record<string, any> = {
   'neck_mobility': {
     name: 'Recupero Collo - Mobilità',
     exercises: [
-      { name: 'Neck Flexion/Extension', sets: 3, reps: '15 per direzione', rest: 45, weight: null, notes: 'Lento e controllato' },
-      { name: 'Cervical Lateral Flexion', sets: 3, reps: '12 per lato', rest: 60, weight: null, notes: 'Inclinazione laterale' },
-      { name: 'Neck Rotation', sets: 3, reps: '15 per lato', rest: 45, weight: null, notes: 'Rotazione controllata' },
-      { name: 'Shoulder Shrugs', sets: 3, reps: '15-20', rest: 60, weight: null, notes: 'Spallucce lente' },
-      { name: 'Scapular Retraction Hold', sets: 3, reps: '20-30s', rest: 60, weight: null, notes: 'Spalle indietro' },
-      { name: 'Chin Tucks', sets: 3, reps: '15-20', rest: 45, weight: null, notes: 'Mento in dentro' }
+      { name: 'Flessione/Estensione Collo', sets: 3, reps: '15 per direzione', rest: 45, weight: null, notes: 'Lento e controllato' },
+      { name: 'Inclinazione Laterale Cervicale', sets: 3, reps: '12 per lato', rest: 60, weight: null, notes: 'Inclinazione laterale' },
+      { name: 'Rotazione Collo', sets: 3, reps: '15 per lato', rest: 45, weight: null, notes: 'Rotazione controllata' },
+      { name: 'Spallucce', sets: 3, reps: '15-20', rest: 60, weight: null, notes: 'Spallucce lente' },
+      { name: 'Retrazione Scapolare', sets: 3, reps: '20-30s', rest: 60, weight: null, notes: 'Spalle indietro' },
+      { name: 'Rientro Mento', sets: 3, reps: '15-20', rest: 45, weight: null, notes: 'Mento in dentro' }
     ]
   },
   'neck_stability': {
     name: 'Recupero Collo - Stabilità',
     exercises: [
-      { name: 'Isometric Neck Hold (Neutral)', sets: 3, reps: '30-45s', rest: 60, weight: null, notes: 'Tenuta posizione neutra' },
-      { name: 'Cervical Isometric Flexion', sets: 3, reps: '30s', rest: 60, weight: null, notes: 'Resistenza in avanti' },
-      { name: 'Cervical Isometric Extension', sets: 3, reps: '30s', rest: 60, weight: null, notes: 'Resistenza indietro' },
-      { name: 'Cervical Isometric Lateral (per lato)', sets: 3, reps: '25s per lato', rest: 60, weight: null, notes: 'Resistenza laterale' },
-      { name: 'Trapezius Activation Band Pull-Apart', sets: 3, reps: '20', rest: 60, weight: null, notes: 'Trapezio superiore' },
-      { name: 'Prone Cobra Hold', sets: 3, reps: '20-30s', rest: 60, weight: null, notes: 'Estensione dolce' }
+      { name: 'Tenuta Isometrica Collo (Neutro)', sets: 3, reps: '30-45s', rest: 60, weight: null, notes: 'Tenuta posizione neutra' },
+      { name: 'Isometrico Cervicale in Flessione', sets: 3, reps: '30s', rest: 60, weight: null, notes: 'Resistenza in avanti' },
+      { name: 'Isometrico Cervicale in Estensione', sets: 3, reps: '30s', rest: 60, weight: null, notes: 'Resistenza indietro' },
+      { name: 'Isometrico Cervicale Laterale', sets: 3, reps: '25s per lato', rest: 60, weight: null, notes: 'Resistenza laterale' },
+      { name: 'Attivazione Trapezio con Elastico', sets: 3, reps: '20', rest: 60, weight: null, notes: 'Trapezio superiore' },
+      { name: 'Cobra Prono Isometrico', sets: 3, reps: '20-30s', rest: 60, weight: null, notes: 'Estensione dolce' }
     ]
   },
   'ankle_stability': {
     name: 'Stabilità Caviglia',
     exercises: [
-      { name: 'Single Leg Stance', sets: 3, reps: '30-60s', rest: 60, weight: null, notes: 'Su una gamba' },
-      { name: 'Ankle Circles', sets: 3, reps: '15 per direzione', rest: 45, weight: null, notes: 'Movimenti circolari' },
-      { name: 'Seated Ankle Dorsiflexion', sets: 3, reps: '20', rest: 60, weight: null, notes: 'Flessione dorsale' },
-      { name: 'Calf Raises su Una Gamba', sets: 3, reps: '12-15', rest: 90, weight: null, notes: 'Single leg' },
-      { name: 'Balance Board Work', sets: 3, reps: '45s', rest: 60, weight: null, notes: 'Propriocezione' },
-      { name: 'Proprioceptive Training', sets: 3, reps: '30-45s', rest: 60, weight: null, notes: 'Equilibrio' }
+      { name: 'Equilibrio su Una Gamba', sets: 3, reps: '30-60s', rest: 60, weight: null, notes: 'Su una gamba' },
+      { name: 'Cerchi Caviglie', sets: 3, reps: '15 per direzione', rest: 45, weight: null, notes: 'Movimenti circolari' },
+      { name: 'Dorsiflessione Caviglia da Seduto', sets: 3, reps: '20', rest: 60, weight: null, notes: 'Flessione dorsale' },
+      { name: 'Calf Raises Monopodalico', sets: 3, reps: '12-15', rest: 90, weight: null, notes: 'Single leg' },
+      { name: 'Tavoletta Propriocettiva', sets: 3, reps: '45s', rest: 60, weight: null, notes: 'Propriocezione' },
+      { name: 'Allenamento Propriocettivo', sets: 3, reps: '30-45s', rest: 60, weight: null, notes: 'Equilibrio' }
     ]
   },
   'knee_stability': {
     name: 'Stabilità Ginocchio',
     exercises: [
-      { name: 'Isometric Quad Hold', sets: 3, reps: '30-45s', rest: 60, weight: null, notes: 'Quadricipiti statici' },
-      { name: 'Short Arc Quads', sets: 3, reps: '15-20', rest: 60, weight: null, notes: 'Range limitato' },
-      { name: 'VMO Work', sets: 3, reps: '15', rest: 60, weight: null, notes: 'Vasto mediale' },
-      { name: 'Glute Bridge Isometric', sets: 3, reps: '30-45s', rest: 90, weight: null, notes: 'Ponte statico' },
-      { name: 'Single Leg Balance', sets: 3, reps: '45s', rest: 60, weight: null, notes: 'Equilibrio su gamba' },
-      { name: 'Step-Up Recovery', sets: 3, reps: '10 per lato', rest: 90, weight: null, notes: 'Scalini bassi' }
+      { name: 'Tenuta Isometrica Quadricipite', sets: 3, reps: '30-45s', rest: 60, weight: null, notes: 'Quadricipiti statici' },
+      { name: 'Estensione Ginocchio Ridotta', sets: 3, reps: '15-20', rest: 60, weight: null, notes: 'Range limitato' },
+      { name: 'Attivazione Vasto Mediale', sets: 3, reps: '15', rest: 60, weight: null, notes: 'Vasto mediale' },
+      { name: 'Ponte Glutei Isometrico', sets: 3, reps: '30-45s', rest: 90, weight: null, notes: 'Ponte statico' },
+      { name: 'Equilibrio Monopodalico', sets: 3, reps: '45s', rest: 60, weight: null, notes: 'Equilibrio su gamba' },
+      { name: 'Step Up Recupero', sets: 3, reps: '10 per lato', rest: 90, weight: null, notes: 'Scalini bassi' }
     ]
   },
   'hip_mobility': {
     name: 'Mobilità Anca',
     exercises: [
-      { name: 'Hip Flexor Stretch', sets: 3, reps: '45s', rest: 60, weight: null, notes: 'Allungamento flessori' },
-      { name: 'Pigeon Pose', sets: 3, reps: '60s', rest: 90, weight: null, notes: 'Posizione piccione' },
-      { name: 'Clamshells', sets: 3, reps: '15', rest: 60, weight: null, notes: 'Aperture anca' },
-      { name: 'Hip Rotations', sets: 3, reps: '12 per lato', rest: 60, weight: null, notes: 'Rotazioni controllate' },
-      { name: 'Glute Activation Bridges', sets: 3, reps: '15-20', rest: 90, weight: null, notes: 'Attivazione glutei' },
-      { name: 'Fire Log Stretch', sets: 3, reps: '45-60s', rest: 90, weight: null, notes: 'Allungamento profondo' }
+      { name: 'Allungamento Flessori Anca', sets: 3, reps: '45s', rest: 60, weight: null, notes: 'Allungamento flessori' },
+      { name: 'Posizione del Piccione', sets: 3, reps: '60s', rest: 90, weight: null, notes: 'Posizione piccione' },
+      { name: 'Clamshell', sets: 3, reps: '15', rest: 60, weight: null, notes: 'Aperture anca' },
+      { name: 'Rotazioni Anca', sets: 3, reps: '12 per lato', rest: 60, weight: null, notes: 'Rotazioni controllate' },
+      { name: 'Ponte Attivazione Glutei', sets: 3, reps: '15-20', rest: 90, weight: null, notes: 'Attivazione glutei' },
+      { name: 'Allungamento Profondo Anca', sets: 3, reps: '45-60s', rest: 90, weight: null, notes: 'Allungamento profondo' }
     ]
   },
   'shoulder_stability': {
     name: 'Stabilità Spalla',
     exercises: [
-      { name: 'Scapular Push-up', sets: 3, reps: '12-15', rest: 60, weight: null, notes: 'Spalla protetta' },
-      { name: 'Shoulder Blade Squeeze', sets: 3, reps: '15-20', rest: 60, weight: null, notes: 'Contrazione scapola' },
-      { name: 'External Rotation Prone', sets: 3, reps: '15', rest: 60, weight: null, notes: 'Rotazione esterna' },
-      { name: 'Band Pull-Apart', sets: 3, reps: '20', rest: 60, weight: null, notes: 'Elastico strappo' },
-      { name: 'Dead Hang Hold', sets: 3, reps: '20-30s', rest: 90, weight: null, notes: 'Tenuta sbarra' },
-      { name: 'Shoulder Shrugs Isometric', sets: 3, reps: '30-45s', rest: 60, weight: null, notes: 'Spallucce statiche' }
+      { name: 'Piegamenti Scapolari', sets: 3, reps: '12-15', rest: 60, weight: null, notes: 'Spalla protetta' },
+      { name: 'Retrazione Scapole', sets: 3, reps: '15-20', rest: 60, weight: null, notes: 'Contrazione scapola' },
+      { name: 'Rotazione Esterna Prono', sets: 3, reps: '15', rest: 60, weight: null, notes: 'Rotazione esterna' },
+      { name: 'Aperture con Elastico', sets: 3, reps: '20', rest: 60, weight: null, notes: 'Elastico strappo' },
+      { name: 'Sospensione Passiva', sets: 3, reps: '20-30s', rest: 90, weight: null, notes: 'Tenuta sbarra' },
+      { name: 'Spallucce Isometriche', sets: 3, reps: '30-45s', rest: 60, weight: null, notes: 'Spallucce statiche' }
     ]
   },
   'lower_back_rehabilitation': {
     name: 'Riabilitazione Schiena',
     exercises: [
-      { name: 'Quadruped Bird Dogs', sets: 3, reps: '12 per lato', rest: 60, weight: null, notes: 'Coordinazione core' },
-      { name: 'Dead Bugs', sets: 3, reps: '12-15', rest: 60, weight: null, notes: 'Schiena protetta' },
-      { name: 'Modified Planks', sets: 3, reps: '20-30s', rest: 60, weight: null, notes: 'Plank sicuro' },
-      { name: 'Glute Bridges', sets: 3, reps: '15-20', rest: 90, weight: null, notes: 'Ponte completo' },
-      { name: 'Cat-Cow Stretches', sets: 3, reps: '10', rest: 60, weight: null, notes: 'Mobilità vertebrale' },
-      { name: 'Child Pose Hold', sets: 3, reps: '45-60s', rest: 90, weight: null, notes: 'Posizione riposo' }
+      { name: 'Bird Dog', sets: 3, reps: '12 per lato', rest: 60, weight: null, notes: 'Coordinazione core' },
+      { name: 'Dead Bug', sets: 3, reps: '12-15', rest: 60, weight: null, notes: 'Schiena protetta' },
+      { name: 'Plank Modificato', sets: 3, reps: '20-30s', rest: 60, weight: null, notes: 'Plank sicuro' },
+      { name: 'Ponte Glutei', sets: 3, reps: '15-20', rest: 90, weight: null, notes: 'Ponte completo' },
+      { name: 'Gatto-Mucca', sets: 3, reps: '10', rest: 60, weight: null, notes: 'Mobilità vertebrale' },
+      { name: 'Posizione del Bambino', sets: 3, reps: '45-60s', rest: 90, weight: null, notes: 'Posizione riposo' }
     ]
   },
   'wrist_mobility': {
     name: 'Mobilità Polso',
     exercises: [
-      { name: 'Wrist Circles', sets: 3, reps: '15 per direzione', rest: 45, weight: null, notes: 'Movimenti circolari' },
-      { name: 'Wrist Flexor Stretch', sets: 3, reps: '45s', rest: 60, weight: null, notes: 'Flessori' },
-      { name: 'Wrist Extensor Stretch', sets: 3, reps: '45s', rest: 60, weight: null, notes: 'Estensori' },
-      { name: 'Pronate/Supinate Movements', sets: 3, reps: '15', rest: 60, weight: null, notes: 'Pronazione/supinazione' },
-      { name: 'Wall Wrist Holds', sets: 3, reps: '30-45s', rest: 90, weight: null, notes: 'Isometrico' },
-      { name: 'Wrist Curls Light', sets: 3, reps: '15-20', rest: 60, weight: null, notes: 'Carico leggero' }
+      { name: 'Cerchi Polso', sets: 3, reps: '15 per direzione', rest: 45, weight: null, notes: 'Movimenti circolari' },
+      { name: 'Allungamento Flessori Polso', sets: 3, reps: '45s', rest: 60, weight: null, notes: 'Flessori' },
+      { name: 'Allungamento Estensori Polso', sets: 3, reps: '45s', rest: 60, weight: null, notes: 'Estensori' },
+      { name: 'Pronazione/Supinazione', sets: 3, reps: '15', rest: 60, weight: null, notes: 'Pronazione/supinazione' },
+      { name: 'Tenuta Polso al Muro', sets: 3, reps: '30-45s', rest: 90, weight: null, notes: 'Isometrico' },
+      { name: 'Curl Polso Leggero', sets: 3, reps: '15-20', rest: 60, weight: null, notes: 'Carico leggero' }
     ]
   }
 };
@@ -2022,6 +2897,47 @@ function getCurrentPoolSet(sessionNumber: number, rotationConfig: { sessionsBefo
 }
 
 /**
+ * Esercizi che richiedono attrezzatura specifica
+ */
+const EQUIPMENT_REQUIREMENTS: Record<string, { requires: string[], alternatives: string[] }> = {
+  // Esercizi che richiedono barra trazioni o tavolo robusto
+  'Inverted Row': { requires: ['pullupBar', 'sturdyTable'], alternatives: ['Prone Y-raise', 'Superman Row', 'Doorway Row'] },
+  'Inverted Row Alta': { requires: ['pullupBar', 'sturdyTable'], alternatives: ['Prone Y-raise', 'Superman Row'] },
+  'Inverted Row 45°': { requires: ['pullupBar', 'sturdyTable'], alternatives: ['Prone Y-raise', 'Superman Row'] },
+  'Inverted Row 30°': { requires: ['pullupBar', 'sturdyTable'], alternatives: ['Prone Y-raise', 'Superman Row'] },
+  'Australian Pull-up': { requires: ['pullupBar', 'sturdyTable'], alternatives: ['Prone Y-raise', 'Superman Row'] },
+  'Pull-up': { requires: ['pullupBar'], alternatives: ['Doorway Curl', 'Band Pull-down'] },
+  'Chin-up': { requires: ['pullupBar'], alternatives: ['Doorway Curl', 'Band Pull-down'] },
+  'Hanging Leg Raise': { requires: ['pullupBar'], alternatives: ['Lying Leg Raise', 'V-up'] },
+  'Hanging Knee Raise': { requires: ['pullupBar'], alternatives: ['Lying Knee Raise', 'Dead Bug'] },
+  // Esercizi che richiedono elastici
+  'Band Row': { requires: ['loopBands'], alternatives: ['Prone Y-raise', 'Superman Row'] },
+  'Band Face Pull': { requires: ['loopBands'], alternatives: ['Prone Y-raise', 'Prone I-Y-T'] },
+  'Face Pull': { requires: ['loopBands'], alternatives: ['Prone Y-raise', 'Prone I-Y-T'] },
+  'Band Pull-apart': { requires: ['loopBands'], alternatives: ['Prone Y-raise', 'Reverse Snow Angel'] },
+};
+
+/**
+ * Filtra esercizi in base all'equipment disponibile
+ */
+function filterExercisesByEquipment(exercises: string[], equipment: any): string[] {
+  if (!equipment) return exercises;
+
+  return exercises.map(exercise => {
+    const requirement = EQUIPMENT_REQUIREMENTS[exercise];
+    if (!requirement) return exercise;
+
+    // Controlla se l'utente ha almeno uno degli attrezzi richiesti
+    const hasRequired = requirement.requires.some(req => equipment[req]);
+
+    if (hasRequired) return exercise;
+
+    // Altrimenti restituisci la prima alternativa disponibile
+    return requirement.alternatives[0] || exercise;
+  });
+}
+
+/**
  * Filtra esercizi per pain areas
  */
 function filterMetabolicExercisesByPain(exercises: Record<string, Record<string, string[]>>, painAreas: any[]): Record<string, Record<string, string[]>> {
@@ -2054,11 +2970,17 @@ function filterMetabolicExercisesByPain(exercises: Record<string, Record<string,
 }
 
 /**
- * Seleziona un esercizio random dal pool
+ * Seleziona un esercizio random dal pool, filtrando per equipment
  */
-function selectFromPool(patternPools: Record<string, string[]>, currentPoolSet: string): string {
-  const pool = patternPools[currentPoolSet] || patternPools.poolA || [];
+function selectFromPool(patternPools: Record<string, string[]>, currentPoolSet: string, equipment?: any): string {
+  let pool = patternPools[currentPoolSet] || patternPools.poolA || [];
   if (pool.length === 0) return 'Bodyweight Exercise';
+
+  // Filtra in base all'equipment disponibile
+  if (equipment) {
+    pool = filterExercisesByEquipment(pool, equipment);
+  }
+
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -2131,11 +3053,11 @@ export function generateMetabolicCircuit(input: MetabolicCircuitInput): Metaboli
       : ['lower_push', 'upper_push', 'lower_pull', 'upper_pull', 'core_dynamic', 'cardio_burst']
     );
 
-  // 8. Seleziona esercizi
+  // 8. Seleziona esercizi (con filtro equipment)
   const timeoutMax = config.timeoutMax?.[levelKey] || 60;
   const exercises = patternSequence.map((pattern: string) => ({
     pattern,
-    name: selectFromPool(filteredPool[pattern] || {}, currentPoolSet),
+    name: selectFromPool(filteredPool[pattern] || {}, currentPoolSet, equipment),
     pool: currentPoolSet,
     timeoutMax,
     rpeTarget: config.rpeTarget || 8,

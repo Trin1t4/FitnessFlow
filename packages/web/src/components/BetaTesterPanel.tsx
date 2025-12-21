@@ -3,7 +3,7 @@
  * Allows testers to quickly switch between levels, goals, locations, and pain areas
  */
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FlaskConical,
@@ -63,6 +63,7 @@ export default function BetaTesterPanel({ compact = false }: BetaTesterPanelProp
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(!compact);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [isBeta, setIsBeta] = useState(false);
 
   const {
     betaOverrides,
@@ -71,6 +72,18 @@ export default function BetaTesterPanel({ compact = false }: BetaTesterPanelProp
     onboardingData,
     clearOnboardingData,
   } = useAppStore();
+
+  // Mostra solo su beta domain
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const isBetaDomain = hostname.startsWith('beta.') ||
+                         hostname === 'localhost' ||
+                         hostname.includes('vercel.app');
+    setIsBeta(isBetaDomain);
+  }, []);
+
+  // Non mostrare su produzione
+  if (!isBeta) return null;
 
   // Count active overrides
   const activeOverridesCount = Object.values(betaOverrides).filter(v => v !== null).length;

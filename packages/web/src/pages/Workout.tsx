@@ -407,16 +407,16 @@ console.log("📊 MULTIPLIER:", { volumeMultiplier, intensityMultiplier });
   const todayWorkout = program.weekly_schedule[currentDay];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent mb-2">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto w-full overflow-x-hidden">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent mb-2">
             {program.name}
           </h1>
-          <p className="text-gray-400 text-lg">{program.description}</p>
+          <p className="text-gray-400 text-base md:text-lg">{program.description}</p>
         </div>
 
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-4">
+        <div className="flex gap-2 mb-6 md:mb-8 overflow-x-auto pb-4 scrollbar-hide">
           {program.weekly_schedule.map((day: any, index: number) => (
             <button
               key={index}
@@ -433,7 +433,7 @@ console.log("📊 MULTIPLIER:", { volumeMultiplier, intensityMultiplier });
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-3xl font-bold text-white mb-6">{todayWorkout.dayName}</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 md:mb-6">{todayWorkout.dayName}</h2>
 
           {todayWorkout.exercises.map((exercise: any, index: number) => (
             <div key={index}>
@@ -485,11 +485,11 @@ console.log("📊 MULTIPLIER:", { volumeMultiplier, intensityMultiplier });
                   )}
                 </div>
               ) : (
-                <div className="bg-gray-800/50 border border-emerald-500/30 rounded-xl p-6 hover:border-emerald-500/60 transition-all">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-2xl font-bold text-white">
+                <div className="bg-gray-800/50 border border-emerald-500/30 rounded-xl p-4 md:p-6 hover:border-emerald-500/60 transition-all">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+                        <h3 className="text-lg md:text-2xl font-bold text-white break-words">
                           {getDisplayedExerciseName(exercise.name)}
                         </h3>
                         {/* Show substituted badge */}
@@ -595,20 +595,20 @@ console.log("📊 MULTIPLIER:", { volumeMultiplier, intensityMultiplier });
                     </div>
                   )}
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-gray-900/50 rounded-lg p-4 text-center">
-                      <p className="text-gray-400 text-sm mb-1">Serie</p>
-                      <p className="text-white font-bold text-xl">{exercise.sets}</p>
+                  <div className="grid grid-cols-3 gap-2 md:gap-4">
+                    <div className="bg-gray-900/50 rounded-lg p-2 md:p-4 text-center">
+                      <p className="text-gray-400 text-xs md:text-sm mb-1">Serie</p>
+                      <p className="text-white font-bold text-lg md:text-xl">{exercise.sets}</p>
                     </div>
-                    <div className="bg-gray-900/50 rounded-lg p-4 text-center">
-                      <p className="text-gray-400 text-sm mb-1">Ripetizioni</p>
-                      <p className="text-white font-bold text-xl">
+                    <div className="bg-gray-900/50 rounded-lg p-2 md:p-4 text-center">
+                      <p className="text-gray-400 text-xs md:text-sm mb-1">Reps</p>
+                      <p className="text-white font-bold text-lg md:text-xl">
                         {getSubstitutedReps(exercise.name, exercise.reps)}
                       </p>
                     </div>
-                    <div className="bg-gray-900/50 rounded-lg p-4 text-center">
-                      <p className="text-gray-400 text-sm mb-1">Recupero</p>
-                      <p className="text-white font-bold text-xl">{exercise.rest}s</p>
+                    <div className="bg-gray-900/50 rounded-lg p-2 md:p-4 text-center">
+                      <p className="text-gray-400 text-xs md:text-sm mb-1">Rest</p>
+                      <p className="text-white font-bold text-lg md:text-xl">{exercise.rest}s</p>
                     </div>
                   </div>
                   {/* Show suggested weight when substituted */}
@@ -633,16 +633,16 @@ console.log("📊 MULTIPLIER:", { volumeMultiplier, intensityMultiplier });
           ))}
         </div>
 
-        <div className="mt-8 flex gap-4">
+        <div className="mt-6 md:mt-8 flex flex-col sm:flex-row gap-3 md:gap-4">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-8 py-4 rounded-lg font-semibold text-lg"
+            className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-lg font-semibold text-base md:text-lg"
           >
             {t('dashboard.back_to_dashboard')}
           </button>
           <button
             onClick={handleStartWorkout}
-            className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg shadow-emerald-500/50"
+            className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-6 md:px-8 py-3 md:py-4 rounded-lg font-semibold text-base md:text-lg shadow-lg shadow-emerald-500/50"
           >
             {t('dashboard.start_workout')}
           </button>

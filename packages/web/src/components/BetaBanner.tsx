@@ -1,10 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, MessageSquare, Bug } from 'lucide-react';
 
 export default function BetaBanner() {
   const [dismissed, setDismissed] = useState(false);
+  const [isBeta, setIsBeta] = useState(false);
 
-  if (dismissed) return null;
+  useEffect(() => {
+    // Mostra il banner solo su beta.trainsmart.me o localhost
+    const hostname = window.location.hostname;
+    const isBetaDomain = hostname.startsWith('beta.') ||
+                         hostname === 'localhost' ||
+                         hostname.includes('vercel.app'); // Preview deployments
+    setIsBeta(isBetaDomain);
+  }, []);
+
+  // Non mostrare su produzione (trainsmart.me senza beta.)
+  if (!isBeta || dismissed) return null;
 
   return (
     <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-4 py-2 text-center relative z-50">

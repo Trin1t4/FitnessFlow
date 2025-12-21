@@ -343,7 +343,11 @@ console.log("🏋️ PESO DEBUG:", {
           workoutId={state.program.id || 'current'}
           exerciseId={currentExercise.name}
           setNumber={currentSet}
-          targetReps={parseInt(currentExercise.reps.split('-')[0])}
+          targetReps={
+            typeof currentExercise.reps === 'string'
+              ? parseInt(currentExercise.reps.split('-')[0]) || 10
+              : (typeof currentExercise.reps === 'number' ? currentExercise.reps : 10)
+          }
           goalType={getGoalType()}
           onComplete={handlePostSetFeedback}
         />

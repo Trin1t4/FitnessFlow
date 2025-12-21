@@ -18,7 +18,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // LOWER PUSH (Squat pattern)
   // ============================================
 
-  'Bodyweight Squat': {
+  'Squat a Corpo Libero': {
     description: 'Movimento base per gambe. Scendi come se ti sedessi su una sedia invisibile, mantenendo il peso distribuito sul piede.',
     technique: [
       'Piedi larghezza spalle',
@@ -38,7 +38,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Front Squat': {
+  'Squat Frontale': {
     description: 'Squat con bilanciere sulle spalle anteriori. Enfatizza i quadricipiti e richiede ottima mobilità.',
     technique: [
       'Bilanciere sulle clavicole',
@@ -48,7 +48,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Back Squat': {
+  'Squat con Bilanciere': {
     description: 'Re degli esercizi per le gambe. Bilanciere sui trapezi, movimento completo che coinvolge tutto il lower body.',
     technique: [
       'Bilanciere sui trapezi (non sul collo)',
@@ -58,7 +58,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Leg Press': {
+  'Pressa': {
     description: 'Movimento guidato per gambe. Ottimo per caricare peso in sicurezza senza stress sulla schiena.',
     technique: [
       'Schiena ben appoggiata allo schienale',
@@ -68,7 +68,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Bulgarian Split Squat': {
+  'Squat Bulgaro': {
     description: 'Squat unilaterale con piede posteriore elevato. Eccellente per equilibrio, forza e correzione di squilibri.',
     technique: [
       'Piede posteriore su panca dietro',
@@ -92,7 +92,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // LOWER PULL (Deadlift/Hip Hinge)
   // ============================================
 
-  'Bodyweight Hip Hinge': {
+  'Hip Hinge a Corpo Libero': {
     description: 'Movimento fondamentale per imparare a piegarsi dalle anche. Propedeutico a tutti i deadlift.',
     technique: [
       'Piega dalle anche, non dalla schiena',
@@ -102,7 +102,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Conventional Deadlift': {
+  'Stacco da Terra': {
     description: 'Esercizio fondamentale per forza totale. Solleva il bilanciere da terra fino alla posizione eretta.',
     technique: [
       'Bilanciere sopra la metà del piede',
@@ -112,7 +112,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Romanian Deadlift (RDL)': {
+  'Stacco Rumeno': {
     description: 'Deadlift con focus sugli ischiocrurali. Movimento eccentrico controllato per massimo stretch muscolare.',
     technique: [
       'Peso sui talloni',
@@ -122,7 +122,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Sumo Deadlift': {
+  'Stacco Sumo': {
     description: 'Variante con stance largo. Riduce il ROM e coinvolge maggiormente glutei e adduttori.',
     technique: [
       'Piedi molto larghi, punte in fuori',
@@ -132,7 +132,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Trap Bar Deadlift': {
+  'Stacco con Trap Bar': {
     description: 'Deadlift con trap bar esagonale. Più sicuro per la schiena, ottimo per principianti e carichi pesanti.',
     technique: [
       'Entra dentro la barra',
@@ -142,7 +142,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Nordic Hamstring Curl': {
+  'Nordic Curl': {
     description: 'Esercizio avanzato per femorali. Scendi lentamente controllandoti con i muscoli posteriori della coscia.',
     technique: [
       'Caviglie bloccate',
@@ -152,7 +152,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Leg Curl (Machine)': {
+  'Leg Curl alla Macchina': {
     description: 'Isolamento puro per ischiocrurali. Movimento semplice e sicuro per sviluppare i femorali.',
     technique: [
       'Ginocchia allineate con il perno della macchina',
@@ -166,7 +166,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // HORIZONTAL PUSH (Bench Press pattern)
   // ============================================
 
-  'Standard Push-up': {
+  'Piegamenti': {
     description: 'Esercizio classico per petto e tricipiti. Spingi il corpo dal pavimento mantenendo il corpo rigido.',
     technique: [
       'Scapole retratte in partenza',
@@ -176,7 +176,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Diamond Push-up': {
+  'Piegamenti Diamante': {
     description: 'Push-up con mani vicine a forma di diamante. Massimo focus sui tricipiti e petto interno.',
     technique: [
       'Scapole retratte in partenza',
@@ -186,7 +186,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Archer Push-up': {
+  'Piegamenti Arciere': {
     description: 'Push-up asimmetrico che prepara al one-arm push-up. Un braccio lavora, l\'altro assiste.',
     technique: [
       'Scapole retratte in partenza',
@@ -196,7 +196,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Flat Barbell Bench Press': {
+  'Panca Piana': {
     description: 'Esercizio fondamentale per la forza del petto. Spingi il bilanciere dal petto alle braccia tese.',
     technique: [
       'Scapole addotte e depresse',
@@ -206,7 +206,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Incline Bench Press': {
+  'Panca Inclinata': {
     description: 'Panca inclinata per enfatizzare il petto alto. Angolo 30-45° per massimo stimolo.',
     technique: [
       'Scapole addotte e depresse',
@@ -216,7 +216,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Decline Bench Press': {
+  'Panca Declinata': {
     description: 'Panca declinata per il petto basso. Minor stress sulle spalle rispetto alla panca piana.',
     technique: [
       'Scapole addotte e depresse',
@@ -226,7 +226,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Dumbbell Bench Press': {
+  'Panca con Manubri': {
     description: 'Panca con manubri per maggiore ROM e attivazione degli stabilizzatori. Ottimo per simmetria.',
     technique: [
       'Scapole addotte e depresse',
@@ -236,7 +236,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Chest Dips': {
+  'Dip per Petto': {
     description: 'Dip alle parallele con focus sul petto. Inclinazione in avanti per massimo stretch pettorale.',
     technique: [
       'Scapole retratte in partenza',
@@ -280,7 +280,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Wall Handstand Push-up': {
+  'Piegamenti in Verticale al Muro': {
     description: 'Push-up in verticale contro il muro. Esercizio avanzato per forza esplosiva delle spalle.',
     technique: [
       'Scapole retratte in partenza',
@@ -290,7 +290,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Military Press (Barbell)': {
+  'Lento Avanti': {
     description: 'Press in piedi con bilanciere. Esercizio fondamentale per forza delle spalle e stabilità del core.',
     technique: [
       'Scapole addotte e depresse',
@@ -300,7 +300,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Dumbbell Shoulder Press': {
+  'Spinte con Manubri': {
     description: 'Press con manubri per maggiore ROM e lavoro degli stabilizzatori. Ottimo per simmetria.',
     technique: [
       'Scapole addotte e depresse',
@@ -334,7 +334,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // VERTICAL PULL (Pull-up/Lat Pulldown)
   // ============================================
 
-  'Standard Pull-up': {
+  'Trazioni alla Sbarra': {
     description: 'Re degli esercizi per la schiena. Tira il corpo verso la sbarra con presa prona.',
     technique: [
       'Scapole retratte in partenza',
@@ -344,7 +344,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Wide Grip Pull-up': {
+  'Trazioni Presa Larga': {
     description: 'Pull-up con presa molto larga. Maggiore enfasi sulla larghezza dorsale e minor coinvolgimento bicipiti.',
     technique: [
       'Scapole retratte in partenza',
@@ -354,7 +354,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Chin-up (Supinated)': {
+  'Trazioni Supine': {
     description: 'Trazioni con presa supina (palmi verso di te). Maggiore coinvolgimento dei bicipiti.',
     technique: [
       'Scapole retratte in partenza',
@@ -364,7 +364,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Neutral Grip Pull-up': {
+  'Trazioni Presa Neutra': {
     description: 'Trazioni con presa neutra (palmi uno di fronte all\'altro). Più facile per le spalle.',
     technique: [
       'Scapole retratte in partenza',
@@ -374,7 +374,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Lat Pulldown (Machine)': {
+  'Lat Machine': {
     description: 'Versione alla macchina della trazione. Permette carichi progressivi e variabili.',
     technique: [
       'Scapole addotte e depresse',
@@ -384,7 +384,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Assisted Pull-up': {
+  'Trazioni Assistite': {
     description: 'Pull-up con assistenza della macchina. Perfetto per costruire la forza necessaria alle trazioni libere.',
     technique: [
       'Scapole retratte in partenza',
@@ -398,7 +398,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // HORIZONTAL PULL (Row pattern)
   // ============================================
 
-  'Inverted Row': {
+  'Rematore Invertito': {
     description: 'Rematore a corpo libero sotto una sbarra. Ottima alternativa al rematore con pesi.',
     technique: [
       'Scapole retratte in partenza',
@@ -409,7 +409,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   },
 
   // Australian Pull-up = Inverted Row orizzontale (alias comune)
-  'Australian Pull-up': {
+  'Trazioni Orizzontali': {
     description: 'Rematore orizzontale a corpo libero (anche detto Inverted Row). Propedeutico alle trazioni.',
     technique: [
       'Scapole retratte in partenza',
@@ -419,8 +419,8 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Australian Pull-up Veloci': {
-    description: 'Versione esplosiva dell\'Australian Pull-up per resistenza e cardio.',
+  'Trazioni Orizzontali Veloci': {
+    description: 'Versione esplosiva delle trazioni orizzontali per resistenza e cardio.',
     technique: [
       'Scapole retratte in partenza',
       'Movimento esplosivo ma controllato',
@@ -429,7 +429,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Barbell Row': {
+  'Rematore con Bilanciere': {
     description: 'Rematore con bilanciere per spessore dorsale. Movimento compound per tutta la schiena.',
     technique: [
       'Scapole addotte e depresse',
@@ -439,7 +439,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Dumbbell Row': {
+  'Rematore con Manubrio': {
     description: 'Rematore unilaterale con manubrio. Permette maggiore ROM e correzione di squilibri.',
     technique: [
       'Scapole retratte in partenza',
@@ -449,7 +449,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Seated Cable Row': {
+  'Pulley Basso': {
     description: 'Rematore ai cavi da seduto. Tensione costante durante tutto il movimento.',
     technique: [
       'Scapole addotte e depresse',
@@ -459,7 +459,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'T-Bar Row': {
+  'Rematore T-Bar': {
     description: 'Rematore con T-bar per massimo carico. Ottimo per costruire spessore nella schiena.',
     technique: [
       'Scapole addotte e depresse',
@@ -483,7 +483,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Side Plank': {
+  'Plank Laterale': {
     description: 'Plank laterale per gli obliqui e la stabilità laterale. Ottimo per prevenire infortuni.',
     technique: [
       'Gomito sotto la spalla',
@@ -493,7 +493,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Hanging Leg Raise': {
+  'Alzate Gambe alla Sbarra': {
     description: 'Alzate gambe alla sbarra per addominali bassi. Richiede buona presa e controllo.',
     technique: [
       'Appeso alla sbarra, braccia tese',
@@ -503,7 +503,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Ab Wheel Rollout': {
+  'Rollout con Ruota': {
     description: 'Rollout con ruota per addominali. Esercizio avanzato per core anti-estensione.',
     technique: [
       'Parti in ginocchio',
@@ -513,7 +513,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Cable Crunch': {
+  'Crunch ai Cavi': {
     description: 'Crunch ai cavi per carico progressivo sugli addominali. Permette di aggiungere resistenza.',
     technique: [
       'In ginocchio, corda dietro la testa',
@@ -534,7 +534,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   },
 
   // === TRICIPITI ===
-  'Tricep Dips': {
+  'Dip per Tricipiti': {
     description: 'Dip alle parallele per tricipiti e petto. Esercizio compound a corpo libero molto efficace per la massa delle braccia.',
     technique: [
       'Presa salda sulle parallele',
@@ -545,7 +545,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Tricep Pushdown': {
+  'Pushdown ai Cavi': {
     description: 'Pushdown ai cavi per isolamento tricipiti. Permette di mantenere tensione costante durante tutto il movimento.',
     technique: [
       'Gomiti fermi ai fianchi',
@@ -556,7 +556,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Skull Crushers': {
+  'French Press': {
     description: 'French press con bilanciere per tricipiti. Ottimo per il capo lungo del tricipite, richiede controllo.',
     technique: [
       'Sdraiato su panca, bilanciere sopra la fronte',
@@ -568,7 +568,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   },
 
   // === BICIPITI ===
-  'Barbell Curl': {
+  'Curl con Bilanciere': {
     description: 'Curl con bilanciere per bicipiti. Esercizio fondamentale per la massa dei bicipiti con carico elevato.',
     technique: [
       'Presa supina larghezza spalle',
@@ -579,7 +579,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Hammer Curl': {
+  'Curl a Martello': {
     description: 'Curl a martello per bicipiti e brachiale. Ottimo per lo sviluppo del brachioradiale e la larghezza del braccio.',
     technique: [
       'Manubri con presa neutra (pollici in alto)',
@@ -602,7 +602,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   },
 
   // === POLPACCI ===
-  'Standing Calf Raise': {
+  'Calf Raise in Piedi': {
     description: 'Calf raise in piedi per gastrocnemio. Lavora principalmente il polpaccio nella sua porzione superiore.',
     technique: [
       'Avampiedi sulla pedana, talloni liberi',
@@ -613,7 +613,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Seated Calf Raise': {
+  'Calf Raise da Seduto': {
     description: 'Calf raise da seduto per soleo. Lavora il muscolo profondo del polpaccio con ginocchia flesse.',
     technique: [
       'Seduto con ginocchia a 90°',
@@ -628,7 +628,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // TEST DI POTENZA (SALTI)
   // ============================================
 
-  'Counter Movement Jump': {
+  'Salto con Contromovimento': {
     description: 'Test fondamentale per valutare la potenza esplosiva delle gambe. Sfrutta il ciclo stiramento-accorciamento per massimizzare l\'altezza del salto.',
     technique: [
       'Parti in piedi, mani sui fianchi (fisse)',
@@ -661,7 +661,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Broad Jump': {
+  'Salto in Lungo da Fermo': {
     description: 'Salto in lungo da fermo. Misura la potenza orizzontale delle gambe, importante per sprint e cambi di direzione.',
     technique: [
       'Piedi paralleli, larghezza anche',
@@ -672,7 +672,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Box Jump': {
+  'Salto sul Box': {
     description: 'Salto su scatola di altezza variabile. Test di esplosività e coordinazione, molto usato nel CrossFit e preparazione atletica.',
     technique: [
       'Parti di fronte al box (altezza appropriata)',
@@ -683,7 +683,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Med Ball Chest Pass': {
+  'Lancio Palla Medica dal Petto': {
     description: 'Lancio palla medica dal petto. Test di potenza upper body, simula movimenti di spinta esplosiva.',
     technique: [
       'Palla medica (3-5kg) al petto',
@@ -694,7 +694,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Med Ball Overhead Throw': {
+  'Lancio Palla Medica Sopra la Testa': {
     description: 'Lancio palla medica sopra la testa all\'indietro. Test di potenza totale del corpo, coinvolge catena posteriore.',
     technique: [
       'Palla medica (3-5kg) tra le mani',
@@ -709,7 +709,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // TEST MOBILITÀ / FMS
   // ============================================
 
-  'Ankle Dorsiflexion Test': {
+  'Test Dorsiflessione Caviglia': {
     description: 'Test ginocchio-muro per valutare la mobilità della caviglia in dorsiflessione. Fondamentale per squat e prevenzione infortuni.',
     technique: [
       'Piede a 5cm dal muro, ginocchio in linea col secondo dito',
@@ -720,7 +720,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Hip Internal Rotation Test': {
+  'Test Rotazione Interna Anca': {
     description: 'Test di rotazione interna dell\'anca da seduto. Identifica restrizioni che possono causare compensi in squat e deadlift.',
     technique: [
       'Seduto sul bordo di una panca, ginocchia a 90°',
@@ -731,7 +731,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Sit and Reach Test': {
+  'Test Sit and Reach': {
     description: 'Test classico di flessibilità per catena posteriore (lombari, glutei, ischiocrurali). Semplice e standardizzato.',
     technique: [
       'Seduto a terra, gambe tese, piedi contro il box',
@@ -742,7 +742,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Thomas Test': {
+  'Test di Thomas': {
     description: 'Test per valutare la flessibilità dei flessori dell\'anca (iliopsoas, retto femorale). Identifica accorciamenti posturali.',
     technique: [
       'Sdraiato supino sul bordo del lettino',
@@ -753,7 +753,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'FMS Deep Squat': {
+  'FMS Squat Profondo': {
     description: 'Squat profondo con bastone sopra la testa. Valuta mobilità di caviglie, anche, torace e spalle contemporaneamente.',
     technique: [
       'Bastone sopra la testa, braccia tese',
@@ -764,7 +764,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'FMS Hurdle Step': {
+  'FMS Passo Ostacolo': {
     description: 'Passo sopra un ostacolo all\'altezza della tuberosità tibiale. Valuta stabilità su una gamba e mobilità dell\'altra.',
     technique: [
       'Ostacolo all\'altezza della tibia',
@@ -775,7 +775,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'FMS Inline Lunge': {
+  'FMS Affondo in Linea': {
     description: 'Affondo su una linea con bastone lungo la schiena. Valuta stabilità, equilibrio e mobilità in pattern di affondo.',
     technique: [
       'Piedi su una linea, uno davanti all\'altro',
@@ -786,7 +786,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'FMS Shoulder Mobility': {
+  'FMS Mobilità Spalle': {
     description: 'Test di mobilità delle spalle con pugno sopra e sotto. Valuta la capacità di raggiungere con entrambe le braccia.',
     technique: [
       'In piedi, porta una mano dietro la schiena dal basso (palmo fuori)',
@@ -797,7 +797,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'FMS Active Straight Leg Raise': {
+  'FMS Alzata Gamba Tesa': {
     description: 'Sollevamento gamba tesa attivo da supino. Valuta la flessibilità degli ischiocrurali e la stabilità del core.',
     technique: [
       'Sdraiato supino, braccia lungo i fianchi',
@@ -808,7 +808,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'FMS Trunk Stability Push-Up': {
+  'FMS Push-up Stabilità': {
     description: 'Push-up per valutare la stabilità del tronco. Test della capacità di mantenere il corpo rigido durante la spinta.',
     technique: [
       'Posizione di partenza: corpo a terra, mani larghe',
@@ -819,7 +819,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'FMS Rotary Stability': {
+  'FMS Stabilità Rotatoria': {
     description: 'Test di stabilità rotatoria in quadrupedia. Valuta la capacità di resistere alla rotazione del tronco.',
     technique: [
       'Posizione quadrupedica (mani e ginocchia)',
@@ -834,7 +834,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // COLLO - PREVENZIONE INFORTUNI
   // ============================================
 
-  'Neck Flexion': {
+  'Flessione Collo': {
     description: 'Flessione del collo contro resistenza. Fondamentale per sport di contatto per prevenire colpi di frusta e lesioni cervicali.',
     technique: [
       'Seduto o in piedi con postura eretta',
@@ -845,7 +845,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Neck Extension': {
+  'Estensione Collo': {
     description: 'Estensione del collo contro resistenza. Rinforza i muscoli posteriori del collo per stabilità cervicale.',
     technique: [
       'Seduto o in piedi con postura eretta',
@@ -856,7 +856,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Neck Lateral Flexion': {
+  'Flessione Laterale Collo': {
     description: 'Flessione laterale del collo contro resistenza. Rinforza i muscoli laterali per stabilità in movimenti multi-direzionali.',
     technique: [
       'Seduto o in piedi con postura eretta',
@@ -867,7 +867,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Neck Rotation': {
+  'Rotazione Collo': {
     description: 'Rotazione del collo contro resistenza. Importante per la propriocezione cervicale e la prevenzione infortuni.',
     technique: [
       'Seduto o in piedi con postura eretta',
@@ -878,7 +878,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Neck Isometric Hold': {
+  'Tenuta Isometrica Collo': {
     description: 'Tenute isometriche del collo in tutte le direzioni. Costruisce resistenza e stabilità statica del rachide cervicale.',
     technique: [
       'Posiziona resistenza (mano o banda) nella direzione desiderata',
@@ -889,7 +889,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Neck Harness Exercise': {
+  'Esercizio con Neck Harness': {
     description: 'Esercizio con harness per collo. Attrezzo specifico per caricare il collo in modo progressivo e sicuro.',
     technique: [
       'Indossa l\'harness correttamente sulla testa',
@@ -904,7 +904,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // SCHIENA BASSA / POSTERIOR CHAIN
   // ============================================
 
-  'Back Extension (45°)': {
+  'Iperestensioni 45°': {
     description: 'Estensione schiena su panca inclinata a 45°. Rinforza gli erettori spinali con carico moderato.',
     technique: [
       'Anca sul cuscinetto, gambe bloccate',
@@ -915,7 +915,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Back Extension (Roman Chair)': {
+  'Iperestensioni alla Sedia Romana': {
     description: 'Estensione su sedia romana (orizzontale). Versione più intensa per erettori spinali e glutei.',
     technique: [
       'Corpo orizzontale, anca sul bordo',
@@ -926,7 +926,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Reverse Hyperextension': {
+  'Iperestensione Inversa': {
     description: 'Iperestensione inversa: busto fermo, gambe si sollevano. Eccellente per lombari e glutei senza compressione spinale.',
     technique: [
       'Prono su lettino/macchina, busto fermo',
@@ -948,7 +948,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Reverse Nordic Curl': {
+  'Nordic Curl Inverso': {
     description: 'Nordic curl inverso per i quadricipiti. Eccentrica intensa per il retto femorale, ottimo per prevenzione infortuni.',
     technique: [
       'In ginocchio, busto eretto',
@@ -985,7 +985,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Superman Hold': {
+  'Superman': {
     description: 'Tenuta in estensione da prono. Rinforza gli estensori della schiena e i glutei.',
     technique: [
       'Prono a terra, braccia tese avanti',
@@ -1029,7 +1029,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Hanging Knee Raise': {
+  'Alzate Ginocchia alla Sbarra': {
     description: 'Sollevamento ginocchia appeso alla sbarra. Progressione verso il leg raise completo.',
     technique: [
       'Appeso alla sbarra, braccia tese',
@@ -1066,7 +1066,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // PETTORALI AGGIUNTIVI
   // ============================================
 
-  'Incline Barbell Bench Press': {
+  'Panca Inclinata con Bilanciere': {
     description: 'Panca inclinata con bilanciere per enfatizzare il petto alto. Angolo ottimale 30-45 gradi.',
     technique: [
       'Panca inclinata 30-45°',
@@ -1077,7 +1077,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Incline Dumbbell Bench Press': {
+  'Panca Inclinata con Manubri': {
     description: 'Panca inclinata con manubri. Maggiore ROM e lavoro degli stabilizzatori rispetto al bilanciere.',
     technique: [
       'Panca inclinata 30-45°',
@@ -1088,7 +1088,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Cable Fly': {
+  'Croci ai Cavi': {
     description: 'Croci ai cavi per isolamento pettorale. Tensione costante durante tutto il ROM.',
     technique: [
       'Cavi all\'altezza desiderata (alto/medio/basso)',
@@ -1099,7 +1099,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Dumbbell Fly': {
+  'Croci con Manubri': {
     description: 'Croci con manubri su panca. Classico esercizio di isolamento per stretch e contrazione del pettorale.',
     technique: [
       'Supino su panca, manubri sopra il petto',
@@ -1125,7 +1125,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // SPALLE - CUFFIA DEI ROTATORI
   // ============================================
 
-  'Rear Delt Fly': {
+  'Alzate Posteriori': {
     description: 'Fly posteriore per il deltoide posteriore. Fondamentale per equilibrio delle spalle.',
     technique: [
       'Piegato in avanti o su panca inclinata',
@@ -1147,7 +1147,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Y-T-W Raises': {
+  'Alzate Y-T-W': {
     description: 'Sequenza di sollevamenti a Y, T e W per la cuffia dei rotatori e trapezio basso/medio.',
     technique: [
       'Prono su panca inclinata o in piedi piegato',
@@ -1158,7 +1158,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'External Rotation (Cable)': {
+  'Rotazione Esterna ai Cavi': {
     description: 'Rotazione esterna ai cavi per infraspinato e teres minor. Fondamentale per la salute della spalla.',
     technique: [
       'Cavo all\'altezza del gomito',
@@ -1195,7 +1195,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Chest Supported Row': {
+  'Rematore con Supporto Petto': {
     description: 'Rematore con supporto petto su panca inclinata. Isola i dorsali eliminando i compensi.',
     technique: [
       'Petto su panca inclinata (30-45°)',
@@ -1206,7 +1206,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Pendlay Row': {
+  'Rematore Pendlay': {
     description: 'Rematore esplosivo da terra. Ogni rep parte dal pavimento per potenza e forza.',
     technique: [
       'Bilanciere a terra, posizione deadlift',
@@ -1217,7 +1217,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Meadows Row': {
+  'Rematore Meadows': {
     description: 'Rematore unilaterale con landmine. Angolo unico per massimo stretch e contrazione.',
     technique: [
       'Bilanciere in landmine, stai di lato',
@@ -1228,7 +1228,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Straight Arm Pulldown': {
+  'Pulldown Braccia Tese': {
     description: 'Pulldown a braccia tese. Isola i dorsali senza coinvolgimento dei bicipiti.',
     technique: [
       'Cavo alto, barra o corda',
@@ -1239,7 +1239,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Dumbbell Pullover': {
+  'Pullover con Manubrio': {
     description: 'Pullover con manubrio. Lavora dorsali e pettorale con grande stretch toracico.',
     technique: [
       'Supino su panca, solo spalle supportate',
@@ -1254,7 +1254,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // BRACCIA AGGIUNTIVE
   // ============================================
 
-  'Preacher Curl': {
+  'Curl alla Panca Scott': {
     description: 'Curl su panca Scott. Isola il bicipite eliminando ogni possibilità di cheating.',
     technique: [
       'Braccia appoggiate sul cuscinetto inclinato',
@@ -1265,7 +1265,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Concentration Curl': {
+  'Curl Concentrato': {
     description: 'Curl concentrato seduto. Massimo isolamento del picco del bicipite.',
     technique: [
       'Seduto, gomito interno coscia',
@@ -1276,7 +1276,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Incline Dumbbell Curl': {
+  'Curl su Panca Inclinata': {
     description: 'Curl su panca inclinata per massimo stretch del bicipite. Lavora il capo lungo.',
     technique: [
       'Panca inclinata 45-60°',
@@ -1298,7 +1298,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Overhead Tricep Extension': {
+  'French Press Sopra la Testa': {
     description: 'French press sopra la testa. Massimo stretch per il capo lungo del tricipite.',
     technique: [
       'In piedi o seduto, manubrio sopra la testa',
@@ -1309,7 +1309,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Close Grip Bench Press': {
+  'Panca Presa Stretta': {
     description: 'Panca con presa stretta per tricipiti. Compound pesante per massa delle braccia.',
     technique: [
       'Presa larghezza spalle o leggermente più stretta',
@@ -1320,7 +1320,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Tricep Kickback': {
+  'Kickback Tricipiti': {
     description: 'Calcio indietro per tricipiti. Isolamento puro del capo laterale e mediale.',
     technique: [
       'Busto parallelo al pavimento',
@@ -1368,7 +1368,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Lying Leg Curl': {
+  'Leg Curl Sdraiato': {
     description: 'Leg curl sdraiato per ischiocrurali. Isolamento puro con macchina guidata.',
     technique: [
       'Prono sulla macchina, ginocchia oltre il bordo',
@@ -1379,7 +1379,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Seated Leg Curl': {
+  'Leg Curl Seduto': {
     description: 'Leg curl seduto per ischiocrurali. Posizione diversa per stimolo complementare.',
     technique: [
       'Seduto, gambe sopra il rullo',
@@ -1390,7 +1390,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Single Leg Romanian Deadlift': {
+  'Stacco Rumeno Unilaterale': {
     description: 'Stacco rumeno unilaterale. Eccellente per equilibrio, stabilità e forza dei femorali.',
     technique: [
       'In piedi su una gamba',
@@ -1405,7 +1405,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // POLPACCI AGGIUNTIVI
   // ============================================
 
-  'Single Leg Calf Raise': {
+  'Calf Raise Unilaterale': {
     description: 'Calf raise su una gamba. Corregge asimmetrie e aumenta l\'intensità.',
     technique: [
       'Su un gradino, una gamba sola',
@@ -1416,7 +1416,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Donkey Calf Raise': {
+  'Calf Raise Donkey': {
     description: 'Calf raise a 90° (posizione asino). Stretch maggiore del gastrocnemio.',
     technique: [
       'Piegato a 90° all\'anca',
@@ -1427,7 +1427,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Tibialis Raise': {
+  'Alzate Tibiali': {
     description: 'Sollevamento tibiale per il muscolo anteriore. Previene shin splints e squilibri.',
     technique: [
       'Schiena contro un muro, piedi avanti',
@@ -1453,7 +1453,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Cable Pull Through': {
+  'Pull Through ai Cavi': {
     description: 'Pull through ai cavi. Hip hinge con tensione costante per glutei e femorali.',
     technique: [
       'Cavo basso, passa tra le gambe',
@@ -1475,7 +1475,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Single Leg Hip Thrust': {
+  'Hip Thrust Unilaterale': {
     description: 'Hip thrust unilaterale. Corregge asimmetrie e aumenta intensità.',
     technique: [
       'Spalle su panca, un piede a terra',
@@ -1486,7 +1486,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Cable Kickback': {
+  'Kickback ai Cavi': {
     description: 'Calcio indietro ai cavi per isolamento gluteo. Tensione costante durante tutto il ROM.',
     technique: [
       'Cavigliera al cavo basso',
@@ -1512,7 +1512,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // ESERCIZI FUNZIONALI
   // ============================================
 
-  'Sled Push': {
+  'Spinta Slitta': {
     description: 'Spinta slitta per condizionamento e forza delle gambe. Full body con focus lower body.',
     technique: [
       'Mani sulla slitta, braccia tese',
@@ -1523,7 +1523,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Sled Pull': {
+  'Traino Slitta': {
     description: 'Traino slitta camminando all\'indietro. Eccellente per riabilitazione ginocchio e condizionamento.',
     technique: [
       'Corda/maniglie in mano, faccia alla slitta',
@@ -1556,7 +1556,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Turkish Get Up': {
+  'Alzata Turca': {
     description: 'Alzata turca completa. Esercizio complesso per mobilità, stabilità e forza funzionale.',
     technique: [
       'Supino con kettlebell in alto',
@@ -1567,7 +1567,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Kettlebell Swing': {
+  'Swing con Kettlebell': {
     description: 'Swing con kettlebell. Hip hinge esplosivo per potenza, condizionamento e posterior chain.',
     technique: [
       'Piedi larghezza spalle, kettlebell davanti',
@@ -1578,7 +1578,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Kettlebell Clean': {
+  'Clean con Kettlebell': {
     description: 'Clean con kettlebell. Porta il peso dalla posizione bassa al rack position.',
     technique: [
       'Swing iniziale come nel KB swing',
@@ -1589,7 +1589,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Kettlebell Snatch': {
+  'Snatch con Kettlebell': {
     description: 'Snatch con kettlebell. Movimento completo dalla terra sopra la testa in un\'azione.',
     technique: [
       'Swing iniziale',
@@ -1604,7 +1604,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   // STRETCHING / MOBILITÀ
   // ============================================
 
-  'Pigeon Stretch': {
+  'Stretch del Piccione': {
     description: 'Stretch del piccione per rotatori esterni dell\'anca e glutei. Classico dello yoga.',
     technique: [
       'Una gamba piegata davanti, l\'altra tesa dietro',
@@ -1615,7 +1615,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  '90/90 Stretch': {
+  'Stretch 90/90': {
     description: 'Stretch 90/90 per rotazione interna ed esterna dell\'anca. Fondamentale per atleti.',
     technique: [
       'Seduto, entrambe le gambe a 90°',
