@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useTranslation } from '../lib/i18n';
+import { shouldSuggestFreeWeight, type FreeWeightSuggestion } from '@fitnessflow/shared';
+import FreeWeightSuggestionCard from '../components/FreeWeightSuggestionCard';
+
+// Note: teamflow version uses same supabase client path
 
 interface RecoveryScreeningProps {
   onComplete: (data: RecoveryData) => void;
   onSkip?: () => void;
+  workoutExercises?: any[]; // Esercizi del workout per proposta peso libero
 }
 
 export interface RecoveryData {
@@ -16,11 +21,15 @@ export interface RecoveryData {
   isFemale: boolean;
   availableTime: number; // minuti disponibili per l'allenamento
   timestamp: string;
+  // Free weight suggestion
+  tryFreeWeight?: string | null; // Nome esercizio corpo libero accettato
+  replaceMachine?: string | null; // Nome macchina da sostituire
 }
 
 export const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
   onComplete,
   onSkip,
+  workoutExercises = [],
 }) => {
   const { t } = useTranslation();
   const [sleepHours, setSleepHours] = useState<number>(7);
@@ -34,9 +43,40 @@ export const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
   const [hasMenopausePreference, setHasMenopausePreference] = useState<boolean>(false);
   const [availableTime, setAvailableTime] = useState<number>(45); // default 45 min
 
+  // Free weight suggestion state
+  const [freeWeightSuggestion, setFreeWeightSuggestion] = useState<FreeWeightSuggestion | null>(null);
+  const [acceptedFreeWeight, setAcceptedFreeWeight] = useState<string | null>(null);
+  const [showSuggestion, setShowSuggestion] = useState<boolean>(false);
+
   useEffect(() => {
     fetchUserGender();
   }, []);
+
+  // Controlla se mostrare proposta peso libero quando cambiano le condizioni
+  useEffect(() => {
+    if (workoutExercises.length > 0) {
+      const suggestion = shouldSuggestFreeWeight(
+        {
+          sleepHours,
+          stressLevel,
+          hasInjury,
+          menstrualCycle: menstrualCycle || undefined
+        },
+        workoutExercises
+      );
+
+      if (suggestion.shouldSuggest) {
+        setFreeWeightSuggestion(suggestion);
+        // Mostra la proposta solo se le condizioni sono buone
+        if (sleepHours >= 6.5 && stressLevel <= 5 && !hasInjury) {
+          setShowSuggestion(true);
+        }
+      } else {
+        setFreeWeightSuggestion(null);
+        setShowSuggestion(false);
+      }
+    }
+  }, [sleepHours, stressLevel, hasInjury, menstrualCycle, workoutExercises]);
 
   const fetchUserGender = async () => {
     try {
@@ -131,6 +171,9 @@ export const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
       isFemale,
       availableTime,
       timestamp: new Date().toISOString(),
+      // Free weight suggestion accepted
+      tryFreeWeight: acceptedFreeWeight,
+      replaceMachine: acceptedFreeWeight && freeWeightSuggestion ? freeWeightSuggestion.machineExercise : null,
     };
 
     try {
@@ -377,10 +420,44 @@ export const RecoveryScreening: React.FC<RecoveryScreeningProps> = ({
             </div>
           )}
 
+          {/* Proposta peso libero (solo se condizioni ottimali) */}
+          {showSuggestion && freeWeightSuggestion && !acceptedFreeWeight && (
+            <FreeWeightSuggestionCard
+              machineExercise={freeWeightSuggestion.machineExercise}
+              freeWeightAlternative={freeWeightSuggestion.freeWeightAlternative}
+              freeWeightDescription={freeWeightSuggestion.freeWeightDescription}
+              videoUrl={freeWeightSuggestion.videoUrl}
+              onAccept={() => {
+                setAcceptedFreeWeight(freeWeightSuggestion.freeWeightAlternative);
+                setShowSuggestion(false);
+              }}
+              onDecline={() => {
+                setShowSuggestion(false);
+              }}
+            />
+          )}
+
+          {/* Badge se ha accettato la proposta */}
+          {acceptedFreeWeight && (
+            <div className="p-4 bg-blue-50 border-2 border-blue-300 rounded-xl">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">💪</span>
+                <div>
+                  <p className="text-sm font-semibold text-blue-900">
+                    Oggi provi: {acceptedFreeWeight}
+                  </p>
+                  <p className="text-xs text-blue-700 mt-0.5">
+                    Inizierai con peso leggero per imparare la tecnica
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Box Adattamenti AdaptFlow */}
           <div className={`p-5 rounded-xl border-2 ${
-            hasWarnings 
-              ? 'bg-amber-50 border-amber-300' 
+            hasWarnings
+              ? 'bg-amber-50 border-amber-300'
               : 'bg-emerald-50 border-emerald-300'
           }`}>
             <h3 className="font-bold text-lg mb-3 text-gray-900">

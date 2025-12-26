@@ -277,10 +277,10 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
         <div className="space-y-4 p-6 bg-slate-900/50 rounded-xl border border-slate-700">
           <div>
             <h3 className="font-semibold text-white mb-3">{t('onboarding.location.gymArea')}</h3>
-            <p className="text-xs text-slate-400 mb-3">{t('onboarding.location.gymAreaDesc')}</p>
+            <p className="text-xs text-slate-400 mb-3">Scegli il tuo stile di allenamento principale</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
             {/* Area Calisthenics */}
             <button
               onClick={() => {
@@ -299,22 +299,22 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
                   parallelBars: true
                 });
               }}
-              className={`w-full p-4 rounded-lg border-2 transition-all flex flex-col min-h-[140px] ${
+              className={`w-full p-5 rounded-xl border-2 transition-all flex flex-col min-h-[160px] ${
                 trainingType === 'bodyweight'
                   ? 'border-emerald-500 bg-emerald-500/10'
                   : 'border-slate-600 hover:border-slate-500'
               }`}
             >
-              <p className="font-semibold text-white text-sm mb-2 leading-tight">{t('onboarding.location.calisthenics')}</p>
-              <p className="text-xs text-slate-400 mb-2 flex-grow">{t('onboarding.location.calisthenicsDesc')}</p>
+              <p className="font-bold text-white text-lg mb-2">{t('onboarding.location.calisthenics')}</p>
+              <p className="text-sm text-slate-400 mb-3 flex-grow">{t('onboarding.location.calisthenicsDesc')}</p>
               <p className="text-xs text-emerald-400 font-medium">{t('onboarding.location.intermediateAdvanced')}</p>
             </button>
 
-            {/* Sala Pesi - Pesi Liberi */}
+            {/* Sala Pesi (include pesi liberi E macchine) */}
             <button
               onClick={() => {
                 setTrainingType('equipment');
-                // Pre-configura per pesi liberi (bilanciere, manubri)
+                // Pre-configura per sala pesi completa (pesi liberi + macchine disponibili)
                 setEquipment({
                   pullupBar: true,
                   loopBands: true,
@@ -328,44 +328,15 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
                   parallelBars: false
                 });
               }}
-              className={`w-full p-4 rounded-lg border-2 transition-all flex flex-col min-h-[140px] ${
+              className={`w-full p-5 rounded-xl border-2 transition-all flex flex-col min-h-[160px] ${
                 trainingType === 'equipment'
                   ? 'border-emerald-500 bg-emerald-500/10'
                   : 'border-slate-600 hover:border-slate-500'
               }`}
             >
-              <p className="font-semibold text-white text-sm mb-2 leading-tight">{t('onboarding.location.freeWeights')}</p>
-              <p className="text-xs text-slate-400 mb-2 flex-grow">{t('onboarding.location.freeWeightsDesc')}</p>
+              <p className="font-bold text-white text-lg mb-2">Pesi</p>
+              <p className="text-sm text-slate-400 mb-3 flex-grow">Pesi liberi e macchine. Durante i test sceglierai tu se usare bilanciere/manubri o macchine.</p>
               <p className="text-xs text-emerald-400 font-medium">{t('onboarding.location.allLevels')}</p>
-            </button>
-
-            {/* Sala Pesi - Macchine (per principianti) */}
-            <button
-              onClick={() => {
-                setTrainingType('machines');
-                // Pre-configura per macchine guidate
-                setEquipment({
-                  pullupBar: true,
-                  loopBands: true,
-                  dumbbells: true,
-                  dumbbellMaxKg: 30, // Manubri leggeri come complemento
-                  barbell: false, // NO bilanciere per chi sceglie macchine
-                  kettlebell: false,
-                  kettlebellKg: 0,
-                  bench: true,
-                  rings: false,
-                  parallelBars: false
-                });
-              }}
-              className={`w-full p-4 rounded-lg border-2 transition-all flex flex-col min-h-[140px] ${
-                trainingType === 'machines'
-                  ? 'border-emerald-500 bg-emerald-500/10'
-                  : 'border-slate-600 hover:border-slate-500'
-              }`}
-            >
-              <p className="font-semibold text-white text-sm mb-2 leading-tight">{t('onboarding.location.machines')}</p>
-              <p className="text-xs text-slate-400 mb-2 flex-grow">{t('onboarding.location.machinesDesc')}</p>
-              <p className="text-xs text-yellow-400 font-medium">{t('onboarding.location.recommendedBeginners')}</p>
             </button>
           </div>
 
@@ -378,9 +349,7 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
               <p className="text-xs text-emerald-200">
                 {trainingType === 'bodyweight'
                   ? t('onboarding.location.calisthenicsEquipment')
-                  : trainingType === 'equipment'
-                  ? t('onboarding.location.freeWeightsEquipment')
-                  : t('onboarding.location.machinesEquipment')}
+                  : 'Bilanciere, manubri, macchine, cavi - tutto disponibile. Sceglierai durante i test.'}
               </p>
             </div>
           )}

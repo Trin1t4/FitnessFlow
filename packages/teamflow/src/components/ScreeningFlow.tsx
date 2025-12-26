@@ -2,55 +2,140 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { CheckCircle, Circle, ArrowRight, ArrowLeft, Info, Check, Timer, RotateCw, X, ZoomIn, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useTranslation } from '../lib/i18n';
-import { getExerciseImageWithFallback } from '@fitnessflow/shared';
+import { getExerciseImageWithFallback, calculateLevelFromScreening } from '@fitnessflow/shared';
 
 // Video disponibili per i test iniziali (SOLO quelli verificati esistenti)
 const SCREENING_VIDEOS: Record<string, string> = {
   // === PUSH-UPS (verificati) ===
   'Pike Push-up': '/videos/exercises/pike-push-up.mp4',
+  'Pike Push Up': '/videos/exercises/pike-push-up.mp4',
+  'Elevated Pike Push-up': '/videos/exercises/pike-push-up.mp4',
   'Wall HSPU (ROM parziale)': '/videos/exercises/wall-handstand-push-up.mp4',
   'Wall HSPU (ROM completo)': '/videos/exercises/wall-handstand-push-up.mp4',
   'Freestanding HSPU': '/videos/exercises/wall-handstand-push-up.mp4',
   'Wall Push-up': '/videos/exercises/wall-push-up.mp4',
+  'Incline Push-up': '/videos/exercises/incline-push-up.mp4',
   'Incline Push-up (rialzato)': '/videos/exercises/incline-push-up.mp4',
   'Push-up Standard': '/videos/exercises/standard-push-up.mp4',
   'Push-up su Ginocchia': '/videos/exercises/knee-push-up.mp4',
   'Diamond Push-up': '/videos/exercises/diamond-push-up.mp4',
+  'Decline Push-up': '/videos/exercises/decline-push-up.mp4',
+  'Pseudo Planche Push-up': '/videos/exercises/standard-push-up.mp4',
   'One Arm Push-up': '/videos/exercises/one-arm-push-up.mp4',
-  // MANCANO: Archer, Pseudo Planche, Elevated Pike, Wall Walk
 
   // === SQUAT (verificati) ===
+  'Squat Assistito (con supporto)': '/videos/exercises/bodyweight-squat.mp4',
   'Air Squat': '/videos/exercises/bodyweight-squat.mp4',
+  'Jump Squat': '/videos/exercises/bodyweight-squat.mp4',
   'Bulgarian Split Squat': '/videos/exercises/bulgarian-split-squat.mp4',
-  'Pistol Squat': '/videos/exercises/pistol-squat.mp4',
   'Pistol Squat Assistito': '/videos/exercises/pistol-squat.mp4',
-  // MANCANO: Squat Assistito, Jump Squat, Shrimp Squat
+  'Shrimp Squat': '/videos/exercises/pistol-squat.mp4',
+  'Pistol Squat': '/videos/exercises/pistol-squat.mp4',
 
   // === PULL (verificati) ===
   'Inverted Row (barra alta)': '/videos/exercises/inverted-row.mp4',
   'Inverted Row (barra media)': '/videos/exercises/inverted-row.mp4',
   'Inverted Row (barra bassa)': '/videos/exercises/inverted-row.mp4',
+  'Australian Pull-up': '/videos/exercises/inverted-row.mp4',
+  'Negative Pull-up (solo eccentrica)': '/videos/exercises/standard-pull-up.mp4',
+  'Band-Assisted Pull-up': '/videos/exercises/assisted-pull-up.mp4',
   'Pull-up Standard': '/videos/exercises/standard-pull-up.mp4',
   'Chin-up': '/videos/exercises/chin-up.mp4',
-  // MANCANO: Negative Pull-up, Band-Assisted Pull-up, Archer Pull-up
+  'Archer Pull-up': '/videos/exercises/standard-pull-up.mp4',
+  'One Arm Pull-up Progression': '/videos/exercises/standard-pull-up.mp4',
 
   // === HINGE/CORE (verificati) ===
   'Glute Bridge': '/videos/exercises/glute-bridge.mp4',
+  'Single Leg Glute Bridge': '/videos/exercises/glute-bridge.mp4',
+  'Hip Thrust': '/videos/exercises/hip-thrust.mp4',
+  'Single Leg RDL (corpo libero)': '/videos/exercises/romanian-deadlift.mp4',
+  'Romanian Deadlift': '/videos/exercises/romanian-deadlift.mp4',
+  'Good Morning': '/videos/exercises/good-morning.mp4',
+  'Good Morning BW': '/videos/exercises/good-morning.mp4',
   'Nordic Curl (solo eccentrica)': '/videos/exercises/nordic-hamstring-curl.mp4',
   'Nordic Curl (completo)': '/videos/exercises/nordic-hamstring-curl.mp4',
+  'Sliding Leg Curl': '/videos/exercises/standing-leg-curl.mp4',
+  'Leg Curl': '/videos/exercises/leg-curl.mp4',
   'Plank': '/videos/exercises/plank.mp4',
+  'Side Plank': '/videos/exercises/side-plank-modified.mp4',
   'Bird Dog': '/videos/exercises/bird-dog.mp4',
   'Dead Bug': '/videos/exercises/dead-bug.mp4',
-  // MANCANO: Single Leg Glute Bridge, RDL bodyweight, Sliding Leg Curl, Side Plank, Hollow Body, L-sit, Dragon Flag
+  'Dead Bug Progression': '/videos/exercises/dead-bug-progression.mp4',
+  'Bear Hold': '/videos/exercises/bear-hold.mp4',
+  'Pallof Press': '/videos/exercises/pallof-press.mp4',
+  'Hanging Leg Raise': '/videos/exercises/hanging-leg-raise.mp4',
+
+  // === ROW / PULL (palestra) ===
+  'Barbell Row': '/videos/exercises/barbell-row.mp4',
+  'Dumbbell Row': '/videos/exercises/dumbbell-row.mp4',
+  'T-Bar Row': '/videos/exercises/t-bar-row.mp4',
+  'Lat Pulldown': '/videos/exercises/lat-pulldown.mp4',
+  'Lat Machine': '/videos/exercises/lat-pulldown.mp4',
+  'Face Pull': '/videos/exercises/face-pull.mp4',
+  'Seated Cable Row': '/videos/exercises/seated-cable-row.mp4',
+
+  // === SHOULDER (palestra) ===
+  'Military Press': '/videos/exercises/military-press.mp4',
+  'Dumbbell Shoulder Press': '/videos/exercises/dumbbell-shoulder-press.mp4',
+  'Arnold Press': '/videos/exercises/arnold-press.mp4',
+  'Lateral Raise': '/videos/exercises/lateral-raise.mp4',
+  'Front Raise': '/videos/exercises/front-raise.mp4',
+
+  // === LOWER (palestra) ===
+  'Leg Press': '/videos/exercises/leg-press.mp4',
+  'Leg Extension': '/videos/exercises/leg-extension.mp4',
+  'Lunges': '/videos/exercises/lunges.mp4',
+  'Affondi': '/videos/exercises/lunges.mp4',
+  'Step-up': '/videos/exercises/step-up.mp4',
+  'Goblet Squat': '/videos/exercises/goblet-squat.mp4',
+  'Front Squat': '/videos/exercises/front-squat.mp4',
+  'Back Squat': '/videos/exercises/back-squat.mp4',
+  'Sumo Deadlift': '/videos/exercises/sumo-deadlift.mp4',
+  'Conventional Deadlift': '/videos/exercises/conventional-deadlift.mp4',
+
+  // === BENCH / DIPS ===
+  'Bench Press': '/videos/exercises/flat-barbell-bench-press.mp4',
+  'Dumbbell Bench Press': '/videos/exercises/dumbbell-bench-press.mp4',
+  'Chest Dips': '/videos/exercises/chest-dips.mp4',
+  'Tricep Dips': '/videos/exercises/tricep-dips.mp4',
 };
 
 /**
- * Formula di Brzycki per calcolare 1RM da peso e reps
- * 1RM = weight / (1.0278 - 0.0278 × reps)
+ * Calcola 1RM usando formule multiple per maggiore accuratezza
+ *
+ * - Reps 1-6: Brzycki (piu accurata per bassi reps)
+ * - Reps 7-10: Media Brzycki + Epley
+ * - Reps 11+: Epley (piu accurata per alti reps)
+ *
+ * Nota: Per reps > 15, l'errore puo essere significativo.
+ * In questi casi, e consigliabile usare pesi piu pesanti per il test.
  */
 function calculateOneRepMax(weight: number, reps: number): number {
   if (reps === 1) return weight;
-  return weight / (1.0278 - 0.0278 * reps);
+  if (reps <= 0 || weight <= 0) return 0;
+
+  // Formule:
+  // Brzycki: weight * 36 / (37 - reps) oppure weight / (1.0278 - 0.0278 × reps)
+  // Epley: weight * (1 + reps / 30)
+  // Lander: weight * 100 / (101.3 - 2.67 * reps)
+
+  const brzycki = weight / (1.0278 - 0.0278 * reps);
+  const epley = weight * (1 + reps / 30);
+
+  if (reps <= 6) {
+    // Brzycki e piu accurata per bassi reps
+    return Math.round(brzycki * 10) / 10;
+  } else if (reps <= 10) {
+    // Media delle due formule
+    return Math.round(((brzycki + epley) / 2) * 10) / 10;
+  } else {
+    // Epley e piu accurata per alti reps, ma con warning
+    // Per reps > 15, l'errore puo superare il 10%
+    if (reps > 15) {
+      console.warn(`[1RM] High rep count (${reps}) - estimate may be inaccurate (±15%)`);
+    }
+    return Math.round(epley * 10) / 10;
+  }
 }
 
 // ===== PROGRESSIONI CALISTHENICS SCIENTIFICHE =====
@@ -58,7 +143,7 @@ const CALISTHENICS_PATTERNS = [
   {
     id: 'lower_push',
     name: 'Lower Body Push (Squat)',
-    description: 'Progressioni squat - dalla più facile alla più difficile',
+    description: 'Progressioni squat - dalla piu facile alla piu difficile',
     progressions: [
       { id: 'squat_assisted', name: 'Squat Assistito (con supporto)', difficulty: 1 },
       { id: 'air_squat', name: 'Air Squat', difficulty: 2 },
@@ -86,7 +171,7 @@ const CALISTHENICS_PATTERNS = [
   },
   {
     id: 'vertical_push',
-    name: 'Vertical Push (Pike → HSPU)',
+    name: 'Vertical Push (Pike - HSPU)',
     description: 'Progressioni spinta verticale verso handstand',
     progressions: [
       { id: 'pike_pushup', name: 'Pike Push-up', difficulty: 4 },
@@ -99,7 +184,7 @@ const CALISTHENICS_PATTERNS = [
   },
   {
     id: 'vertical_pull',
-    name: 'Vertical Pull (Row → Pull-up)',
+    name: 'Vertical Pull (Row - Pull-up)',
     description: 'Progressioni trazione verticale - BASE: inverted row',
     progressions: [
       { id: 'inverted_row_high', name: 'Inverted Row (barra alta)', difficulty: 2 },
@@ -129,7 +214,7 @@ const CALISTHENICS_PATTERNS = [
   {
     id: 'core',
     name: 'Core Stability',
-    description: 'Progressioni core e stabilità',
+    description: 'Progressioni core e stabilita',
     progressions: [
       { id: 'plank', name: 'Plank', difficulty: 2, isometric: true },
       { id: 'side_plank', name: 'Side Plank', difficulty: 3, isometric: true },
@@ -142,131 +227,157 @@ const CALISTHENICS_PATTERNS = [
   }
 ];
 
-// ===== PROGRESSIONI PALESTRA - PESI LIBERI (10RM TEST) =====
-// Per chi si allena con bilanciere e manubri
-const GYM_PATTERNS_FREEWEIGHTS = [
+// ===== PROGRESSIONI PALESTRA CON SCELTA PESO LIBERO vs MACCHINA =====
+// Per ogni pattern l'utente sceglie se usare peso libero o macchina
+const GYM_PATTERNS_WITH_CHOICE = [
   {
     id: 'lower_push',
-    name: 'Back Squat',
-    description: 'Test 10RM Squat con bilanciere',
-    exercise: { id: 'back_squat', name: 'Back Squat', unit: 'kg' }
+    name: 'Lower Push (Gambe)',
+    description: 'Scegli come testare la spinta delle gambe',
+    variants: [
+      {
+        id: 'back_squat',
+        name: 'Squat con Bilanciere',
+        type: 'free_weight',
+        description: 'Attiva piu muscoli (core, stabilizzatori). Migliore per forza funzionale.',
+        videoUrl: '/videos/exercises/back-squat.mp4',
+        recommended: true
+      },
+      {
+        id: 'leg_press',
+        name: 'Leg Press',
+        type: 'machine',
+        description: 'Piu sicura, ideale per iniziare. Meno attivazione muscolare globale.',
+        videoUrl: '/videos/exercises/leg-press.mp4'
+      }
+    ]
   },
   {
     id: 'horizontal_push',
-    name: 'Bench Press',
-    description: 'Test 10RM Panca piana con bilanciere',
-    exercise: { id: 'bench_press', name: 'Bench Press', unit: 'kg' }
-  },
-  {
-    id: 'vertical_push',
-    name: 'Military Press',
-    description: 'Test 10RM Shoulder Press con bilanciere in piedi',
-    exercise: { id: 'military_press', name: 'Military Press', unit: 'kg' }
+    name: 'Horizontal Push (Petto)',
+    description: 'Scegli come testare la spinta orizzontale',
+    variants: [
+      {
+        id: 'bench_press',
+        name: 'Panca Piana',
+        type: 'free_weight',
+        description: 'Attiva stabilizzatori e core. Movimento piu completo.',
+        videoUrl: '/videos/exercises/flat-barbell-bench-press.mp4',
+        recommended: true
+      },
+      {
+        id: 'chest_press',
+        name: 'Chest Press',
+        type: 'machine',
+        description: 'Traiettoria guidata, piu sicura per principianti.',
+        videoUrl: '/videos/exercises/chest-press.mp4'
+      }
+    ]
   },
   {
     id: 'vertical_pull',
-    name: 'Lat Pulldown',
-    description: 'Test 10RM Lat Machine (o Trazioni zavorrate)',
-    exercise: { id: 'lat_pulldown', name: 'Lat Pulldown', unit: 'kg' }
+    name: 'Vertical Pull (Dorsali)',
+    description: 'Test alla Lat Machine',
+    variants: [
+      {
+        id: 'lat_pulldown',
+        name: 'Lat Machine',
+        type: 'machine',
+        description: 'Lat Pulldown ai cavi',
+        videoUrl: '/videos/exercises/lat-pulldown.mp4'
+      }
+      // Nessuna alternativa per lat machine
+    ]
+  },
+  {
+    id: 'vertical_push',
+    name: 'Vertical Push (Spalle)',
+    description: 'Scegli come testare la spinta verticale',
+    variants: [
+      {
+        id: 'military_press',
+        name: 'Military Press',
+        type: 'free_weight',
+        description: 'In piedi, attiva core e stabilizzatori. Piu completo.',
+        videoUrl: '/videos/exercises/military-press.mp4',
+        recommended: true
+      },
+      {
+        id: 'shoulder_press_machine',
+        name: 'Shoulder Press Machine',
+        type: 'machine',
+        description: 'Seduto, traiettoria guidata. Ideale per isolare le spalle.',
+        videoUrl: '/videos/exercises/shoulder-press.mp4'
+      }
+    ]
   },
   {
     id: 'horizontal_pull',
-    name: 'Pulley Basso',
-    description: 'Test 10RM Pulley Basso (rematore ai cavi)',
-    exercise: { id: 'low_cable_row', name: 'Pulley Basso', unit: 'kg' }
-  },
-  {
-    id: 'lower_pull',
-    name: 'Deadlift',
-    description: 'Test 10RM Stacco da terra con bilanciere',
-    exercise: { id: 'deadlift', name: 'Deadlift', unit: 'kg' }
-  },
-  {
-    id: 'core',
-    name: 'Crunch ai Cavi',
-    description: 'Test 10RM Crunch ai cavi',
-    exercise: { id: 'cable_crunch', name: 'Crunch ai Cavi', unit: 'kg' }
+    name: 'Horizontal Pull (Remata)',
+    description: 'Scegli come testare la tirata orizzontale',
+    variants: [
+      {
+        id: 'low_cable_row',
+        name: 'Pulley Basso',
+        type: 'cable',
+        description: 'Cavi liberi, richiede controllo del core.',
+        videoUrl: '/videos/exercises/seated-cable-row.mp4',
+        recommended: true
+      },
+      {
+        id: 'row_machine',
+        name: 'Row Machine',
+        type: 'machine',
+        description: 'Traiettoria guidata, piu semplice da eseguire.',
+        videoUrl: '/videos/exercises/seated-row-machine.mp4'
+      }
+    ]
   }
 ];
 
-// ===== PROGRESSIONI PALESTRA - MACCHINE (10RM TEST) =====
-// Per chi si allena prevalentemente con macchine isotoniche
-const GYM_PATTERNS_MACHINES = [
-  {
-    id: 'lower_push',
-    name: 'Leg Press',
-    description: 'Test 10RM Leg Press (pressa)',
-    exercise: { id: 'leg_press', name: 'Leg Press', unit: 'kg' }
-  },
-  {
-    id: 'horizontal_push',
-    name: 'Chest Press',
-    description: 'Test 10RM Chest Press (pettorali)',
-    exercise: { id: 'chest_press', name: 'Chest Press', unit: 'kg' }
-  },
-  {
-    id: 'vertical_push',
-    name: 'Shoulder Press Machine',
-    description: 'Test 10RM Shoulder Press alla macchina',
-    exercise: { id: 'shoulder_press_machine', name: 'Shoulder Press Machine', unit: 'kg' }
-  },
-  {
-    id: 'vertical_pull',
-    name: 'Lat Pulldown',
-    description: 'Test 10RM Lat Machine',
-    exercise: { id: 'lat_pulldown', name: 'Lat Pulldown', unit: 'kg' }
-  },
-  {
-    id: 'horizontal_pull',
-    name: 'Pulley Basso',
-    description: 'Test 10RM Pulley Basso (rematore ai cavi)',
-    exercise: { id: 'low_cable_row', name: 'Pulley Basso', unit: 'kg' }
-  },
-  {
-    id: 'lower_pull',
-    name: 'Leg Curl',
-    description: 'Test 10RM Leg Curl (femorali)',
-    exercise: { id: 'leg_curl', name: 'Leg Curl', unit: 'kg' }
-  },
-  {
-    id: 'core',
-    name: 'Crunch ai Cavi',
-    description: 'Test 10RM Crunch ai cavi',
-    exercise: { id: 'cable_crunch', name: 'Crunch ai Cavi', unit: 'kg' }
-  }
-];
+// Legacy arrays per retrocompatibilita (usati solo se necessario)
+const GYM_PATTERNS_FREEWEIGHTS = GYM_PATTERNS_WITH_CHOICE.map(p => ({
+  id: p.id,
+  name: p.variants[0].name,
+  description: p.variants[0].description,
+  exercise: { id: p.variants[0].id, name: p.variants[0].name, unit: 'kg' }
+}));
+
+const GYM_PATTERNS_MACHINES = GYM_PATTERNS_WITH_CHOICE.map(p => ({
+  id: p.id,
+  name: p.variants[p.variants.length - 1].name,
+  description: p.variants[p.variants.length - 1].description,
+  exercise: { id: p.variants[p.variants.length - 1].id, name: p.variants[p.variants.length - 1].name, unit: 'kg' }
+}));
 
 export default function ScreeningFlow({ onComplete, userData, userId }) {
   const { t } = useTranslation();
 
-  // Determina modalità test in base a location e trainingType
+  // Determina modalita test in base a location e trainingType
   const isGymMode = userData?.trainingLocation === 'gym' &&
                     (userData?.trainingType === 'equipment' || userData?.trainingType === 'machines');
-
-  // Distingui tra pesi liberi e macchine
-  const isMachinesMode = userData?.trainingType === 'machines';
 
   // Seleziona il set di pattern corretto
   let MOVEMENT_PATTERNS;
   let testType;
 
+  // BETA: Solo 2 test - lower_push (squat) e horizontal_push (push/bench)
+  const BETA_PATTERN_IDS = ['lower_push', 'horizontal_push'];
+
   if (!isGymMode) {
     // Calisthenics / Corpo libero
-    MOVEMENT_PATTERNS = CALISTHENICS_PATTERNS;
+    MOVEMENT_PATTERNS = CALISTHENICS_PATTERNS.filter(p => BETA_PATTERN_IDS.includes(p.id));
     testType = 'CALISTHENICS';
-  } else if (isMachinesMode) {
-    // Palestra con macchine isotoniche
-    MOVEMENT_PATTERNS = GYM_PATTERNS_MACHINES;
-    testType = 'GYM_MACHINES';
   } else {
-    // Palestra con pesi liberi (bilanciere/manubri)
-    MOVEMENT_PATTERNS = GYM_PATTERNS_FREEWEIGHTS;
-    testType = 'GYM_FREEWEIGHTS';
+    // Palestra - usa nuova struttura con scelta peso libero/macchina
+    MOVEMENT_PATTERNS = GYM_PATTERNS_WITH_CHOICE.filter(p => BETA_PATTERN_IDS.includes(p.id));
+    testType = 'GYM_WITH_CHOICE';
   }
 
   const [currentPattern, setCurrentPattern] = useState(0);
   const [results, setResults] = useState({});
   const [selectedVariant, setSelectedVariant] = useState('');
+  const [selectedGymVariant, setSelectedGymVariant] = useState(''); // Per GYM: quale variante (squat/leg press)
   const [reps, setReps] = useState('');
   const [weight, setWeight] = useState(''); // Per GYM mode (kg)
   const [showSummary, setShowSummary] = useState(false);
@@ -288,6 +399,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
       // Ripristina i valori del pattern precedente
       if (prevResult) {
         if (isGymMode) {
+          setSelectedGymVariant(prevResult.variantId || '');
           setWeight(prevResult.weight10RM?.toString() || '');
         } else {
           setSelectedVariant(prevResult.variantId || '');
@@ -295,6 +407,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
         }
       } else {
         setSelectedVariant('');
+        setSelectedGymVariant('');
         setReps('');
         setWeight('');
       }
@@ -327,7 +440,11 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
   const handleNext = () => {
     // Validation diversa per GYM vs CALISTHENICS
     if (isGymMode) {
-      // GYM: serve peso in kg (10RM fisso)
+      // GYM: serve variante selezionata + peso in kg (10RM fisso)
+      if (!selectedGymVariant) {
+        alert('Seleziona quale esercizio vuoi usare per il test');
+        return;
+      }
       if (!weight || parseFloat(weight) === 0) {
         alert('Inserisci il peso massimo (10RM) per questo esercizio');
         return;
@@ -345,7 +462,8 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
     let newResults;
 
     if (isGymMode) {
-      // GYM MODE: Calcola 1RM con formula Brzycki
+      // GYM MODE: Usa la variante selezionata
+      const selectedExercise = pattern.variants.find(v => v.id === selectedGymVariant);
       const weight10RM = parseFloat(weight);
       const oneRM = calculateOneRepMax(weight10RM, 10);
 
@@ -354,26 +472,30 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
       const relativeStrength = oneRM / bodyWeight;
 
       // Score: relativeStrength moltiplicato per fattore pattern
-      // Esempio: Squat 1RM = 100kg, BW = 70kg → 1.43 × 100 = 143
       const score = Math.round(relativeStrength * 100);
+
+      // Determina se ha scelto macchina o peso libero
+      const usedMachine = selectedExercise?.type === 'machine';
 
       newResults = {
         ...results,
         [pattern.id]: {
           patternName: pattern.name,
-          variantId: pattern.exercise.id,
-          variantName: pattern.exercise.name,
+          variantId: selectedGymVariant,
+          variantName: selectedExercise?.name || selectedGymVariant,
+          variantType: selectedExercise?.type || 'unknown', // 'free_weight' o 'machine'
+          usedMachine: usedMachine,
           weight10RM: weight10RM,
-          oneRM: Math.round(oneRM * 10) / 10, // Arrotonda a 1 decimale
+          oneRM: Math.round(oneRM * 10) / 10,
           relativeStrength: Math.round(relativeStrength * 100) / 100,
-          difficulty: 8, // GYM exercises considerati advanced difficulty
-          reps: 10, // Fisso per 10RM test
+          difficulty: usedMachine ? 6 : 8, // Macchine leggermente meno difficili
+          reps: 10,
           score: score,
           mode: 'GYM'
         }
       };
 
-      console.log(`[GYM] ${pattern.name}: 10RM=${weight10RM}kg → 1RM=${Math.round(oneRM)}kg | Score=${score}`);
+      console.log(`[GYM] ${pattern.name}: ${selectedExercise?.name} 10RM=${weight10RM}kg -> 1RM=${Math.round(oneRM)}kg | Score=${score} | Machine=${usedMachine}`);
     } else {
       // CALISTHENICS MODE: Sistema attuale
       const selectedProgression = pattern.progressions.find(p => p.id === selectedVariant);
@@ -387,7 +509,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
           difficulty: selectedProgression.difficulty,
           reps: parseInt(reps),
           isometric: selectedProgression.isometric || false,
-          score: selectedProgression.difficulty * parseInt(reps), // Fixed: removed × 10 multiplier
+          score: selectedProgression.difficulty * parseInt(reps),
           mode: 'CALISTHENICS'
         }
       };
@@ -398,6 +520,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
     if (currentPattern < MOVEMENT_PATTERNS.length - 1) {
       setCurrentPattern(currentPattern + 1);
       setSelectedVariant('');
+      setSelectedGymVariant('');
       setReps('');
       setWeight('');
     } else {
@@ -417,7 +540,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
     const maxPossibleScore = MOVEMENT_PATTERNS.length * 10 * 20; // 6 pattern × difficulty 10 × 20 reps
     const practicalScore = ((totalScore / maxPossibleScore) * 100).toFixed(1);
 
-    // 3. Parametri fisici (da onboarding - BMI, età)
+    // 3. Parametri fisici (da onboarding - BMI, eta)
     const onboardingData = localStorage.getItem('onboarding_data');
     let physicalScore = 65; // Default
 
@@ -431,7 +554,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
       if (bmi >= 18.5 && bmi <= 24.9) bmiScore = 85;
       else if (bmi < 18.5 || bmi > 30) bmiScore = 50;
 
-      // Score basato su età
+      // Score basato su eta
       let ageScore = 70;
       if (age < 30) ageScore = 85;
       else if (age < 40) ageScore = 75;
@@ -441,9 +564,9 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
     }
 
     // 4. Score finale ponderato
-    // ✅ FIX PROPORZIONI: Practical conta DI PIÙ del quiz teorico!
-    // - Quiz teorico è utile ma secondario (20%)
-    // - Test pratici sono LA cosa più importante (60%)
+    // Practical conta DI PIU del quiz teorico!
+    // - Quiz teorico e utile ma secondario (20%)
+    // - Test pratici sono LA cosa piu importante (60%)
     // - Parametri fisici sono contesto (20%)
     const finalScore = (
       quizScore * 0.2 +                    // 20% peso al quiz teorico
@@ -451,16 +574,21 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
       parseFloat(physicalScore) * 0.2      // 20% peso ai parametri fisici
     ).toFixed(1);
 
-    // 5. Determina livello
-    let level = 'beginner';
-    if (finalScore >= 75) level = 'advanced';
-    else if (finalScore >= 55) level = 'intermediate';
+    // 5. Determina livello usando funzione centralizzata
+    // Controlla se l'utente ha usato solo macchine
+    const usedOnlyMachines = Object.values(practicalResults).every(
+      (p: any) => p.usedMachine === true
+    );
 
-    // ✅ OVERRIDE: Chi usa macchine è sempre BEGINNER
-    // Logica: le macchine sono per principianti o chi preferisce sicurezza
-    if (isMachinesMode) {
-      level = 'beginner';
-      console.log('[SCREENING] ⚠️ Machines mode detected → forcing BEGINNER level');
+    const { level, finalScore: calculatedScore } = calculateLevelFromScreening(
+      parseFloat(practicalScore),
+      quizScore,
+      parseFloat(physicalScore),
+      usedOnlyMachines
+    );
+
+    if (usedOnlyMachines) {
+      console.log('[SCREENING] User chose only machines -> may suggest free weights later');
     }
 
     // 6. Salva dati completi con BASELINE per ogni pattern
@@ -470,7 +598,8 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
       quizScore: quizScore,
       practicalScore: practicalScore,
       physicalScore: physicalScore,
-      patternBaselines: practicalResults, // ← BASELINE per programma
+      patternBaselines: practicalResults, // BASELINE per programma
+      usedOnlyMachines: usedOnlyMachines, // Flag per proposta squat settimanale
       completed: true,
       timestamp: new Date().toISOString()
     };
@@ -548,7 +677,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
                               {pattern.variantName}: 10RM = <strong>{pattern.weight10RM} kg</strong>
                             </p>
                             <p className="text-blue-400 text-xs mt-1 font-mono">
-                              1RM stimato: {pattern.oneRM} kg • Rel. Strength: {pattern.relativeStrength}
+                              1RM stimato: {pattern.oneRM} kg - Rel. Strength: {pattern.relativeStrength}
                             </p>
                           </>
                         ) : (
@@ -557,17 +686,17 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
                               {pattern.isometric ? (
                                 <>
                                   <Timer className="w-4 h-4" />
-                                  {pattern.variantName} × {pattern.reps} secondi
+                                  {pattern.variantName} x {pattern.reps} secondi
                                 </>
                               ) : (
                                 <>
                                   <RotateCw className="w-4 h-4" />
-                                  {pattern.variantName} × {pattern.reps} reps
+                                  {pattern.variantName} x {pattern.reps} reps
                                 </>
                               )}
                             </p>
                             <p className="text-xs text-slate-500 mt-1">
-                              Difficoltà: {pattern.difficulty}/10
+                              Difficolta: {pattern.difficulty}/10
                             </p>
                           </>
                         )}
@@ -618,7 +747,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
           <CardContent className="space-y-6">
             <div className="bg-emerald-500/10 border border-emerald-500 rounded-lg p-4">
               <p className="text-emerald-300 font-medium mb-2">
-                📋 {isGymMode ? 'Test 10RM' : 'Cosa fare'}:
+                {isGymMode ? 'Test 10RM' : 'Cosa fare'}:
               </p>
               {isGymMode ? (
                 <ol className="text-emerald-200 text-sm space-y-1 list-decimal list-inside">
@@ -628,41 +757,135 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
                 </ol>
               ) : (
                 <ol className="text-emerald-200 text-sm space-y-1 list-decimal list-inside">
-                  <li>Seleziona la variante più difficile che riesci a fare con buona forma</li>
+                  <li>Seleziona la variante piu difficile che riesci a fare con buona forma</li>
                   <li>Inserisci il numero massimo di ripetizioni pulite che riesci a completare</li>
                 </ol>
               )}
             </div>
 
             {isGymMode ? (
-              /* GYM MODE: Solo input peso */
-              <div className="space-y-2">
-                <label className="text-white font-display font-semibold text-lg">
-                  Peso 10RM (kg) - {pattern.name}
-                </label>
-                <p className="text-slate-400 text-sm mb-2">
-                  Il peso massimo con cui riesci a fare esattamente 10 ripetizioni con forma perfetta
-                </p>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                    placeholder="es. 60"
-                    className="w-full p-4 pr-12 rounded-xl bg-slate-700 border-2 border-slate-600 text-white font-mono text-lg focus:border-emerald-500 focus:outline-none"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-mono">kg</span>
+              /* GYM MODE: Scelta variante + input peso */
+              <div className="space-y-4">
+                {/* Step 1: Scelta esercizio */}
+                <div className="space-y-3">
+                  <label className="text-white font-semibold text-lg">
+                    Quale esercizio preferisci per questo test?
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {pattern.variants.map((variant) => {
+                      const isSelected = selectedGymVariant === variant.id;
+                      return (
+                        <button
+                          key={variant.id}
+                          onClick={() => setSelectedGymVariant(variant.id)}
+                          className={`relative p-4 rounded-xl border-2 transition-all text-left ${
+                            isSelected
+                              ? 'border-emerald-500 bg-emerald-500/20 shadow-lg shadow-emerald-500/10'
+                              : 'border-slate-600 bg-slate-700/50 hover:border-slate-500'
+                          }`}
+                        >
+                          {/* Badge Consigliato */}
+                          {variant.recommended && (
+                            <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                              Consigliato
+                            </span>
+                          )}
+
+                          {/* Video/Immagine */}
+                          <div className="relative w-full h-32 rounded-lg overflow-hidden bg-slate-800 mb-3 group">
+                            {variant.videoUrl ? (
+                              <>
+                                <video
+                                  src={variant.videoUrl}
+                                  className="w-full h-full object-cover"
+                                  muted
+                                  loop
+                                  playsInline
+                                  autoPlay
+                                  onError={(e) => {
+                                    const target = e.target as HTMLVideoElement;
+                                    target.style.display = 'none';
+                                  }}
+                                />
+                                {/* Bottone zoom */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openImagePreview(variant.videoUrl, variant.name);
+                                  }}
+                                  className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                >
+                                  <ZoomIn className="w-8 h-8 text-white" />
+                                </button>
+                              </>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-4xl">
+                                🏋️
+                              </div>
+                            )}
+                            {/* Badge tipo */}
+                            <span className={`absolute bottom-2 left-2 text-xs px-2 py-1 rounded-full font-medium ${
+                              variant.type === 'free_weight'
+                                ? 'bg-blue-500/80 text-white'
+                                : variant.type === 'cable'
+                                ? 'bg-purple-500/80 text-white'
+                                : 'bg-orange-500/80 text-white'
+                            }`}>
+                              {variant.type === 'free_weight' ? 'Peso Libero' : variant.type === 'cable' ? 'Cavi' : 'Macchina'}
+                            </span>
+                          </div>
+
+                          {/* Info */}
+                          <p className={`font-bold text-lg ${isSelected ? 'text-emerald-300' : 'text-white'}`}>
+                            {variant.name}
+                          </p>
+                          <p className="text-slate-400 text-sm mt-1">
+                            {variant.description}
+                          </p>
+
+                          {/* Checkmark */}
+                          {isSelected && (
+                            <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                              <Check className="w-4 h-4 text-white" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                {weight && parseFloat(weight) > 0 && (
-                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mt-2">
-                    <p className="text-blue-300 text-sm">
-                      🎯 1RM stimato: <strong className="font-mono text-lg">{Math.round(calculateOneRepMax(parseFloat(weight), 10))} kg</strong>
+
+                {/* Step 2: Input peso (appare dopo selezione) */}
+                {selectedGymVariant && (
+                  <div className="space-y-2 animate-in slide-in-from-top-2 duration-200 pt-4 border-t border-slate-700">
+                    <label className="text-white font-semibold text-lg">
+                      Peso 10RM (kg) - {pattern.variants.find(v => v.id === selectedGymVariant)?.name}
+                    </label>
+                    <p className="text-slate-400 text-sm mb-2">
+                      Il peso massimo con cui riesci a fare esattamente 10 ripetizioni con forma perfetta
                     </p>
-                    <p className="text-blue-400 text-xs mt-1">
-                      Calcolato con formula di Brzycki
-                    </p>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={weight}
+                        onChange={(e) => setWeight(e.target.value)}
+                        placeholder="es. 60"
+                        className="w-full p-4 pr-12 rounded-xl bg-slate-700 border-2 border-slate-600 text-white font-mono text-lg focus:border-emerald-500 focus:outline-none"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-mono">kg</span>
+                    </div>
+                    {weight && parseFloat(weight) > 0 && (
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mt-2">
+                        <p className="text-blue-300 text-sm">
+                          🎯 1RM stimato: <strong className="font-mono text-lg">{Math.round(calculateOneRepMax(parseFloat(weight), 10))} kg</strong>
+                        </p>
+                        <p className="text-blue-400 text-xs mt-1">
+                          Calcolato con formula di Brzycki
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -670,7 +893,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
               /* CALISTHENICS MODE: Lista visuale con immagini */
               <>
                 <div className="space-y-3">
-                  <label className="text-white font-medium">Seleziona la variante più difficile che riesci a fare:</label>
+                  <label className="text-white font-medium">Seleziona la variante piu difficile che riesci a fare:</label>
                   <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2">
                     {pattern.progressions.map((prog) => {
                       const videoUrl = SCREENING_VIDEOS[prog.name];
@@ -700,6 +923,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
                                     playsInline
                                     autoPlay
                                     onError={(e) => {
+                                      // Fallback a immagine se video non carica
                                       const target = e.target as HTMLVideoElement;
                                       target.style.display = 'none';
                                       const fallback = target.nextElementSibling as HTMLElement;
@@ -711,9 +935,11 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
                                       <img src={imageUrl} alt={prog.name} className="w-full h-full object-cover" />
                                     ) : '🏋️'}
                                   </div>
+                                  {/* Badge video */}
                                   <div className="absolute bottom-0.5 right-0.5 bg-emerald-500/90 rounded px-1 py-0.5">
                                     <Play className="w-2.5 h-2.5 text-white fill-white" />
                                   </div>
+                                  {/* Bottone zoom overlay */}
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -734,6 +960,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
                                       (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect fill="%23374151" width="64" height="64"/><text x="32" y="36" text-anchor="middle" fill="%239ca3af" font-size="24">🏋️</text></svg>';
                                     }}
                                   />
+                                  {/* Bottone zoom overlay */}
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -857,7 +1084,7 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
               {/* Bottone Avanti */}
               <button
                 onClick={handleNext}
-                disabled={isGymMode ? !weight : (!selectedVariant || !reps)}
+                disabled={isGymMode ? (!selectedGymVariant || !weight) : (!selectedVariant || !reps)}
                 className={`${currentPattern > 0 ? 'flex-1' : 'w-full'} bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:from-emerald-600 hover:to-emerald-700 transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2`}
               >
                 {currentPattern < MOVEMENT_PATTERNS.length - 1 ? 'Prossimo Pattern' : 'Completa Assessment'}

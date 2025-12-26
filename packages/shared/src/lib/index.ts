@@ -189,3 +189,15 @@ export { default as painTrackingService } from './painTrackingService';
 export { default as rehabilitationService } from './rehabilitationService';
 export { default as followService } from './followService';
 export { default as socialService } from './socialService';
+
+// Free Weight Suggestion Service
+export {
+  shouldSuggestFreeWeight,
+  isInOptimalCondition,
+  getUserMachinePreference,
+  findFreeWeightAlternative,
+  markSuggestionShown,
+  recordSuggestionResponse,
+  type RecoveryConditions,
+  type FreeWeightSuggestion,
+} from './freeWeightSuggestionService';
