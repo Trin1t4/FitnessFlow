@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { Check, X, Timer } from 'lucide-react';
+import { Check, X, Timer, AlertCircle } from 'lucide-react';
 import { PostSetScreening, SetFeedback } from '../components/PostSetScreening';
 import TUTTimer from '../components/TUTTimer';
+import {
+  startProgressiveWorkout,
+  saveProgressiveSet,
+  updateProgressiveProgress,
+  completeProgressiveWorkout,
+  type ProgressiveSetLog,
+} from '@trainsmart/shared';
 
 interface Exercise {
   name: string;
@@ -11,7 +18,8 @@ interface Exercise {
   reps: string;
   rest: number;
   weight?: number;
-    tempo?: {
+  pattern?: string;
+  tempo?: {
     eccentric: number;
     pause: number;
     concentric: number;
@@ -26,7 +34,7 @@ interface Exercise {
 interface WorkoutSessionState {
   program: any;
   dayIndex: number;
-  adjustment: {
+  adjustment?: {
     volumeMultiplier: number;
     intensityMultiplier: number;
     restMultiplier?: number;
@@ -34,6 +42,14 @@ interface WorkoutSessionState {
     skipExercises: string[];
     recommendation: string;
   };
+  recoveryData?: any;
+  // Resume workout props
+  resumeWorkoutId?: string;
+  resumeExerciseIndex?: number;
+  resumeSetNumber?: number;
+  completedSets?: ProgressiveSetLog[];
+  // Merge exercises props
+  mergeExercises?: string[];
 }
 
 export default function WorkoutSession() {
@@ -41,21 +57,79 @@ export default function WorkoutSession() {
   const navigate = useNavigate();
   const state = location.state as WorkoutSessionState;
 
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [currentSet, setCurrentSet] = useState(1);
+  // Initialize from resume state if available
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(
+    state?.resumeExerciseIndex ?? 0
+  );
+  const [currentSet, setCurrentSet] = useState(
+    state?.resumeSetNumber ?? 1
+  );
   const [isResting, setIsResting] = useState(false);
   const [restTimeLeft, setRestTimeLeft] = useState(0);
-  const [completedSets, setCompletedSets] = useState<number[]>([]);
+  const [completedSetsInExercise, setCompletedSetsInExercise] = useState<number[]>([]);
   const [sessionStartTime] = useState(new Date());
-    const [currentRep, setCurrentRep] = useState(1);
+  const [currentRep, setCurrentRep] = useState(1);
   const [showPostSetScreening, setShowPostSetScreening] = useState(false);
   const [setFeedbackHistory, setSetFeedbackHistory] = useState<SetFeedback[]>([]);
+
+  // Progressive save state
+  const [workoutLogId, setWorkoutLogId] = useState<string | null>(
+    state?.resumeWorkoutId ?? null
+  );
+  const [userId, setUserId] = useState<string | null>(null);
+  const [exercisesCompletedCount, setExercisesCompletedCount] = useState(0);
+  const [isResuming, setIsResuming] = useState(!!state?.resumeWorkoutId);
+
+  // Track already completed sets from resume
+  const [previouslyCompletedSets, setPreviouslyCompletedSets] = useState<ProgressiveSetLog[]>(
+    state?.completedSets ?? []
+  );
+
+  // Get user ID on mount
+  useEffect(() => {
+    async function getUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    }
+    getUser();
+  }, []);
 
   useEffect(() => {
     if (!state || !state.program) {
       navigate('/workout');
     }
   }, [state, navigate]);
+
+  // Initialize progressive workout save
+  useEffect(() => {
+    if (!userId || !state?.program || workoutLogId) return;
+
+    // If resuming, we already have workoutLogId
+    if (isResuming) {
+      console.log('[WorkoutSession] Resuming workout:', state.resumeWorkoutId);
+      return;
+    }
+
+    // Start new progressive workout
+    async function initWorkout() {
+      const workout = state.program.weekly_schedule[state.dayIndex];
+      const result = await startProgressiveWorkout({
+        userId: userId!,
+        programId: state.program.id,
+        dayName: workout.dayName,
+        totalExercises: workout.exercises?.length || 0,
+      });
+
+      if (result.workoutId) {
+        setWorkoutLogId(result.workoutId);
+        console.log('[WorkoutSession] Started new workout:', result.workoutId);
+      }
+    }
+
+    initWorkout();
+  }, [userId, state?.program, workoutLogId, isResuming]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -74,14 +148,20 @@ export default function WorkoutSession() {
   }
 
   const workout = state.program.weekly_schedule[state.dayIndex];
+  const adjustment = state.adjustment || {
+    volumeMultiplier: 1,
+    intensityMultiplier: 1,
+    skipExercises: [],
+    recommendation: '',
+  };
 
   // Filtra esercizi in base a skipExercises e exerciseMode
-  let filteredExercises = workout.exercises.filter(
-    (ex: Exercise) => !state.adjustment.skipExercises.some(skip => ex.name.includes(skip))
+  let filteredExercises = (workout.exercises || []).filter(
+    (ex: Exercise) => !adjustment.skipExercises.some((skip: string) => ex.name.includes(skip))
   );
 
   // Limita numero esercizi in base a exerciseMode (tempo disponibile)
-  const exerciseMode = state.adjustment.exerciseMode || 'standard';
+  const exerciseMode = adjustment.exerciseMode || 'standard';
   if (exerciseMode === 'express') {
     // 20 min: solo primi 2-3 esercizi principali
     filteredExercises = filteredExercises.slice(0, 3);
@@ -93,9 +173,41 @@ export default function WorkoutSession() {
   }
   // standard (45), full (60), extended (90+) = tutti gli esercizi
 
+  // Add merged exercises from previous incomplete workout
+  if (state.mergeExercises && state.mergeExercises.length > 0) {
+    console.log('[WorkoutSession] Merging exercises:', state.mergeExercises);
+    // Find the exercises from the program that match the names
+    const allProgramExercises = state.program.weekly_schedule.flatMap(
+      (day: any) => day.exercises || []
+    );
+    const mergedExs = state.mergeExercises
+      .map((name: string) => allProgramExercises.find((ex: Exercise) => ex.name === name))
+      .filter(Boolean);
+    filteredExercises = [...filteredExercises, ...mergedExs];
+  }
+
   const exercises = filteredExercises;
   const currentExercise = exercises[currentExerciseIndex];
-console.log("🎯 STATE RICEVUTO:", state.adjustment);
+
+  // Safety check for empty exercises
+  if (!currentExercise) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+          <p className="text-xl text-gray-300">Nessun esercizio disponibile</p>
+          <button
+            onClick={() => navigate('/workout')}
+            className="mt-4 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-lg"
+          >
+            Torna al workout
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+console.log("🎯 STATE RICEVUTO:", adjustment);
 console.log("⚙️ ESERCIZIO CORRENTE:", {
   name: currentExercise.name,
   sets: currentExercise.sets,
@@ -103,29 +215,26 @@ console.log("⚙️ ESERCIZIO CORRENTE:", {
   weight: currentExercise.weight
 });
 
-const adjustedSets = Math.max(1, Math.round(currentExercise.sets * state.adjustment.volumeMultiplier));
-
-
+const adjustedSets = Math.max(1, Math.round(currentExercise.sets * adjustment.volumeMultiplier));
 
 console.log("🔢 VOLUME ADJUSTMENT:", {
   exerciseName: currentExercise.name,
   originalSets: currentExercise.sets,
-  volumeMultiplier: state.adjustment.volumeMultiplier,
-  calculated: currentExercise.sets * state.adjustment.volumeMultiplier,
+  volumeMultiplier: adjustment.volumeMultiplier,
+  calculated: currentExercise.sets * adjustment.volumeMultiplier,
   adjustedSets: adjustedSets,
   wasReduced: adjustedSets < currentExercise.sets
 });
 console.log("✅ SETS CALCOLATI:", { originalSets: currentExercise.sets, adjustedSets });
-const adjustedWeight = currentExercise.weight 
-  ? Math.round(currentExercise.weight * state.adjustment.intensityMultiplier) 
+const adjustedWeight = currentExercise.weight
+  ? Math.round(currentExercise.weight * adjustment.intensityMultiplier)
   : null;
-
 
 console.log("🏋️ PESO DEBUG:", {
   exerciseName: currentExercise.name,
   originalWeight: currentExercise.weight,
   hasWeight: !!currentExercise.weight,
-  intensityMultiplier: state.adjustment.intensityMultiplier,
+  intensityMultiplier: adjustment.intensityMultiplier,
   adjustedWeight: adjustedWeight
 });
   const getGoalType = (): 'hypertrophy' | 'strength' | 'endurance' | 'power' => {
@@ -140,22 +249,56 @@ console.log("🏋️ PESO DEBUG:", {
     setShowPostSetScreening(true);
   };
 
-  const handlePostSetFeedback = (feedback: SetFeedback) => {
+  const handlePostSetFeedback = async (feedback: SetFeedback) => {
     setSetFeedbackHistory([...setFeedbackHistory, feedback]);
     setShowPostSetScreening(false);
-    setCompletedSets([...completedSets, currentSet]);
+    setCompletedSetsInExercise([...completedSetsInExercise, currentSet]);
+
+    // Save set progressively to database
+    if (workoutLogId) {
+      await saveProgressiveSet({
+        workout_log_id: workoutLogId,
+        exercise_name: currentExercise.name,
+        exercise_index: currentExerciseIndex,
+        set_number: currentSet,
+        reps_completed: feedback.actualReps,
+        weight_used: adjustedWeight || undefined,
+        rpe: feedback.perceivedEffort,
+      });
+
+      // Update progress position
+      await updateProgressiveProgress(
+        workoutLogId,
+        currentExerciseIndex,
+        currentSet + 1,
+        exercisesCompletedCount
+      );
+    }
 
     if (currentSet < adjustedSets) {
       setCurrentSet(currentSet + 1);
       // Applica restMultiplier per ridurre pause in modalità express/veloce
-      const adjustedRest = Math.round(currentExercise.rest * (state.adjustment.restMultiplier || 1));
+      const adjustedRest = Math.round(currentExercise.rest * (adjustment.restMultiplier || 1));
       setRestTimeLeft(Math.max(30, adjustedRest)); // Minimo 30 secondi
       setIsResting(true);
     } else {
+      // Exercise completed
+      const newExercisesCompleted = exercisesCompletedCount + 1;
+      setExercisesCompletedCount(newExercisesCompleted);
+
+      if (workoutLogId) {
+        await updateProgressiveProgress(
+          workoutLogId,
+          currentExerciseIndex + 1,
+          1,
+          newExercisesCompleted
+        );
+      }
+
       if (currentExerciseIndex < exercises.length - 1) {
         setCurrentExerciseIndex(currentExerciseIndex + 1);
         setCurrentSet(1);
-        setCompletedSets([]);
+        setCompletedSetsInExercise([]);
       } else {
         handleCompleteWorkout();
       }
@@ -167,11 +310,36 @@ console.log("🏋️ PESO DEBUG:", {
   };
 
   const handleCompleteWorkout = async () => {
+    const endTime = new Date();
+    const durationMinutes = Math.round(
+      (endTime.getTime() - sessionStartTime.getTime()) / 60000
+    );
+
     console.log('Allenamento completato!', {
       startTime: sessionStartTime,
-      endTime: new Date(),
+      endTime,
+      durationMinutes,
       feedbackHistory: setFeedbackHistory,
     });
+
+    // Finalize progressive workout in database
+    if (workoutLogId) {
+      // Calculate average RPE from feedback
+      const avgRpe = setFeedbackHistory.length > 0
+        ? Math.round(
+            setFeedbackHistory.reduce((sum, f) => sum + f.perceivedEffort, 0) /
+            setFeedbackHistory.length
+          )
+        : undefined;
+
+      await completeProgressiveWorkout(workoutLogId, {
+        sessionRpe: avgRpe,
+        durationMinutes,
+        exercisesCompleted: exercises.length,
+      });
+      console.log('[WorkoutSession] Workout finalized:', workoutLogId);
+    }
+
     navigate('/workout');
   };
 
@@ -212,27 +380,50 @@ console.log("🏋️ PESO DEBUG:", {
             </div>
           </div>
 
-          {(state.adjustment.volumeMultiplier < 1 || state.adjustment.intensityMultiplier < 1) && (
+          {/* Resume indicator */}
+          {isResuming && currentExerciseIndex === (state?.resumeExerciseIndex ?? 0) && (
+            <div className="mt-4 bg-blue-900/30 border border-blue-500/60 rounded-xl p-3">
+              <div className="flex items-center gap-2 text-blue-300">
+                <span className="text-lg">🔄</span>
+                <span className="font-semibold">Workout ripreso</span>
+                <span className="text-blue-400 text-sm ml-auto">
+                  {previouslyCompletedSets.length} set già completati
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Merged exercises indicator */}
+          {state?.mergeExercises && state.mergeExercises.length > 0 && (
+            <div className="mt-4 bg-purple-900/30 border border-purple-500/60 rounded-xl p-3">
+              <div className="flex items-center gap-2 text-purple-300">
+                <span className="text-lg">➕</span>
+                <span className="font-semibold">+{state.mergeExercises.length} esercizi accorpati</span>
+              </div>
+            </div>
+          )}
+
+          {(adjustment.volumeMultiplier < 1 || adjustment.intensityMultiplier < 1) && (
             <div className="mt-4 bg-yellow-900/30 border border-yellow-500/60 rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2">
                 <span className="text-xl">⚡</span>
                 <span className="text-yellow-300 font-bold text-lg">AdaptFlow Attivo</span>
               </div>
               <p className="text-yellow-200/90 text-sm leading-relaxed">
-                {state.adjustment.recommendation}
+                {adjustment.recommendation}
               </p>
               <div className="flex gap-4 mt-3 pt-3 border-t border-yellow-500/30">
-                {state.adjustment.volumeMultiplier < 1 && (
+                {adjustment.volumeMultiplier < 1 && (
                   <div className="bg-yellow-500/20 px-3 py-1.5 rounded-lg">
                     <span className="text-yellow-300 font-semibold">
-                      📊 Volume: -{Math.round((1 - state.adjustment.volumeMultiplier) * 100)}%
+                      📊 Volume: -{Math.round((1 - adjustment.volumeMultiplier) * 100)}%
                     </span>
                   </div>
                 )}
-                {state.adjustment.intensityMultiplier < 1 && (
+                {adjustment.intensityMultiplier < 1 && (
                   <div className="bg-yellow-500/20 px-3 py-1.5 rounded-lg">
                     <span className="text-yellow-300 font-semibold">
-                      💪 Intensità: -{Math.round((1 - state.adjustment.intensityMultiplier) * 100)}%
+                      💪 Intensità: -{Math.round((1 - adjustment.intensityMultiplier) * 100)}%
                     </span>
                   </div>
                 )}
@@ -346,7 +537,7 @@ console.log("🏋️ PESO DEBUG:", {
             <div
               key={idx}
               className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ${
-                completedSets.includes(idx + 1)
+                completedSetsInExercise.includes(idx + 1)
                   ? 'bg-emerald-500 text-white'
                   : idx + 1 === currentSet
                   ? 'bg-emerald-500/50 text-white border-2 border-emerald-400'

@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { X, Info, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Dumbbell } from 'lucide-react';
+import { X, Info, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Dumbbell, Clock, PlayCircle, XCircle, PlusCircle } from 'lucide-react';
 import { RecoveryScreening } from '../pages/RecoveryScreening';
 import type { RecoveryData } from '../pages/RecoveryScreening';
 import { useTranslation } from '../lib/i18n';
-import { getAlternativesWithParams, hasAlternatives, type ExerciseAlternative, type SuggestedParams } from '@fitnessflow/shared';
+import {
+  getAlternativesWithParams,
+  hasAlternatives,
+  type ExerciseAlternative,
+  type SuggestedParams,
+  getInProgressWorkout,
+  getWorkoutSets,
+  abandonProgressiveWorkout,
+  logExerciseSkip,
+  patternToMuscleGroup,
+  type ProgressiveWorkoutSession,
+  type ProgressiveSetLog,
+} from '@trainsmart/shared';
 
 export default function Workout() {
   const navigate = useNavigate();
@@ -23,9 +35,146 @@ export default function Workout() {
     suggestedReps?: number;
   }>>({});
 
+  // In-progress workout state
+  const [inProgressWorkout, setInProgressWorkout] = useState<ProgressiveWorkoutSession | null>(null);
+  const [inProgressSets, setInProgressSets] = useState<ProgressiveSetLog[]>([]);
+  const [showResumeModal, setShowResumeModal] = useState(false);
+  const [resumeModalType, setResumeModalType] = useState<'same_day' | 'different_day'>('same_day');
+  const [missedExercises, setMissedExercises] = useState<string[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+
   useEffect(() => {
     loadProgram();
   }, []);
+
+  // Check for in-progress workout after program loads
+  useEffect(() => {
+    if (userId && program) {
+      checkInProgressWorkout();
+    }
+  }, [userId, program]);
+
+  async function checkInProgressWorkout() {
+    if (!userId) return;
+
+    try {
+      const workout = await getInProgressWorkout(userId);
+
+      if (workout) {
+        const workoutDate = new Date(workout.workout_date);
+        const today = new Date();
+        const isToday = workoutDate.toDateString() === today.toDateString();
+
+        // Get completed sets
+        const sets = await getWorkoutSets(workout.id);
+        setInProgressSets(sets);
+
+        // Calculate missed exercises (not in completed sets)
+        const completedExercises = new Set(sets.map(s => s.exercise_name));
+        const allExercises = program?.weekly_schedule?.flatMap((day: any) =>
+          day.exercises?.map((ex: any) => ex.name) || []
+        ) || [];
+
+        // Find exercises from the interrupted workout that weren't completed
+        // We need the original workout's exercises - for now use day_name to find them
+        const workoutDay = program?.weekly_schedule?.find((day: any) =>
+          day.dayName === workout.day_name
+        );
+        const missedExs = workoutDay?.exercises
+          ?.filter((ex: any) => !completedExercises.has(ex.name))
+          ?.map((ex: any) => ex.name) || [];
+
+        setMissedExercises(missedExs);
+        setInProgressWorkout(workout);
+
+        if (isToday) {
+          // Same day - auto resume
+          setResumeModalType('same_day');
+        } else {
+          // Different day - ask to merge
+          setResumeModalType('different_day');
+        }
+
+        setShowResumeModal(true);
+      }
+    } catch (error) {
+      console.error('[Workout] Error checking in-progress workout:', error);
+    }
+  }
+
+  // Handle resume workout (same day)
+  async function handleResumeWorkout() {
+    if (!inProgressWorkout) return;
+
+    setShowResumeModal(false);
+
+    // Navigate to workout session with resume data
+    navigate('/workout-session', {
+      state: {
+        program,
+        dayIndex: currentDay,
+        resumeWorkoutId: inProgressWorkout.id,
+        resumeExerciseIndex: inProgressWorkout.current_exercise_index,
+        resumeSetNumber: inProgressWorkout.current_set,
+        completedSets: inProgressSets,
+      }
+    });
+  }
+
+  // Handle merge missed exercises into today's workout
+  async function handleMergeExercises() {
+    if (!inProgressWorkout) return;
+
+    // Mark old workout as abandoned
+    await abandonProgressiveWorkout(inProgressWorkout.id);
+
+    setShowResumeModal(false);
+    setInProgressWorkout(null);
+
+    // The missed exercises will be added to today's workout in the session
+    navigate('/workout-session', {
+      state: {
+        program,
+        dayIndex: currentDay,
+        mergeExercises: missedExercises, // Pass missed exercises to add
+      }
+    });
+  }
+
+  // Handle skip all missed exercises (counts as skip for pattern detection)
+  async function handleSkipMissedExercises() {
+    if (!inProgressWorkout || !userId) return;
+
+    // Log each missed exercise as a skip
+    for (const exerciseName of missedExercises) {
+      // Find the exercise pattern from program
+      const exercise = program?.weekly_schedule
+        ?.flatMap((day: any) => day.exercises || [])
+        ?.find((ex: any) => ex.name === exerciseName);
+
+      const pattern = exercise?.pattern || exercise?.type || 'compound';
+
+      await logExerciseSkip(
+        userId,
+        exerciseName,
+        pattern,
+        {
+          programId: inProgressWorkout.program_id || undefined,
+          skipReason: 'other', // Workout not completed
+          dayName: inProgressWorkout.day_name,
+        }
+      );
+    }
+
+    // Mark old workout as abandoned
+    await abandonProgressiveWorkout(inProgressWorkout.id);
+
+    setShowResumeModal(false);
+    setInProgressWorkout(null);
+    setMissedExercises([]);
+
+    console.log(`[Workout] Logged ${missedExercises.length} exercises as skipped`);
+  }
 
   async function loadProgram() {
     try {
@@ -33,6 +182,7 @@ export default function Workout() {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
+        setUserId(user.id); // Save user ID for in-progress check
         console.log('[WORKOUT] User authenticated, loading from Supabase...');
         const { data, error } = await supabase
           .from('training_programs')
@@ -693,6 +843,116 @@ console.log("📊 MULTIPLIER:", { volumeMultiplier, intensityMultiplier, restMul
             });
           }}
         />
+      )}
+
+      {/* Resume Workout Modal */}
+      {showResumeModal && inProgressWorkout && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 max-w-md w-full border border-slate-700 shadow-2xl">
+            {resumeModalType === 'same_day' ? (
+              // SAME DAY - Resume workout
+              <>
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 mx-auto bg-emerald-500/20 rounded-full flex items-center justify-center mb-3">
+                    <PlayCircle className="w-8 h-8 text-emerald-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Workout in corso</h3>
+                  <p className="text-slate-400 text-sm mt-2">
+                    Hai un workout iniziato oggi che non hai completato
+                  </p>
+                </div>
+
+                <div className="bg-slate-700/50 rounded-xl p-4 mb-4">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-slate-400">Giorno:</span>
+                    <span className="text-white font-semibold">{inProgressWorkout.day_name}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-slate-400">Progresso:</span>
+                    <span className="text-emerald-400 font-semibold">
+                      {inProgressWorkout.exercises_completed}/{inProgressWorkout.total_exercises} esercizi
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Set completati:</span>
+                    <span className="text-white">{inProgressSets.length}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleResumeWorkout}
+                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    <PlayCircle className="w-5 h-5" />
+                    Riprendi
+                  </button>
+                  <button
+                    onClick={handleSkipMissedExercises}
+                    className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    <XCircle className="w-5 h-5" />
+                    Abbandona
+                  </button>
+                </div>
+              </>
+            ) : (
+              // DIFFERENT DAY - Merge or skip
+              <>
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 mx-auto bg-amber-500/20 rounded-full flex items-center justify-center mb-3">
+                    <Clock className="w-8 h-8 text-amber-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Workout non completato</h3>
+                  <p className="text-slate-400 text-sm mt-2">
+                    Hai {missedExercises.length} esercizi non completati da {inProgressWorkout.day_name}
+                  </p>
+                </div>
+
+                <div className="bg-slate-700/50 rounded-xl p-4 mb-4">
+                  <p className="text-slate-300 text-sm font-semibold mb-2">Esercizi mancanti:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {missedExercises.slice(0, 5).map((ex, i) => (
+                      <span key={i} className="px-2 py-1 bg-amber-500/20 text-amber-300 rounded-lg text-xs">
+                        {ex}
+                      </span>
+                    ))}
+                    {missedExercises.length > 5 && (
+                      <span className="px-2 py-1 bg-slate-600 text-slate-400 rounded-lg text-xs">
+                        +{missedExercises.length - 5} altri
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-slate-400 text-sm mb-4 text-center">
+                  Vuoi aggiungere questi esercizi alla seduta di oggi?
+                </p>
+
+                <div className="space-y-2">
+                  <button
+                    onClick={handleMergeExercises}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    <PlusCircle className="w-5 h-5" />
+                    Sì, accorpa alla seduta di oggi
+                  </button>
+                  <button
+                    onClick={handleSkipMissedExercises}
+                    className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    <XCircle className="w-5 h-5" />
+                    No, salta (conta come skip)
+                  </button>
+                </div>
+
+                <p className="text-slate-500 text-xs text-center mt-4">
+                  Se salti, gli esercizi verranno conteggiati per il tracking pattern
+                </p>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

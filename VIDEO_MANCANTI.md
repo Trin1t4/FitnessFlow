@@ -1,6 +1,6 @@
-# Media Esercizi Mancanti - FitnessFlow
+# Media Esercizi Mancanti - TrainSmart
 
-> **Ultimo aggiornamento:** 29 Novembre 2025
+> **Ultimo aggiornamento:** 26 Dicembre 2025
 
 > **LEGENDA:**
 > - **VIDEO** = Esercizi dinamici che richiedono movimento
@@ -82,7 +82,76 @@
 
 ---
 
-# SEZIONE 2: VIDEO DINAMICI MANCANTI
+# SEZIONE 2: VIDEO BODYWEIGHT MANCANTI (PRIORITA' MASSIMA)
+
+> Questi video sono per esercizi a corpo libero usati attivamente nell'app.
+> Sono fondamentali per utenti che si allenano a casa senza attrezzatura.
+
+## Lower Body - Bodyweight (12 video)
+
+| Esercizio | Nome File | Descrizione | Priorita |
+|-----------|-----------|-------------|----------|
+| Squat con Pausa | `squat-pause.mp4` | Squat con 2-3 sec pausa in basso | ALTA |
+| Squat Jump | `squat-jump.mp4` | Salto esplosivo da squat | ALTA |
+| Split Squat | `split-squat.mp4` | Affondo statico, piedi fermi | ALTA |
+| Affondi Indietro | `reverse-lunge.mp4` | Passo indietro (diverso da forward) | ALTA |
+| Skater Squat | `skater-squat.mp4` | Squat su una gamba, altra indietro | ALTA |
+| Shrimp Squat | `shrimp-squat.mp4` | Squat su una gamba, afferrando piede | ALTA |
+| Ponte Glutei a Una Gamba | `single-leg-glute-bridge.mp4` | Bridge unilaterale | ALTA |
+| Stacco Rumeno a Una Gamba | `single-leg-rdl.mp4` | RDL unilaterale, equilibrio | ALTA |
+| Hip Thrust Rialzato | `elevated-hip-thrust.mp4` | Hip thrust con spalle su panca | MEDIA |
+| Slider Leg Curl | `slider-leg-curl.mp4` | Leg curl con slider/asciugamano | MEDIA |
+| Box Squat | `box-squat.mp4` | Squat sedendosi su box/panca | MEDIA |
+| Assisted Pistol | `assisted-pistol-squat.mp4` | Pistol con supporto TRX/muro | MEDIA |
+
+## Upper Body Push - Bodyweight (8 video)
+
+| Esercizio | Nome File | Descrizione | Priorita |
+|-----------|-----------|-------------|----------|
+| Archer Push-up | `archer-push-up.mp4` | Push-up con braccio esteso laterale | ALTA |
+| Narrow Push-up | `narrow-push-up.mp4` | Push-up mani vicine (non diamante) | ALTA |
+| Ring Push-up | `ring-push-up.mp4` | Push-up agli anelli | MEDIA |
+| Typewriter Push-up | `typewriter-push-up.mp4` | Push-up laterale tipo macchina da scrivere | MEDIA |
+| Elevated Pike Push-up | `elevated-pike-push-up.mp4` | Pike push-up con piedi su rialzo | ALTA |
+| Handstand Hold | `handstand-hold.mp4` | Tenuta in verticale al muro | MEDIA |
+| Pseudo Planche Push-up | `pseudo-planche-push-up.mp4` | Push-up con mani ruotate indietro | BASSA |
+| Clap Push-up | `clap-push-up.mp4` | Push-up esplosivo con battito mani | BASSA |
+
+## Upper Body Pull - Bodyweight (4 video)
+
+| Esercizio | Nome File | Descrizione | Priorita |
+|-----------|-----------|-------------|----------|
+| Trazioni Presa Larga | `wide-grip-pull-up.mp4` | Pull-up con presa extra larga | ALTA |
+| Trazioni Presa Neutra | `neutral-grip-pull-up.mp4` | Pull-up con palmi paralleli | ALTA |
+| TRX Row | `trx-row.mp4` | Rematore alle cinghie TRX | MEDIA |
+| Band Row | `band-row.mp4` | Rematore con elastico | MEDIA |
+
+## Core - Bodyweight (6 video)
+
+| Esercizio | Nome File | Descrizione | Priorita |
+|-----------|-----------|-------------|----------|
+| Plank Laterale | `side-plank.mp4` | Side plank versione completa | ALTA |
+| Hollow Body Hold | `hollow-body-hold.mp4` | Tenuta corpo cavo | ALTA |
+| Copenhagen Plank | `copenhagen-plank.mp4` | Side plank con adduttori su panca | MEDIA |
+| Lying Leg Raise | `lying-leg-raise.mp4` | Alzate gambe a terra | ALTA |
+| L-Sit | `l-sit.mp4` | Tenuta a L su parallele/terra | MEDIA |
+| Dragon Flag | `dragon-flag.mp4` | Bandiera del drago | BASSA |
+
+---
+
+## RIEPILOGO VIDEO BODYWEIGHT
+
+| Categoria | Quantita | Priorita ALTA |
+|-----------|----------|---------------|
+| Lower Body | 12 | 8 |
+| Upper Push | 8 | 3 |
+| Upper Pull | 4 | 2 |
+| Core | 6 | 3 |
+| **TOTALE** | **30** | **16** |
+
+---
+
+# SEZIONE 3: VIDEO DINAMICI MANCANTI (GYM/EQUIPMENT)
 
 ## PRIORITA' ALTA - Test Atletici Team Edition
 
@@ -276,7 +345,17 @@
 | Core avanzato | 1 | MEDIA |
 | **TOTALE IMMAGINI** | **16** | - |
 
-## VIDEO NECESSARI (Esercizi Dinamici)
+## VIDEO BODYWEIGHT MANCANTI (PRIORITA' MASSIMA)
+
+| Categoria | Quantita | Priorita ALTA |
+|-----------|----------|---------------|
+| Lower Body (squat, lunge, bridge) | 12 | 8 |
+| Upper Push (push-up varianti) | 8 | 3 |
+| Upper Pull (trazioni, row) | 4 | 2 |
+| Core (plank, hollow, leg raise) | 6 | 3 |
+| **TOTALE BODYWEIGHT** | **30** | **16** |
+
+## VIDEO GYM/EQUIPMENT MANCANTI
 
 | Categoria | Quantita | Priorita |
 |-----------|----------|----------|
@@ -294,7 +373,7 @@
 | Polpacci | 3 | MEDIA |
 | Glutei | 6 | MEDIA |
 | Funzionali | 9 | BASSA |
-| **TOTALE VIDEO** | **~80** | - |
+| **TOTALE GYM** | **80** | - |
 
 ## FOTO STATICHE MANCANTI
 
@@ -303,7 +382,19 @@
 | Test Mobilita | 5 | ALTA |
 | Collo (isometrici) | 3 | ALTA |
 | Stretching | 4 | BASSA |
-| **TOTALE FOTO** | **~12** | - |
+| **TOTALE FOTO** | **12** | - |
+
+---
+
+## RIEPILOGO FINALE
+
+| Tipo Media | Quantita | Di cui ALTA priorita |
+|------------|----------|----------------------|
+| Immagini Supabase | 16 | 14 |
+| Video Bodyweight | 30 | 16 |
+| Video Gym/Equipment | 80 | 23 |
+| Foto Statiche | 12 | 8 |
+| **TOTALE GENERALE** | **138** | **61** |
 
 ---
 

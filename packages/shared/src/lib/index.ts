@@ -7,7 +7,7 @@
  *
  * Usage:
  * ```typescript
- * import { initProgramService, createProgram } from '@fitnessflow/shared';
+ * import { initProgramService, createProgram } from '@trainsmart/shared';
  * import { supabase } from './supabaseClient';
  *
  * // Initialize once at app startup
@@ -201,3 +201,42 @@ export {
   type RecoveryConditions,
   type FreeWeightSuggestion,
 } from './freeWeightSuggestionService';
+
+// Skip Tracking Service
+export {
+  initSkipTrackingService,
+  patternToMuscleGroup,
+  logExerciseSkip,
+  getActiveAlerts,
+  acknowledgeSkipAlert,
+  getSkipStats,
+  checkSkipPattern,
+  getRecentSkips,
+  calculateLoadReduction,
+  generateSkipFeedback,
+  MUSCLE_GROUP_NAMES,
+  type SkipReason,
+  type MuscleGroup,
+  type ExerciseSkip,
+  type SkipPatternAlert,
+  type SkipStats,
+} from './skipTrackingService';
+export { default as skipTrackingService } from './skipTrackingService';
+
+// Progressive Workout Service
+export {
+  initProgressiveWorkoutService,
+  startWorkout as startProgressiveWorkout,
+  saveSet as saveProgressiveSet,
+  updateProgress as updateProgressiveProgress,
+  completeWorkout as completeProgressiveWorkout,
+  abandonWorkout as abandonProgressiveWorkout,
+  getInProgressWorkout,
+  getWorkoutSets,
+  hasInProgressWorkout,
+  getWorkoutResumeSummary,
+  type WorkoutSession as ProgressiveWorkoutSession,
+  type SetLog as ProgressiveSetLog,
+  type StartWorkoutInput,
+} from './progressiveWorkoutService';
+export { default as progressiveWorkoutService } from './progressiveWorkoutService';

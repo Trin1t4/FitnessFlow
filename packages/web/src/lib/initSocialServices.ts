@@ -10,7 +10,9 @@ import {
   initAchievementService,
   initFollowService,
   initSocialService,
-} from '@fitnessflow/shared';
+  initSkipTrackingService,
+  initProgressiveWorkoutService,
+} from '@trainsmart/shared';
 
 let initialized = false;
 
@@ -29,9 +31,11 @@ export function initializeSocialServices(): void {
   initAchievementService(supabase);
   initFollowService(supabase);
   initSocialService(supabase);
+  initSkipTrackingService(supabase);
+  initProgressiveWorkoutService(supabase);
 
   initialized = true;
-  console.log('[SocialServices] All social services initialized');
+  console.log('[SocialServices] All services initialized (skip tracking + progressive workout)');
 }
 
 /**

@@ -38,8 +38,20 @@ import {
   isSpecialPopulation,
   DifficultyFeedback,
   ProgressionResult,
-  ExerciseAlternative
-} from '@fitnessflow/shared';
+  ExerciseAlternative,
+  logExerciseSkip,
+  getActiveAlerts,
+  acknowledgeSkipAlert,
+  generateSkipFeedback,
+  MUSCLE_GROUP_NAMES,
+  startProgressiveWorkout,
+  saveProgressiveSet,
+  updateProgressiveProgress,
+  completeProgressiveWorkout,
+  abandonProgressiveWorkout,
+  type SkipReason,
+  type SkipPatternAlert,
+} from '@trainsmart/shared';
 
 interface Exercise {
   name: string;
@@ -266,6 +278,16 @@ export default function LiveWorkoutSession({
   // Station Occupied / Alternatives Modal state
   const [showAlternativesModal, setShowAlternativesModal] = useState(false);
   const [currentAlternatives, setCurrentAlternatives] = useState<ExerciseAlternative[]>([]);
+
+  // Skip Tracking state
+  const [showSkipReasonModal, setShowSkipReasonModal] = useState(false);
+  const [skipAlerts, setSkipAlerts] = useState<SkipPatternAlert[]>([]);
+  const [showSkipAlert, setShowSkipAlert] = useState(false);
+  const [currentSkipAlert, setCurrentSkipAlert] = useState<SkipPatternAlert | null>(null);
+
+  // Progressive Workout Save state
+  const [workoutLogId, setWorkoutLogId] = useState<string | null>(null);
+  const [exercisesCompletedCount, setExercisesCompletedCount] = useState(0);
 
   // Adjustment state
   const [suggestion, setSuggestion] = useState<{
@@ -911,7 +933,7 @@ export default function LiveWorkoutSession({
   };
 
   // Start workout after pre-check
-  const handleStartWorkout = () => {
+  const handleStartWorkout = async () => {
     let adaptedExercises = exercises;
 
     // STEP 1: Adapt for pain if needed
@@ -943,6 +965,28 @@ export default function LiveWorkoutSession({
     setShowPreWorkout(false);
     setWorkoutStartTime(new Date());
 
+    // STEP 3: Create workout_log for progressive saving
+    try {
+      const { workoutId, error } = await startProgressiveWorkout({
+        userId,
+        programId,
+        dayName,
+        totalExercises: adaptedExercises.length,
+        mood,
+        sleepQuality,
+        notes: painAreas.length > 0 ? `Pain areas: ${painAreas.map(p => `${p.area}(${p.intensity})`).join(', ')}` : undefined,
+      });
+
+      if (workoutId) {
+        setWorkoutLogId(workoutId);
+        console.log('[ProgressiveWorkout] Workout started with ID:', workoutId);
+      } else {
+        console.error('[ProgressiveWorkout] Failed to create workout:', error);
+      }
+    } catch (err) {
+      console.error('[ProgressiveWorkout] Error starting workout:', err);
+    }
+
     const painSummary = painAreas.length > 0
       ? ` • Pain: ${painAreas.map(p => p.area).join(', ')}`
       : '';
@@ -955,6 +999,27 @@ export default function LiveWorkoutSession({
       description: `Mood: ${mood} • Sleep: ${sleepQuality}/10${locationSwitched ? ' • Casa' : ''}${painSummary}${cycleSummary}`
     });
   };
+
+  // Progressive save: Update progress when exercise/set changes
+  useEffect(() => {
+    if (workoutLogId && !showPreWorkout) {
+      // Count completed exercises (those with at least one set logged)
+      const completedCount = Object.keys(setLogs).length;
+
+      updateProgressiveProgress(
+        workoutLogId,
+        currentExerciseIndex,
+        currentSet,
+        completedCount
+      ).then(updated => {
+        if (updated) {
+          console.log(`[ProgressiveWorkout] Progress updated: Ex ${currentExerciseIndex + 1}/${totalExercises}, Set ${currentSet}`);
+        }
+      }).catch(err => {
+        console.error('[ProgressiveWorkout] Error updating progress:', err);
+      });
+    }
+  }, [workoutLogId, currentExerciseIndex, currentSet, showPreWorkout]);
 
   // Rest timer countdown
   useEffect(() => {
@@ -1077,21 +1142,14 @@ export default function LiveWorkoutSession({
   };
 
   /**
-   * Handler per skippare esercizio senza attivare Recovery
+   * Handler per skippare esercizio senza attivare Recovery (from HybridRecoveryModal)
    */
   const handleSkipExercise = () => {
     console.log('⏭️ Exercise skipped without recovery activation');
-
-    toast.info('Esercizio saltato. Passiamo al prossimo.', { duration: 3000 });
-
     setShowHybridRecoveryModal(false);
-    if (currentExerciseIndex < totalExercises - 1) {
-      setCurrentExerciseIndex(prev => prev + 1);
-      setCurrentSet(1);
-      setShowRPEInput(false);
-      setCurrentPainLevel(0);
-      setPainAdaptations([]);
-    }
+
+    // Use the skip tracking - assume fatigue if coming from recovery modal
+    handleSkipWithReason('fatigue');
   };
 
   // Analyze RIR feedback and provide suggestions
@@ -1489,6 +1547,27 @@ export default function LiveWorkoutSession({
       ...prev,
       [currentExercise.name]: [...(prev[currentExercise.name] || []), newSetLog]
     }));
+
+    // PROGRESSIVE SAVE: Salva il set nel database in tempo reale
+    if (workoutLogId) {
+      saveProgressiveSet({
+        workout_log_id: workoutLogId,
+        exercise_name: currentExercise.name,
+        exercise_index: currentExerciseIndex,
+        set_number: currentSet,
+        reps_completed: currentReps,
+        weight_used: currentWeight || undefined,
+        rpe: currentRPE,
+        rir: currentRIR,
+        was_adjusted: weightAdjusted,
+      }).then(saved => {
+        if (saved) {
+          console.log(`[ProgressiveWorkout] Set saved: ${currentExercise.name} Set ${currentSet}`);
+        }
+      }).catch(err => {
+        console.error('[ProgressiveWorkout] Error saving set:', err);
+      });
+    }
 
     // NOTA: Il timer ora parte in handleSetComplete, non qui (per partire subito dopo i dati)
 
@@ -1943,6 +2022,18 @@ export default function LiveWorkoutSession({
         contextAdjustment !== 0 ? `RPE adjusted by ${contextAdjustment > 0 ? '+' : ''}${contextAdjustment.toFixed(1)} for context` : ''
       ].filter(Boolean).join(' | ');
 
+      // PROGRESSIVE SAVE: Complete the workout (update status to 'completed')
+      if (workoutLogId) {
+        await completeProgressiveWorkout(workoutLogId, {
+          sessionRpe: adjustedAvgRPE,
+          durationMinutes: duration,
+          exercisesCompleted: Object.keys(setLogs).length,
+          notes: workoutNotes,
+        });
+        console.log('[ProgressiveWorkout] Workout completed and finalized');
+      }
+
+      // Also log via autoRegulationService for analytics compatibility
       await autoRegulationService.logWorkout(userId, programId, {
         day_name: dayName,
         split_type: currentExercise?.pattern || 'Full Body',
@@ -1977,16 +2068,80 @@ export default function LiveWorkoutSession({
     return Math.round((allRPEs.reduce((a, b) => a + b, 0) / allRPEs.length) * 10) / 10;
   };
 
-  // Skip exercise
+  // Skip exercise - now shows modal to select reason
   const skipExercise = () => {
-    if (confirm(`Vuoi saltare "${currentExercise?.name}"?`)) {
-      if (currentExerciseIndex < totalExercises - 1) {
-        setCurrentExerciseIndex(prev => prev + 1);
-        setCurrentSet(1);
+    setShowSkipReasonModal(true);
+  };
+
+  // Handle skip with reason tracking
+  const handleSkipWithReason = async (reason: SkipReason, painArea?: string, painLevel?: number) => {
+    if (!currentExercise) return;
+
+    setShowSkipReasonModal(false);
+
+    // Log the skip to database
+    try {
+      const { alert } = await logExerciseSkip(
+        userId,
+        currentExercise.name,
+        currentExercise.pattern,
+        {
+          programId: programId,
+          skipReason: reason,
+          painArea: painArea,
+          painLevel: painLevel,
+          dayName: dayName,
+        }
+      );
+
+      // If a new alert was created, show it
+      if (alert) {
+        setCurrentSkipAlert(alert);
+        setShowSkipAlert(true);
+        toast.warning(
+          `Hai saltato esercizi per ${MUSCLE_GROUP_NAMES[alert.muscle_group as keyof typeof MUSCLE_GROUP_NAMES]} nelle ultime ${alert.consecutive_sessions} sedute`,
+          { duration: 5000 }
+        );
       } else {
-        handleWorkoutComplete();
+        toast.info('Esercizio saltato. Passiamo al prossimo.', { duration: 3000 });
       }
+
+      console.log(`[SkipTracking] Exercise skipped: ${currentExercise.name}, reason: ${reason}`);
+    } catch (error) {
+      console.error('[SkipTracking] Error logging skip:', error);
+      toast.info('Esercizio saltato. Passiamo al prossimo.', { duration: 3000 });
     }
+
+    // Move to next exercise
+    if (currentExerciseIndex < totalExercises - 1) {
+      setCurrentExerciseIndex(prev => prev + 1);
+      setCurrentSet(1);
+      setShowRPEInput(false);
+      setCurrentPainLevel(0);
+      setPainAdaptations([]);
+    } else {
+      handleWorkoutComplete();
+    }
+  };
+
+  // Handle skip alert acknowledgment
+  const handleSkipAlertResponse = async (accepted: boolean) => {
+    if (!currentSkipAlert) return;
+
+    await acknowledgeSkipAlert(
+      currentSkipAlert.id,
+      accepted ? 'accepted' : 'declined'
+    );
+
+    if (accepted && currentSkipAlert.load_reduction_percent) {
+      toast.success(
+        `Carico ridotto del ${currentSkipAlert.load_reduction_percent}% per ${MUSCLE_GROUP_NAMES[currentSkipAlert.muscle_group as keyof typeof MUSCLE_GROUP_NAMES]}`,
+        { duration: 5000 }
+      );
+    }
+
+    setShowSkipAlert(false);
+    setCurrentSkipAlert(null);
   };
 
   // ===== EXERCISE DISLIKE HANDLERS =====
@@ -3495,6 +3650,169 @@ export default function LiveWorkoutSession({
               >
                 Annulla
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Skip Reason Modal */}
+      <AnimatePresence>
+        {showSkipReasonModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowSkipReasonModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <SkipForward className="w-5 h-5 text-amber-400" />
+                  Perché salti questo esercizio?
+                </h3>
+                <button
+                  onClick={() => setShowSkipReasonModal(false)}
+                  className="p-1 hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              <p className="text-slate-400 text-sm mb-4">
+                Tracciamo i motivi per aiutarti a migliorare il programma.
+              </p>
+
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleSkipWithReason('pain')}
+                  className="w-full py-3 px-4 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-xl transition-colors flex items-center gap-3"
+                >
+                  <span className="text-xl">🩹</span>
+                  <div className="text-left">
+                    <p className="font-semibold">Dolore/Fastidio</p>
+                    <p className="text-xs text-red-400/70">Sento dolore in questa zona</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleSkipWithReason('fatigue')}
+                  className="w-full py-3 px-4 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl transition-colors flex items-center gap-3"
+                >
+                  <span className="text-xl">😓</span>
+                  <div className="text-left">
+                    <p className="font-semibold">Troppo stanco</p>
+                    <p className="text-xs text-amber-400/70">Non ho energie per questo esercizio</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleSkipWithReason('equipment')}
+                  className="w-full py-3 px-4 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-xl transition-colors flex items-center gap-3"
+                >
+                  <span className="text-xl">🏋️</span>
+                  <div className="text-left">
+                    <p className="font-semibold">Attrezzatura non disponibile</p>
+                    <p className="text-xs text-blue-400/70">Postazione occupata o macchinario rotto</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleSkipWithReason('time')}
+                  className="w-full py-3 px-4 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-xl transition-colors flex items-center gap-3"
+                >
+                  <span className="text-xl">⏰</span>
+                  <div className="text-left">
+                    <p className="font-semibold">Poco tempo</p>
+                    <p className="text-xs text-purple-400/70">Devo accorciare la seduta</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleSkipWithReason('dislike')}
+                  className="w-full py-3 px-4 bg-slate-600/50 hover:bg-slate-600/70 text-slate-300 rounded-xl transition-colors flex items-center gap-3"
+                >
+                  <span className="text-xl">👎</span>
+                  <div className="text-left">
+                    <p className="font-semibold">Non mi piace</p>
+                    <p className="text-xs text-slate-400/70">Preferisco altri esercizi</p>
+                  </div>
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowSkipReasonModal(false)}
+                className="w-full mt-4 py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl transition-colors"
+              >
+                Annulla
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Skip Pattern Alert Modal */}
+      <AnimatePresence>
+        {showSkipAlert && currentSkipAlert && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-gradient-to-b from-amber-900/50 to-slate-800 rounded-2xl p-6 max-w-md w-full border border-amber-500/30 shadow-2xl"
+            >
+              <div className="text-center mb-4">
+                <div className="w-16 h-16 mx-auto bg-amber-500/20 rounded-full flex items-center justify-center mb-3">
+                  <AlertTriangle className="w-8 h-8 text-amber-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white">
+                  Pattern Rilevato
+                </h3>
+                <p className="text-amber-300 font-semibold mt-1">
+                  {MUSCLE_GROUP_NAMES[currentSkipAlert.muscle_group as keyof typeof MUSCLE_GROUP_NAMES]}
+                </p>
+              </div>
+
+              <div className="bg-slate-800/50 rounded-xl p-4 mb-4">
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  {currentSkipAlert.suggested_action}
+                </p>
+              </div>
+
+              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 mb-4">
+                <p className="text-green-300 text-sm font-semibold">
+                  💡 Suggerimento: -{currentSkipAlert.load_reduction_percent}% carico
+                </p>
+                <p className="text-green-400/70 text-xs mt-1">
+                  Ridurremo automaticamente il carico per prevenire infortuni
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleSkipAlertResponse(true)}
+                  className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors"
+                >
+                  Accetta
+                </button>
+                <button
+                  onClick={() => handleSkipAlertResponse(false)}
+                  className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl transition-colors"
+                >
+                  Ignora
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
