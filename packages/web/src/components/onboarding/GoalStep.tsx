@@ -68,6 +68,12 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
         : []
   );
 
+  // Screening gambe per donne
+  const [legsGoalType, setLegsGoalType] = useState<'toning' | 'slimming' | 'rebalance' | null>(
+    (data as any).legsGoalType || null
+  );
+  const isFemale = data.personalInfo?.gender === 'F';
+
   const GOAL_OPTIONS = getGoalOptions(t);
   const SPORTS_OPTIONS = getSportsOptions(t);
   const MUSCULAR_FOCUS_OPTIONS = getMuscularFocusOptions(t);
@@ -101,12 +107,16 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
     // Empty string = "Nessun focus specifico" → deselect all
     if (focusValue === '') {
       setMuscularFocus([]);
+      setLegsGoalType(null); // Reset legs screening
       return;
     }
 
     setMuscularFocus(prev => {
       if (prev.includes(focusValue)) {
         // Deselect
+        if (focusValue === 'gambe') {
+          setLegsGoalType(null); // Reset legs screening when deselecting legs
+        }
         return prev.filter(f => f !== focusValue);
       } else {
         // Select (max 3 muscle groups)
@@ -118,9 +128,14 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
     });
   };
 
+  // Check if we need to show legs screening (female + legs selected)
+  const showLegsScreening = isFemale && muscularFocus.includes('gambe');
+
   const handleSubmit = () => {
     if (goals.length === 0) return;
     if (goals.includes('prestazioni_sportive') && !sport) return;
+    // If female selected legs, must choose a legs goal type
+    if (showLegsScreening && !legsGoalType) return;
 
     onNext({
       goal: goals[0], // backward compatibility
@@ -128,11 +143,15 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
       sport: goals.includes('prestazioni_sportive') ? sport : '',
       sportRole: goals.includes('prestazioni_sportive') ? sportRole : '',
       // Multi-select muscular focus (array)
-      muscularFocus: (goals.includes('ipertrofia') || goals.includes('tonificazione')) ? muscularFocus : []
+      muscularFocus: (goals.includes('ipertrofia') || goals.includes('tonificazione')) ? muscularFocus : [],
+      // Legs goal type for females (PHA, rebalance, or standard toning)
+      legsGoalType: showLegsScreening ? legsGoalType : undefined
     });
   };
 
-  const isValid = goals.length > 0 && (!goals.includes('prestazioni_sportive') || sport);
+  const isValid = goals.length > 0 &&
+    (!goals.includes('prestazioni_sportive') || sport) &&
+    (!showLegsScreening || legsGoalType);
 
   // Controlla se ha selezionato goal che richiedono UI aggiuntive
   const showSportSelection = goals.includes('prestazioni_sportive');
@@ -506,6 +525,140 @@ export default function GoalStep({ data, onNext }: GoalStepProps) {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* LEGS SCREENING - Solo per donne che selezionano "gambe" */}
+      {showLegsScreening && (
+        <div className="space-y-4 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded-xl p-5 border border-pink-500/30 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center text-xl">
+              🦵
+            </div>
+            <div>
+              <h4 className="font-bold text-white">Qual è il tuo obiettivo per le gambe?</h4>
+              <p className="text-xs text-pink-200/80">Personalizzeremo il programma in base alle tue esigenze</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {/* Opzione 1: Tono e volume */}
+            <button
+              onClick={() => setLegsGoalType('toning')}
+              className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-200 ${
+                legsGoalType === 'toning'
+                  ? 'border-pink-500 bg-pink-500/20 shadow-lg shadow-pink-500/10'
+                  : 'border-slate-600 bg-slate-800/50 hover:border-pink-500/50 hover:bg-slate-700/50'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg ${
+                  legsGoalType === 'toning' ? 'bg-pink-500/30' : 'bg-slate-700'
+                }`}>
+                  💪
+                </div>
+                <div className="flex-1">
+                  <div className={`font-bold text-sm ${legsGoalType === 'toning' ? 'text-white' : 'text-slate-200'}`}>
+                    Più tono e definizione muscolare
+                  </div>
+                  <div className={`text-xs mt-1 ${legsGoalType === 'toning' ? 'text-pink-200' : 'text-slate-400'}`}>
+                    Costruire muscolo, glutei sodi, cosce definite
+                  </div>
+                </div>
+                {legsGoalType === 'toning' && (
+                  <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </button>
+
+            {/* Opzione 2: Snellire/Drenare (PHA) */}
+            <button
+              onClick={() => setLegsGoalType('slimming')}
+              className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-200 ${
+                legsGoalType === 'slimming'
+                  ? 'border-cyan-500 bg-cyan-500/20 shadow-lg shadow-cyan-500/10'
+                  : 'border-slate-600 bg-slate-800/50 hover:border-cyan-500/50 hover:bg-slate-700/50'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg ${
+                  legsGoalType === 'slimming' ? 'bg-cyan-500/30' : 'bg-slate-700'
+                }`}>
+                  💧
+                </div>
+                <div className="flex-1">
+                  <div className={`font-bold text-sm ${legsGoalType === 'slimming' ? 'text-white' : 'text-slate-200'}`}>
+                    Snellire e drenare le gambe
+                  </div>
+                  <div className={`text-xs mt-1 ${legsGoalType === 'slimming' ? 'text-cyan-200' : 'text-slate-400'}`}>
+                    Gambe pesanti, ritenzione idrica, cellulite - Programma PHA circolatorio
+                  </div>
+                </div>
+                {legsGoalType === 'slimming' && (
+                  <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </button>
+
+            {/* Opzione 3: Riequilibrare proporzioni */}
+            <button
+              onClick={() => setLegsGoalType('rebalance')}
+              className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-200 ${
+                legsGoalType === 'rebalance'
+                  ? 'border-purple-500 bg-purple-500/20 shadow-lg shadow-purple-500/10'
+                  : 'border-slate-600 bg-slate-800/50 hover:border-purple-500/50 hover:bg-slate-700/50'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg ${
+                  legsGoalType === 'rebalance' ? 'bg-purple-500/30' : 'bg-slate-700'
+                }`}>
+                  ⚖️
+                </div>
+                <div className="flex-1">
+                  <div className={`font-bold text-sm ${legsGoalType === 'rebalance' ? 'text-white' : 'text-slate-200'}`}>
+                    Riequilibrare le proporzioni
+                  </div>
+                  <div className={`text-xs mt-1 ${legsGoalType === 'rebalance' ? 'text-purple-200' : 'text-slate-400'}`}>
+                    Valorizzare spalle e schiena, mantenere le gambe - Silhouette più armonica
+                  </div>
+                </div>
+                {legsGoalType === 'rebalance' && (
+                  <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </button>
+          </div>
+
+          {/* Info box in base alla selezione */}
+          {legsGoalType === 'slimming' && (
+            <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3 mt-2">
+              <p className="text-xs text-cyan-200">
+                <strong>Programma PHA:</strong> Alterna esercizi upper/lower per massimizzare la circolazione,
+                drenare i liquidi e ridurre la sensazione di gambe pesanti.
+              </p>
+            </div>
+          )}
+          {legsGoalType === 'rebalance' && (
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 mt-2">
+              <p className="text-xs text-purple-200">
+                <strong>Programma Riproporzione:</strong> Focus su spalle, schiena e braccia per creare
+                una silhouette più bilanciata. Le gambe lavoreranno in mantenimento.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

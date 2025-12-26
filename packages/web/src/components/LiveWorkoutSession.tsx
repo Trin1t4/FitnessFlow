@@ -16,7 +16,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Play, Pause, SkipForward, X, Info, ThumbsDown, ArrowLeftRight } from 'lucide-react';
+import { CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Play, Pause, SkipForward, X, Info, ThumbsDown, ArrowLeftRight, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import autoRegulationService from '../lib/autoRegulationService';
 import { supabase } from '../lib/supabaseClient';

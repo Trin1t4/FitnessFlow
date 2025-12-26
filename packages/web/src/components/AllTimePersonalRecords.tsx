@@ -97,11 +97,20 @@ export default function AllTimePersonalRecords({ userId, className = '' }: AllTi
   const loadWorkoutData = async () => {
     setLoading(true);
     try {
+      // Query exercise_logs with join to workout_logs for user filtering
       const { data, error } = await supabase
-        .from('workout_logs')
-        .select('id, exercise_name, weight, reps, created_at')
-        .eq('user_id', userId)
-        .gt('weight', 0)
+        .from('exercise_logs')
+        .select(`
+          id,
+          exercise_name,
+          weight_used,
+          reps_completed,
+          created_at,
+          workout_log_id,
+          workout_logs!inner(user_id)
+        `)
+        .eq('workout_logs.user_id', userId)
+        .gt('weight_used', 0)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -109,7 +118,16 @@ export default function AllTimePersonalRecords({ userId, className = '' }: AllTi
         return;
       }
 
-      setWorkoutLogs(data || []);
+      // Map to expected format
+      const mapped = (data || []).map((log: any) => ({
+        id: log.id,
+        exercise_name: log.exercise_name,
+        weight: log.weight_used,
+        reps: log.reps_completed,
+        created_at: log.created_at
+      }));
+
+      setWorkoutLogs(mapped);
     } catch (error) {
       console.error('Error:', error);
     } finally {

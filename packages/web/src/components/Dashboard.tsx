@@ -752,6 +752,8 @@ export default function Dashboard() {
     const goals = onboarding?.goals || [finalGoal];
     const sport = onboarding?.sport || '';
     const sportRole = onboarding?.sportRole || '';
+    const legsGoalType = onboarding?.legsGoalType || undefined;
+    const gender = onboarding?.personalInfo?.gender || 'M';
 
     // ⚠️ VALIDAZIONE: Avvisa se location mancante
     if (!onboarding?.trainingLocation && !betaOverrides.location) {
@@ -792,7 +794,9 @@ export default function Dashboard() {
       muscularFocus,
       sessionDuration: finalSessionDuration,
       sport,
-      sportRole
+      sportRole,
+      legsGoalType,
+      gender
     });
 
     // Aggiungi campi richiesti dal formato esistente

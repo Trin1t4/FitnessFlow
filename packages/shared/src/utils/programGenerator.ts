@@ -66,6 +66,9 @@ export interface ProgramGeneratorOptions {
   disabilityType?: string;
   assessments?: any[];
   userBodyweight?: number; // Peso corporeo utente in kg - fondamentale per location adapter
+  // Legs goal type for females (PHA, rebalance, or standard toning)
+  legsGoalType?: 'toning' | 'slimming' | 'rebalance';
+  gender?: 'M' | 'F';
 }
 
 export interface ScreeningResult {
@@ -3281,6 +3284,92 @@ export function generateProgramWithSplit(
         });
       });
     }
+  }
+
+  // ============================================
+  // STEP 5b: LEGS GOAL TYPE ADAPTATION (PHA / REBALANCE)
+  // Solo per donne con focus gambe
+  // ============================================
+  if (correctedOptions.legsGoalType && correctedOptions.gender === 'F') {
+    console.log(`[LEGS] Applying legs goal type: ${correctedOptions.legsGoalType}`);
+
+    if (correctedOptions.legsGoalType === 'slimming') {
+      // PHA (Peripheral Heart Action) - Drenaggio e circolazione
+      console.log('[LEGS] Applying PHA protocol for leg slimming');
+
+      weeklySplit.days.forEach((day: any) => {
+        // Riordina esercizi per alternare upper/lower (PHA style)
+        const upperExercises = day.exercises.filter((ex: any) =>
+          ['horizontal_push', 'horizontal_pull', 'vertical_push', 'vertical_pull'].includes(ex.pattern)
+        );
+        const lowerExercises = day.exercises.filter((ex: any) =>
+          ['lower_push', 'lower_pull'].includes(ex.pattern)
+        );
+        const otherExercises = day.exercises.filter((ex: any) =>
+          !['horizontal_push', 'horizontal_pull', 'vertical_push', 'vertical_pull', 'lower_push', 'lower_pull'].includes(ex.pattern)
+        );
+
+        // Alterna upper/lower
+        const phaOrder: any[] = [];
+        const maxLen = Math.max(upperExercises.length, lowerExercises.length);
+        for (let i = 0; i < maxLen; i++) {
+          if (upperExercises[i]) phaOrder.push(upperExercises[i]);
+          if (lowerExercises[i]) phaOrder.push(lowerExercises[i]);
+        }
+        phaOrder.push(...otherExercises);
+
+        // Applica parametri PHA: alte reps, poco riposo
+        phaOrder.forEach((ex: any) => {
+          ex.reps = '15-20';
+          ex.rest = '30-45s';
+          ex.notes = ex.notes
+            ? `${ex.notes} | 💧 PHA - Circolazione`
+            : '💧 PHA - Focus circolazione e drenaggio';
+        });
+
+        day.exercises = phaOrder;
+        day.name = `${day.name} (PHA)`;
+        day.description = day.description
+          ? `${day.description} - Protocollo PHA per migliorare circolazione e drenaggio gambe`
+          : 'Protocollo PHA per migliorare circolazione e drenaggio gambe';
+      });
+    } else if (correctedOptions.legsGoalType === 'rebalance') {
+      // Riproporzione - Focus upper body, mantenimento lower
+      console.log('[LEGS] Applying rebalance protocol for body proportions');
+
+      weeklySplit.days.forEach((day: any) => {
+        day.exercises.forEach((ex: any) => {
+          // Aumenta volume upper body
+          if (['horizontal_push', 'horizontal_pull', 'vertical_push', 'vertical_pull'].includes(ex.pattern)) {
+            if (typeof ex.sets === 'number') {
+              ex.sets = Math.min(ex.sets + 1, 5); // +1 set, max 5
+            }
+            // Focus su spalle e schiena per creare V-taper
+            if (ex.pattern === 'vertical_push' || ex.pattern === 'horizontal_pull') {
+              ex.notes = ex.notes
+                ? `${ex.notes} | ⚖️ Focus proporzioni - Priorità`
+                : '⚖️ Focus proporzioni - Esercizio prioritario';
+            }
+          }
+
+          // Riduci volume lower body a mantenimento
+          if (['lower_push', 'lower_pull'].includes(ex.pattern)) {
+            if (typeof ex.sets === 'number') {
+              ex.sets = Math.max(ex.sets - 1, 2); // -1 set, min 2
+            }
+            ex.notes = ex.notes
+              ? `${ex.notes} | 🔄 Mantenimento`
+              : '🔄 Mantenimento - Volume ridotto per riproporzione';
+          }
+        });
+
+        day.name = `${day.name} (Riproporzione)`;
+        day.description = day.description
+          ? `${day.description} - Focus upper body per bilanciare le proporzioni corporee`
+          : 'Focus upper body per bilanciare le proporzioni corporee';
+      });
+    }
+    // 'toning' = programma standard, nessuna modifica
   }
 
   const allExercises: Exercise[] = [];
