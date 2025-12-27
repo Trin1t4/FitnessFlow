@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut, Shield, ClipboardList } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from '../lib/i18n';
-import { validateAndNormalizePainAreas, generateProgram, generateProgramWithSplit } from '@trainsmart/shared';
+import { validateAndNormalizePainAreas, generateProgram, generateProgramWithSplit, inferMissingBaselines } from '@trainsmart/shared';
 import { motion } from 'framer-motion';
 import WeeklySplitView from './WeeklySplitView';
 import WorkoutLogger from './WorkoutLogger';
@@ -750,7 +750,12 @@ export default function Dashboard() {
 
     const trainingType = onboarding?.trainingType || 'bodyweight';
     const equipment = onboarding?.equipment || {};
-    const baselines = dataStatus.screening?.patternBaselines || {};
+    const userBodyweight = onboarding?.personalInfo?.weight || 75;
+
+    // Inferisci i pattern mancanti (horizontal_pull, vertical_push, lower_pull)
+    // Per onboarding rapido senza test, stima basata su peso corporeo
+    const rawBaselines = dataStatus.screening?.patternBaselines || {};
+    const baselines = inferMissingBaselines(rawBaselines, userBodyweight, finalLevel as any);
     const muscularFocus = onboarding?.muscularFocus || '';
     const goals = onboarding?.goals || [finalGoal];
     const sport = onboarding?.sport || '';

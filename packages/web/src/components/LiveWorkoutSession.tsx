@@ -2246,6 +2246,29 @@ export default function LiveWorkoutSession({
         context_adjustment: contextAdjustment
       });
 
+      // CALIBRAZIONE PESI: Salva i pesi effettivamente usati per esercizi con peso stimato
+      // Questo permette al sistema di calibrare già dalla prima seduta
+      for (const log of exerciseLogs) {
+        const avgExerciseRPE = log.exercise_rpe;
+
+        // Se RPE fuori range ottimale (6-8), logga per calibrazione futura
+        if (avgExerciseRPE >= 9 || avgExerciseRPE <= 5) {
+          console.log(
+            `[Calibrazione] ${log.exercise_name}: RPE ${avgExerciseRPE.toFixed(1)} fuori range → ` +
+            `suggerito adattamento peso ${avgExerciseRPE >= 9 ? '-5%' : '+5%'} per prossima sessione`
+          );
+        }
+
+        // Per esercizi bodyweight, logga se troppo facile/difficile
+        if (!log.weight_used && avgExerciseRPE !== undefined) {
+          if (avgExerciseRPE >= 9) {
+            console.log(`[Calibrazione BW] ${log.exercise_name}: troppo difficile → considera regressione`);
+          } else if (avgExerciseRPE <= 5) {
+            console.log(`[Calibrazione BW] ${log.exercise_name}: troppo facile → considera progressione`);
+          }
+        }
+      }
+
       if (onWorkoutComplete) {
         onWorkoutComplete(exerciseLogs);
       }

@@ -19,14 +19,17 @@ export interface PatternBaseline {
   reps: number; // max reps achieved
   weight10RM?: number; // kg usati nel test 10RM (solo per esercizi con pesi)
   testDate?: string; // ISO date dell'ultimo test per questo pattern
+  isEstimated?: boolean; // true = peso inferito da altri pattern, da adattare dopo 2-3 sedute
+  estimatedFrom?: string; // pattern da cui è stato inferito (es. "horizontal_push")
 }
 
 export interface PatternBaselines {
   lower_push?: PatternBaseline;
+  lower_pull?: PatternBaseline;
   horizontal_push?: PatternBaseline;
+  horizontal_pull?: PatternBaseline;  // Rematore/Row - aggiunto per completezza
   vertical_push?: PatternBaseline;
   vertical_pull?: PatternBaseline;
-  lower_pull?: PatternBaseline;
   core?: PatternBaseline;
 }
 

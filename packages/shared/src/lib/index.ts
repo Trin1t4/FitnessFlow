@@ -240,3 +240,12 @@ export {
   type StartWorkoutInput,
 } from './progressiveWorkoutService';
 export { default as progressiveWorkoutService } from './progressiveWorkoutService';
+
+// Baseline Inference Service - Stima pesi mancanti dai pattern correlati
+export {
+  inferMissingBaselines,
+  isPatternEstimated,
+  calculateWeightAdjustment,
+  shouldValidateEstimatedWeight,
+} from './baselineInferenceService';
+export { default as baselineInferenceService } from './baselineInferenceService';
