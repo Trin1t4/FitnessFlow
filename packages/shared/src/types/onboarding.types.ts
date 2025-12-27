@@ -113,6 +113,9 @@ export type PainArea =
 
 export type PainSeverity = 'mild' | 'moderate' | 'severe';
 
+// Fase stagionale per sport
+export type SeasonPhase = 'off_season' | 'pre_season' | 'in_season';
+
 export interface PainEntry {
   area: PainArea;
   severity: PainSeverity;
@@ -134,7 +137,8 @@ export interface OnboardingData {
   goal?: string; // backward compatibility (primo goal)
   goals?: string[]; // multi-goal support (max 2-3)
   sport?: string; // if goal includes sport_performance
-  sportRole?: string;
+  sportRole?: string; // ruolo/categoria (es. peso leggero per boxe)
+  seasonPhase?: SeasonPhase; // fase stagionale (off_season, pre_season, in_season)
   muscularFocus?: string; // if goal includes ipertrofia or tonificazione
 
   // Step 5: Pain/Injury

@@ -18,7 +18,7 @@
 export type SportType =
   | 'calcio' | 'basket' | 'pallavolo' | 'rugby'
   | 'tennis' | 'corsa' | 'nuoto' | 'ciclismo'
-  | 'crossfit' | 'powerlifting' | 'altro';
+  | 'boxe' | 'altro';
 
 export type SeasonPhase = 'off_season' | 'pre_season' | 'in_season';
 
@@ -410,86 +410,44 @@ export const SPORT_PROFILES: Record<SportType, SportProfile> = {
   },
 
   // ========================================
-  // CROSSFIT - Tutto, ma con criterio
+  // BOXE - Potenza esplosiva, resistenza, core
   // ========================================
-  crossfit: {
-    sport: 'crossfit',
+  boxe: {
+    sport: 'boxe',
     priorities: {
-      maxStrength: 5,
-      explosivePower: 5,
-      speedStrength: 5,
-      endurance: 5,
-      mobility: 5,
-      coreStability: 5
+      maxStrength: 3,        // Base, ma non prioritaria
+      explosivePower: 5,     // Pugni potenti, scatti
+      speedStrength: 5,      // Combinazioni rapide
+      endurance: 5,          // Round 3 min, match lunghi
+      mobility: 4,           // Schivate, rotazioni
+      coreStability: 5       // Rotazioni potenti, assorbire colpi
     },
-    injuryRiskAreas: ['shoulder', 'lower_back', 'knee', 'wrist', 'elbow'],
-    primaryMuscles: ['full_body'],
+    injuryRiskAreas: ['shoulder', 'wrist', 'neck', 'elbow', 'lower_back'],
+    primaryMuscles: ['core', 'shoulders', 'legs', 'lats', 'triceps'],
     keyLifts: {
       barbell: [
-        'Back Squat',
-        'Front Squat',
-        'Conventional Deadlift',
-        'Overhead Press',
-        'Power Clean'
+        'Back Squat',           // Potenza gambe → pugni
+        'Romanian Deadlift',    // Catena posteriore, anche
+        'Hip Thrust',           // Rotazione anche potente
+        'Barbell Row',          // Schiena forte per retrarre
+        'Bench Press'           // Spinta orizzontale
       ],
       calisthenics: [
-        'Pull-up',
-        'Push-up',
-        'Pistol Squat',
-        'Handstand Push-up',
-        'Muscle-up'
+        'Pull-up',              // Lat forti = pugni potenti
+        'Push-up',              // Base pushing
+        'Med Ball Chest Pass',  // Potenza orizzontale esplosiva
+        'Plank',                // Core anti-estensione
+        'Pallof Press'          // Core anti-rotazione
       ]
     },
     preventionExercises: [
-      'Face Pull',
-      'External Rotation',
-      'Wrist Mobility',
-      'Hip Mobility',
-      'Thoracic Mobility'
+      'Neck Strengthening',     // CRITICO per pugili
+      'Face Pull',              // Cuffia rotatori
+      'External Rotation',      // Stabilità spalla
+      'Wrist Curls',            // Prevenzione polsi
+      'Wrist Extensions'        // Prevenzione polsi
     ],
-    notes: 'Tutto serve. Priorità a tecnica perfetta prima di caricare. Spalle = punto debole comune.'
-  },
-
-  // ========================================
-  // POWERLIFTING - Forza massimale pura
-  // ========================================
-  powerlifting: {
-    sport: 'powerlifting',
-    priorities: {
-      maxStrength: 5,        // Tutto qui
-      explosivePower: 3,
-      speedStrength: 3,
-      endurance: 1,
-      mobility: 3,           // Quanto serve per le alzate
-      coreStability: 5
-    },
-    injuryRiskAreas: ['lower_back', 'shoulder', 'hip', 'knee', 'elbow'],
-    primaryMuscles: ['full_body', 'posterior_chain', 'chest', 'triceps'],
-    keyLifts: {
-      barbell: [
-        'Back Squat',           // Gara
-        'Bench Press',          // Gara
-        'Conventional Deadlift', // Gara
-        'Pause Squat',          // Accessorio
-        'Close Grip Bench'      // Accessorio
-      ],
-      calisthenics: [
-        // Powerlifting senza bilanciere è limitato
-        'Push-up',
-        'Pull-up',
-        'Pistol Squat',
-        'Dips',
-        'Inverted Row'
-      ]
-    },
-    preventionExercises: [
-      'Face Pull',
-      'Hip Mobility',
-      'Shoulder Mobility',
-      'Core Work',
-      'Upper Back Work'
-    ],
-    notes: 'Le 3 alzate sono tutto. Accessori servono a migliorare le alzate, non per altro.'
+    notes: 'Potenza nasce dalle gambe, passa dal core, esce dalle mani. Collo forte = carriera lunga. Mai trascurare prevenzione spalle.'
   },
 
   // ========================================
@@ -781,6 +739,38 @@ export const ROLE_MODIFIERS: RoleModifier[] = [
     },
     additionalExercises: ['Dolphin Kick', 'Shoulder Power'],
     notes: 'Potenza totale, coordinazione'
+  },
+
+  // BOXE - Categorie di peso
+  {
+    role: 'peso massimo',
+    sport: 'boxe',
+    priorityAdjustments: {
+      maxStrength: 5,
+      endurance: 4
+    },
+    additionalExercises: ['Heavy Squat', 'Power Clean'],
+    notes: 'Più forza massimale, KO power. Meno focus su resistenza.'
+  },
+  {
+    role: 'peso medio',
+    sport: 'boxe',
+    priorityAdjustments: {
+      // Profilo bilanciato, nessuna modifica
+    },
+    additionalExercises: [],
+    notes: 'Profilo bilanciato tra potenza e resistenza.'
+  },
+  {
+    role: 'peso leggero',
+    sport: 'boxe',
+    priorityAdjustments: {
+      speedStrength: 5,
+      endurance: 5,
+      maxStrength: 2
+    },
+    additionalExercises: ['Speed Drill', 'Shadow Boxing'],
+    notes: 'Velocità e volume colpi. Evitare ipertrofia eccessiva per restare in peso.'
   }
 ];
 
@@ -1019,7 +1009,14 @@ export const SPORT_TO_DB_EXERCISE_MAP: Record<string, string> = {
   'Step-up': 'Step-up',
   'Dead Bug': 'Dead Bug',
   'Pallof Press': 'Pallof Press',
-  'Lateral Raise': 'Lateral Raise'
+  'Lateral Raise': 'Lateral Raise',
+
+  // Boxe specifici
+  'Med Ball Chest Pass': 'Medicine Ball Chest Pass',
+  'Neck Strengthening': 'Neck Strengthening',
+  'External Rotation': 'External Rotation',
+  'Wrist Curls': 'Wrist Curl',
+  'Wrist Extensions': 'Wrist Extension'
 };
 
 /**

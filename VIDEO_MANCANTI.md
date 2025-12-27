@@ -286,6 +286,12 @@
 
 ## PRIORITA' BASSA - Funzionali (VIDEO)
 
+### Esercizi Sport Combattimento (Boxe)
+| Esercizio | Descrizione | Note |
+|-----------|-------------|------|
+| Med Ball Rotational Throw | Lancio palla medica con rotazione del tronco | Potenza rotazionale per ganci/uppercut |
+| Landmine Press | Press con bilanciere incastrato a terra (angolo ~45°) | Spinta angolata, transfer su pugno |
+
 ### Esercizi Funzionali / Sport-Specific
 | Esercizio | Descrizione | Note |
 |-----------|-------------|------|
