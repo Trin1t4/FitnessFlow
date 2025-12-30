@@ -1548,9 +1548,11 @@ function createExercise(
 
   // Determina quale variante usare
   const equipment = location === 'gym' ? 'gym' : 'bodyweight';
+  // Traduci il nome dal baseline (potrebbe essere inglese da screening vecchio)
+  const translatedBaselineName = translateExerciseName(baseline.variantName);
   let exerciseName = variantIndex === 0
-    ? baseline.variantName // Prima variante = quella dello screening
-    : getVariantForPattern(patternId, baseline.variantName, variantIndex, equipment);
+    ? translatedBaselineName // Prima variante = quella dello screening (tradotta)
+    : getVariantForPattern(patternId, translatedBaselineName, variantIndex, equipment);
 
   let finalSets = volumeCalc.sets;
   let finalReps = volumeCalc.reps;

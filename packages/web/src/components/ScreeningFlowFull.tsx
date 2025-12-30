@@ -25,7 +25,7 @@ const SCREENING_VIDEOS: Record<string, string> = {
 
   // === SQUAT (italiano) ===
   'Squat Assistito (con supporto)': '/videos/exercises/modified-squat.mp4',
-  'Squat a Corpo Libero': '/videos/exercises/squat-to-stand.mp4',
+  'Squat a Corpo Libero': '/videos/exercises/deep-squat-hold.mp4',
   'Squat con Salto': '/videos/exercises/squat-jump.mp4',
   'Split Squat Bulgaro': '/videos/exercises/bulgarian-split-squat.mp4',
   'Pistol Squat Assistito': '/videos/exercises/pistol-squat.mp4',
