@@ -4,101 +4,73 @@ import { CheckCircle, Circle, ArrowRight, ArrowLeft, Info, Check, Timer, RotateC
 import { useTranslation } from '../lib/i18n';
 import { getExerciseImageWithFallback, calculateLevelFromScreening } from '@trainsmart/shared';
 
-// Video disponibili per i test iniziali (SOLO quelli verificati esistenti)
+// Video disponibili per i test iniziali
+// Chiavi in italiano per match con i nomi tradotti
 const SCREENING_VIDEOS: Record<string, string> = {
-  // === PUSH-UPS (verificati) ===
+  // === PUSH-UPS (italiano) ===
   'Pike Push-up': '/videos/exercises/pike-push-up.mp4',
-  'Pike Push Up': '/videos/exercises/pike-push-up.mp4',
-  'Elevated Pike Push-up': '/videos/exercises/pike-push-up.mp4',
-  'Wall HSPU (ROM parziale)': '/videos/exercises/wall-handstand-push-up.mp4',
-  'Wall HSPU (ROM completo)': '/videos/exercises/wall-handstand-push-up.mp4',
-  'Freestanding HSPU': '/videos/exercises/wall-handstand-push-up.mp4',
-  'Wall Push-up': '/videos/exercises/wall-push-up.mp4',
-  'Incline Push-up': '/videos/exercises/incline-push-up.mp4',
-  'Incline Push-up (rialzato)': '/videos/exercises/incline-push-up.mp4',
+  'Pike Push-up Elevato': '/videos/exercises/pike-push-up.mp4',
+  'HSPU al Muro (ROM parziale)': '/videos/exercises/wall-handstand-push-up.mp4',
+  'HSPU al Muro (ROM completo)': '/videos/exercises/wall-handstand-push-up.mp4',
+  'HSPU in Verticale Libera': '/videos/exercises/wall-handstand-push-up.mp4',
+  'Push-up al Muro': '/videos/exercises/wall-push-up.mp4',
+  'Push-up Inclinato (rialzato)': '/videos/exercises/incline-push-up.mp4',
   'Push-up Standard': '/videos/exercises/standard-push-up.mp4',
   'Push-up su Ginocchia': '/videos/exercises/knee-push-up.mp4',
-  'Diamond Push-up': '/videos/exercises/diamond-push-up.mp4',
-  'Decline Push-up': '/videos/exercises/decline-push-up.mp4',
-  // 'Archer Push-up' - usa immagine (archer-push-up.jpg) invece di video
-  'Pseudo Planche Push-up': '/videos/exercises/standard-push-up.mp4', // usa standard come fallback
-  'One Arm Push-up': '/videos/exercises/one-arm-push-up.mp4',
+  'Push-up Diamante': '/videos/exercises/diamond-push-up.mp4',
+  'Push-up Arciere': '/videos/exercises/archer-push-up.mp4',
+  'Pseudo Planche Push-up': '/videos/exercises/standard-push-up.mp4',
+  'Push-up a Un Braccio': '/videos/exercises/one-arm-push-up.mp4',
+  'Camminata al Muro': '/videos/exercises/wall-walk.mp4',
 
-  // === SQUAT (verificati) ===
+  // === SQUAT (italiano) ===
   'Squat Assistito (con supporto)': '/videos/exercises/bodyweight-squat.mp4',
-  'Air Squat': '/videos/exercises/bodyweight-squat.mp4',
-  'Jump Squat': '/videos/exercises/bodyweight-squat.mp4', // usa bodyweight come fallback
-  'Bulgarian Split Squat': '/videos/exercises/bulgarian-split-squat.mp4',
+  'Squat a Corpo Libero': '/videos/exercises/bodyweight-squat.mp4',
+  'Squat con Salto': '/videos/exercises/bodyweight-squat.mp4',
+  'Split Squat Bulgaro': '/videos/exercises/bulgarian-split-squat.mp4',
   'Pistol Squat Assistito': '/videos/exercises/pistol-squat.mp4',
-  'Shrimp Squat': '/videos/exercises/pistol-squat.mp4', // usa pistol come fallback
+  'Shrimp Squat (Squat Gambero)': '/videos/exercises/shrimp-squat.mp4',
   'Pistol Squat': '/videos/exercises/pistol-squat.mp4',
 
-  // === PULL (verificati) ===
-  'Inverted Row (barra alta)': '/videos/exercises/inverted-row.mp4',
-  'Inverted Row (barra media)': '/videos/exercises/inverted-row.mp4',
-  'Inverted Row (barra bassa)': '/videos/exercises/inverted-row.mp4',
-  'Australian Pull-up': '/videos/exercises/inverted-row.mp4',
-  'Negative Pull-up (solo eccentrica)': '/videos/exercises/standard-pull-up.mp4',
-  'Band-Assisted Pull-up': '/videos/exercises/assisted-pull-up.mp4',
-  'Pull-up Standard': '/videos/exercises/standard-pull-up.mp4',
-  'Chin-up': '/videos/exercises/chin-up.mp4',
-  'Archer Pull-up': '/videos/exercises/standard-pull-up.mp4', // usa standard come fallback
-  'One Arm Pull-up Progression': '/videos/exercises/standard-pull-up.mp4', // usa standard come fallback
+  // === PULL (italiano) ===
+  'Rematore Inverso (barra alta)': '/videos/exercises/inverted-row.mp4',
+  'Rematore Inverso (barra media)': '/videos/exercises/inverted-row.mp4',
+  'Rematore Inverso (barra bassa)': '/videos/exercises/inverted-row.mp4',
+  'Trazione Negativa (solo eccentrica)': '/videos/exercises/standard-pull-up.mp4',
+  'Trazione con Elastico': '/videos/exercises/assisted-pull-up.mp4',
+  'Trazione alla Sbarra': '/videos/exercises/standard-pull-up.mp4',
+  'Chin-up (presa supina)': '/videos/exercises/chin-up.mp4',
+  'Trazione Arciere': '/videos/exercises/standard-pull-up.mp4',
+  'Progressione Trazione a Un Braccio': '/videos/exercises/standard-pull-up.mp4',
 
-  // === HINGE/CORE (verificati) ===
-  'Glute Bridge': '/videos/exercises/glute-bridge.mp4',
-  'Single Leg Glute Bridge': '/videos/exercises/glute-bridge.mp4',
+  // === HINGE/CORE (italiano) ===
+  'Ponte Glutei': '/videos/exercises/glute-bridge.mp4',
+  'Ponte Glutei a Una Gamba': '/videos/exercises/glute-bridge.mp4',
   'Hip Thrust': '/videos/exercises/hip-thrust.mp4',
-  'Single Leg RDL (corpo libero)': '/videos/exercises/romanian-deadlift.mp4',
-  'Romanian Deadlift': '/videos/exercises/romanian-deadlift.mp4',
-  'Good Morning': '/videos/exercises/good-morning.mp4',
-  'Good Morning BW': '/videos/exercises/good-morning.mp4',
+  'Stacco Rumeno a Una Gamba (corpo libero)': '/videos/exercises/romanian-deadlift.mp4',
   'Nordic Curl (solo eccentrica)': '/videos/exercises/nordic-hamstring-curl.mp4',
   'Nordic Curl (completo)': '/videos/exercises/nordic-hamstring-curl.mp4',
-  'Sliding Leg Curl': '/videos/exercises/standing-leg-curl.mp4',
-  'Leg Curl': '/videos/exercises/leg-curl.mp4',
+  'Leg Curl Scivolato': '/videos/exercises/standing-leg-curl.mp4',
   'Plank': '/videos/exercises/plank.mp4',
-  'Side Plank': '/videos/exercises/side-plank-modified.mp4',
-  'Bird Dog': '/videos/exercises/bird-dog.mp4',
-  'Dead Bug': '/videos/exercises/dead-bug.mp4',
-  'Dead Bug Progression': '/videos/exercises/dead-bug-progression.mp4',
-  'Bear Hold': '/videos/exercises/bear-hold.mp4',
-  'Pallof Press': '/videos/exercises/pallof-press.mp4',
-  'Hanging Leg Raise': '/videos/exercises/hanging-leg-raise.mp4',
+  'Plank Laterale': '/videos/exercises/side-plank-modified.mp4',
+  'Hollow Body Hold': '/videos/exercises/hollow-body-hold.mp4',
+  'L-sit Raccolto': '/videos/exercises/l-sit.mp4',
+  'L-sit a Una Gamba': '/videos/exercises/l-sit.mp4',
+  'L-sit Completo': '/videos/exercises/l-sit.mp4',
+  'Dragon Flag': '/videos/exercises/dragon-flag.mp4',
 
-  // === ROW / PULL (palestra) ===
-  'Barbell Row': '/videos/exercises/barbell-row.mp4',
-  'Dumbbell Row': '/videos/exercises/dumbbell-row.mp4',
-  'T-Bar Row': '/videos/exercises/t-bar-row.mp4',
-  'Lat Pulldown': '/videos/exercises/lat-pulldown.mp4',
+  // === PALESTRA (italiano) ===
+  'Squat con Bilanciere': '/videos/exercises/back-squat.mp4',
+  'Panca Piana': '/videos/exercises/flat-barbell-bench-press.mp4',
+  'Lento Avanti': '/videos/exercises/military-press.mp4',
   'Lat Machine': '/videos/exercises/lat-pulldown.mp4',
-  'Face Pull': '/videos/exercises/face-pull.mp4',
-  'Seated Cable Row': '/videos/exercises/seated-cable-row.mp4',
-
-  // === SHOULDER (palestra) ===
-  'Military Press': '/videos/exercises/military-press.mp4',
-  'Dumbbell Shoulder Press': '/videos/exercises/dumbbell-shoulder-press.mp4',
-  'Arnold Press': '/videos/exercises/arnold-press.mp4',
-  'Lateral Raise': '/videos/exercises/lateral-raise.mp4',
-  'Front Raise': '/videos/exercises/front-raise.mp4',
-
-  // === LOWER (palestra) ===
+  'Pulley Basso': '/videos/exercises/seated-cable-row.mp4',
+  'Stacco da Terra': '/videos/exercises/conventional-deadlift.mp4',
+  'Crunch ai Cavi': '/videos/exercises/cable-crunch.mp4',
   'Leg Press': '/videos/exercises/leg-press.mp4',
-  'Leg Extension': '/videos/exercises/leg-extension.mp4',
-  'Lunges': '/videos/exercises/lunges.mp4',
-  'Affondi': '/videos/exercises/lunges.mp4',
-  'Step-up': '/videos/exercises/step-up.mp4',
-  'Goblet Squat': '/videos/exercises/goblet-squat.mp4',
-  'Front Squat': '/videos/exercises/front-squat.mp4',
-  'Back Squat': '/videos/exercises/back-squat.mp4',
-  'Sumo Deadlift': '/videos/exercises/sumo-deadlift.mp4',
-  'Conventional Deadlift': '/videos/exercises/conventional-deadlift.mp4',
-
-  // === BENCH / DIPS ===
-  'Bench Press': '/videos/exercises/flat-barbell-bench-press.mp4',
-  'Dumbbell Bench Press': '/videos/exercises/dumbbell-bench-press.mp4',
-  'Chest Dips': '/videos/exercises/chest-dips.mp4',
-  'Tricep Dips': '/videos/exercises/tricep-dips.mp4',
+  'Chest Press': '/videos/exercises/chest-press.mp4',
+  'Shoulder Press Machine': '/videos/exercises/shoulder-press-machine.mp4',
+  'Leg Curl': '/videos/exercises/leg-curl.mp4',
 };
 
 /**
@@ -143,86 +115,86 @@ function calculateOneRepMax(weight: number, reps: number): number {
 const CALISTHENICS_PATTERNS = [
   {
     id: 'lower_push',
-    name: 'Lower Body Push (Squat)',
+    name: 'Spinta Gambe (Squat)',
     description: 'Progressioni squat - dalla più facile alla più difficile',
     progressions: [
       { id: 'squat_assisted', name: 'Squat Assistito (con supporto)', difficulty: 1 },
-      { id: 'air_squat', name: 'Air Squat', difficulty: 2 },
-      { id: 'jump_squat', name: 'Jump Squat', difficulty: 4 },
-      { id: 'bulgarian_split', name: 'Bulgarian Split Squat', difficulty: 5 },
+      { id: 'air_squat', name: 'Squat a Corpo Libero', difficulty: 2 },
+      { id: 'jump_squat', name: 'Squat con Salto', difficulty: 4 },
+      { id: 'bulgarian_split', name: 'Split Squat Bulgaro', difficulty: 5 },
       { id: 'pistol_assisted', name: 'Pistol Squat Assistito', difficulty: 7 },
-      { id: 'shrimp_squat', name: 'Shrimp Squat', difficulty: 8 },
+      { id: 'shrimp_squat', name: 'Shrimp Squat (Squat Gambero)', difficulty: 8 },
       { id: 'pistol', name: 'Pistol Squat', difficulty: 10 }
     ]
   },
   {
     id: 'horizontal_push',
-    name: 'Horizontal Push (Push-up)',
+    name: 'Spinta Orizzontale (Push-up)',
     description: 'Progressioni push-up orizzontali',
     progressions: [
-      { id: 'wall_pushup', name: 'Wall Push-up', difficulty: 1 },
-      { id: 'incline_pushup', name: 'Incline Push-up (rialzato)', difficulty: 2 },
+      { id: 'wall_pushup', name: 'Push-up al Muro', difficulty: 1 },
+      { id: 'incline_pushup', name: 'Push-up Inclinato (rialzato)', difficulty: 2 },
       { id: 'knee_pushup', name: 'Push-up su Ginocchia', difficulty: 3 },
       { id: 'standard_pushup', name: 'Push-up Standard', difficulty: 5 },
-      { id: 'diamond_pushup', name: 'Diamond Push-up', difficulty: 6 },
-      { id: 'archer_pushup', name: 'Archer Push-up', difficulty: 8 },
+      { id: 'diamond_pushup', name: 'Push-up Diamante', difficulty: 6 },
+      { id: 'archer_pushup', name: 'Push-up Arciere', difficulty: 8 },
       { id: 'pseudo_planche', name: 'Pseudo Planche Push-up', difficulty: 9 },
-      { id: 'one_arm_pushup', name: 'One Arm Push-up', difficulty: 10 }
+      { id: 'one_arm_pushup', name: 'Push-up a Un Braccio', difficulty: 10 }
     ]
   },
   {
     id: 'vertical_push',
-    name: 'Vertical Push (Pike → HSPU)',
+    name: 'Spinta Verticale (Pike → HSPU)',
     description: 'Progressioni spinta verticale verso handstand',
     progressions: [
       { id: 'pike_pushup', name: 'Pike Push-up', difficulty: 4 },
-      { id: 'elevated_pike', name: 'Elevated Pike Push-up', difficulty: 5 },
-      { id: 'wall_walk', name: 'Wall Walk', difficulty: 6 },
-      { id: 'wall_hspu_partial', name: 'Wall HSPU (ROM parziale)', difficulty: 7 },
-      { id: 'wall_hspu', name: 'Wall HSPU (ROM completo)', difficulty: 8 },
-      { id: 'freestanding_hspu', name: 'Freestanding HSPU', difficulty: 10 }
+      { id: 'elevated_pike', name: 'Pike Push-up Elevato', difficulty: 5 },
+      { id: 'wall_walk', name: 'Camminata al Muro', difficulty: 6 },
+      { id: 'wall_hspu_partial', name: 'HSPU al Muro (ROM parziale)', difficulty: 7 },
+      { id: 'wall_hspu', name: 'HSPU al Muro (ROM completo)', difficulty: 8 },
+      { id: 'freestanding_hspu', name: 'HSPU in Verticale Libera', difficulty: 10 }
     ]
   },
   {
     id: 'vertical_pull',
-    name: 'Vertical Pull (Row → Pull-up)',
-    description: 'Progressioni trazione verticale - BASE: inverted row',
+    name: 'Tirata Verticale (Row → Trazioni)',
+    description: 'Progressioni trazione verticale - BASE: rematore inverso',
     progressions: [
-      { id: 'inverted_row_high', name: 'Inverted Row (barra alta)', difficulty: 2 },
-      { id: 'inverted_row_mid', name: 'Inverted Row (barra media)', difficulty: 3 },
-      { id: 'inverted_row_low', name: 'Inverted Row (barra bassa)', difficulty: 4 },
-      { id: 'negative_pullup', name: 'Negative Pull-up (solo eccentrica)', difficulty: 5 },
-      { id: 'band_pullup', name: 'Band-Assisted Pull-up', difficulty: 6 },
-      { id: 'pullup', name: 'Pull-up Standard', difficulty: 7 },
-      { id: 'chinup', name: 'Chin-up', difficulty: 7 },
-      { id: 'archer_pullup', name: 'Archer Pull-up', difficulty: 9 },
-      { id: 'one_arm_pullup_prog', name: 'One Arm Pull-up Progression', difficulty: 10 }
+      { id: 'inverted_row_high', name: 'Rematore Inverso (barra alta)', difficulty: 2 },
+      { id: 'inverted_row_mid', name: 'Rematore Inverso (barra media)', difficulty: 3 },
+      { id: 'inverted_row_low', name: 'Rematore Inverso (barra bassa)', difficulty: 4 },
+      { id: 'negative_pullup', name: 'Trazione Negativa (solo eccentrica)', difficulty: 5 },
+      { id: 'band_pullup', name: 'Trazione con Elastico', difficulty: 6 },
+      { id: 'pullup', name: 'Trazione alla Sbarra', difficulty: 7 },
+      { id: 'chinup', name: 'Chin-up (presa supina)', difficulty: 7 },
+      { id: 'archer_pullup', name: 'Trazione Arciere', difficulty: 9 },
+      { id: 'one_arm_pullup_prog', name: 'Progressione Trazione a Un Braccio', difficulty: 10 }
     ]
   },
   {
     id: 'lower_pull',
-    name: 'Lower Body Pull (Hinge/Hamstring)',
+    name: 'Tirata Gambe (Cerniera/Femorali)',
     description: 'Progressioni cerniera anca e femorali',
     progressions: [
-      { id: 'glute_bridge', name: 'Glute Bridge', difficulty: 2 },
-      { id: 'single_leg_glute', name: 'Single Leg Glute Bridge', difficulty: 3 },
-      { id: 'rdl_bodyweight', name: 'Single Leg RDL (corpo libero)', difficulty: 4 },
+      { id: 'glute_bridge', name: 'Ponte Glutei', difficulty: 2 },
+      { id: 'single_leg_glute', name: 'Ponte Glutei a Una Gamba', difficulty: 3 },
+      { id: 'rdl_bodyweight', name: 'Stacco Rumeno a Una Gamba (corpo libero)', difficulty: 4 },
       { id: 'nordic_eccentric', name: 'Nordic Curl (solo eccentrica)', difficulty: 6 },
       { id: 'nordic_full', name: 'Nordic Curl (completo)', difficulty: 9 },
-      { id: 'sliding_leg_curl', name: 'Sliding Leg Curl', difficulty: 5 }
+      { id: 'sliding_leg_curl', name: 'Leg Curl Scivolato', difficulty: 5 }
     ]
   },
   {
     id: 'core',
-    name: 'Core Stability',
+    name: 'Stabilità Core',
     description: 'Progressioni core e stabilità',
     progressions: [
       { id: 'plank', name: 'Plank', difficulty: 2, isometric: true },
-      { id: 'side_plank', name: 'Side Plank', difficulty: 3, isometric: true },
+      { id: 'side_plank', name: 'Plank Laterale', difficulty: 3, isometric: true },
       { id: 'hollow_body', name: 'Hollow Body Hold', difficulty: 5, isometric: true },
-      { id: 'lsit_tuck', name: 'Tuck L-sit', difficulty: 6, isometric: true },
-      { id: 'lsit_one_leg', name: 'One Leg L-sit', difficulty: 7, isometric: true },
-      { id: 'lsit_full', name: 'Full L-sit', difficulty: 9, isometric: true },
+      { id: 'lsit_tuck', name: 'L-sit Raccolto', difficulty: 6, isometric: true },
+      { id: 'lsit_one_leg', name: 'L-sit a Una Gamba', difficulty: 7, isometric: true },
+      { id: 'lsit_full', name: 'L-sit Completo', difficulty: 9, isometric: true },
       { id: 'dragon_flag', name: 'Dragon Flag', difficulty: 10 }
     ]
   }
@@ -233,14 +205,14 @@ const CALISTHENICS_PATTERNS = [
 const GYM_PATTERNS_WITH_CHOICE = [
   {
     id: 'lower_push',
-    name: 'Lower Push (Gambe)',
+    name: 'Spinta Gambe',
     description: 'Scegli come testare la spinta delle gambe',
     variants: [
       {
         id: 'back_squat',
         name: 'Squat con Bilanciere',
         type: 'free_weight',
-        description: 'Attiva piu muscoli (core, stabilizzatori). Migliore per forza funzionale.',
+        description: 'Attiva più muscoli (core, stabilizzatori). Migliore per forza funzionale.',
         videoUrl: '/videos/exercises/back-squat.mp4',
         recommended: true
       },
@@ -248,21 +220,21 @@ const GYM_PATTERNS_WITH_CHOICE = [
         id: 'leg_press',
         name: 'Leg Press',
         type: 'machine',
-        description: 'Piu sicura, ideale per iniziare. Meno attivazione muscolare globale.',
+        description: 'Più sicura, ideale per iniziare. Meno attivazione muscolare globale.',
         videoUrl: '/videos/exercises/leg-press.mp4'
       }
     ]
   },
   {
     id: 'horizontal_push',
-    name: 'Horizontal Push (Petto)',
+    name: 'Spinta Orizzontale (Petto)',
     description: 'Scegli come testare la spinta orizzontale',
     variants: [
       {
         id: 'bench_press',
         name: 'Panca Piana',
         type: 'free_weight',
-        description: 'Attiva stabilizzatori e core. Movimento piu completo.',
+        description: 'Attiva stabilizzatori e core. Movimento più completo.',
         videoUrl: '/videos/exercises/flat-barbell-bench-press.mp4',
         recommended: true
       },
@@ -270,42 +242,41 @@ const GYM_PATTERNS_WITH_CHOICE = [
         id: 'chest_press',
         name: 'Chest Press',
         type: 'machine',
-        description: 'Traiettoria guidata, piu sicura per principianti.',
+        description: 'Traiettoria guidata, più sicura per principianti.',
         videoUrl: '/videos/exercises/chest-press.mp4'
       }
     ]
   },
   {
     id: 'vertical_pull',
-    name: 'Vertical Pull (Dorsali)',
+    name: 'Tirata Verticale (Dorsali)',
     description: 'Test alla Lat Machine',
     variants: [
       {
         id: 'lat_pulldown',
         name: 'Lat Machine',
         type: 'machine',
-        description: 'Lat Pulldown ai cavi',
+        description: 'Tirata verticale ai cavi per dorsali e bicipiti.',
         videoUrl: '/videos/exercises/lat-pulldown.mp4'
       }
-      // Nessuna alternativa per lat machine
     ]
   },
   {
     id: 'vertical_push',
-    name: 'Vertical Push (Spalle)',
+    name: 'Spinta Verticale (Spalle)',
     description: 'Scegli come testare la spinta verticale',
     variants: [
       {
         id: 'military_press',
-        name: 'Military Press',
+        name: 'Lento Avanti',
         type: 'free_weight',
-        description: 'In piedi, attiva core e stabilizzatori. Piu completo.',
+        description: 'In piedi, attiva core e stabilizzatori. Più completo.',
         videoUrl: '/videos/exercises/military-press.mp4',
         recommended: true
       },
       {
         id: 'shoulder_press_machine',
-        name: 'Shoulder Press Machine',
+        name: 'Shoulder Press (Macchina)',
         type: 'machine',
         description: 'Seduto, traiettoria guidata. Ideale per isolare le spalle.',
         videoUrl: '/videos/exercises/shoulder-press.mp4'
@@ -314,7 +285,7 @@ const GYM_PATTERNS_WITH_CHOICE = [
   },
   {
     id: 'horizontal_pull',
-    name: 'Horizontal Pull (Remata)',
+    name: 'Tirata Orizzontale (Remata)',
     description: 'Scegli come testare la tirata orizzontale',
     variants: [
       {
@@ -329,7 +300,7 @@ const GYM_PATTERNS_WITH_CHOICE = [
         id: 'row_machine',
         name: 'Row Machine',
         type: 'machine',
-        description: 'Traiettoria guidata, piu semplice da eseguire.',
+        description: 'Traiettoria guidata, più semplice da eseguire.',
         videoUrl: '/videos/exercises/seated-row-machine.mp4'
       }
     ]
