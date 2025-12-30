@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import ScreeningFlowFull from '../components/ScreeningFlowFull';
 import WarmupGuide from '../components/assessment/WarmupGuide';
@@ -7,22 +7,39 @@ import WarmupGuide from '../components/assessment/WarmupGuide';
 /**
  * ScreeningFull - Pagina per lo screening approfondito con 4 test pratici
  * Usata dopo BiomechanicsQuizFull (7 domande)
+ *
+ * Gestisce 3 scenari:
+ * 1. In palestra + test ora → riscaldamento + test completi
+ * 2. Non in palestra + conosco massimali → NO riscaldamento, inserimento manuale
+ * 3. Non in palestra + non conosco → va direttamente alla dashboard (gestito altrove)
  */
 export default function ScreeningFull() {
   const [userId, setUserId] = useState(null);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showWarmup, setShowWarmup] = useState(true);
+  const [isManualEntry, setIsManualEntry] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     fetchUserData();
-    // Check if warmup was already completed this session
+
+    // Check if this is manual entry mode (user knows their maxes, not in gym)
+    const manualEntry = location.state?.manualEntry === true;
+    setIsManualEntry(manualEntry);
+
+    // Skip warmup if:
+    // 1. Manual entry mode (user is not in gym)
+    // 2. Warmup was already completed this session
     const warmupCompleted = sessionStorage.getItem('warmup_completed');
-    if (warmupCompleted === 'true') {
+    if (manualEntry || warmupCompleted === 'true' || warmupCompleted === 'skipped') {
       setShowWarmup(false);
+      if (manualEntry) {
+        console.log('[SCREENING-FULL] Manual entry mode - skipping warmup');
+      }
     }
-  }, []);
+  }, [location.state]);
 
   const fetchUserData = async () => {
     try {

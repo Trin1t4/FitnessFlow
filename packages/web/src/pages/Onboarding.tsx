@@ -139,24 +139,29 @@ export default function Onboarding() {
     }
   };
 
-  const nextStep = async () => {
+  // ✅ FIX: nextStep ora accetta dati mergiati per evitare race condition con React state
+  const nextStep = async (mergedData?: Partial<OnboardingData>) => {
     if (currentStep < totalSteps) {
       console.log(`[ONBOARDING] ➡️ Moving from step ${currentStep} to ${currentStep + 1}`);
       setCurrentStep(currentStep + 1);
     } else {
       // ✅ STEP FINALE - Salva e naviga
+      // Usa mergedData se fornito (dal GoalStep), altrimenti usa data dallo state
+      const finalData = mergedData || data;
+
       setIsSaving(true);
       try {
         // 🔍 DEBUG CRITICO - Stampa TUTTO prima di salvare
         console.log('[ONBOARDING] 🎯 ========== FINAL SAVE START ==========');
         console.log('[ONBOARDING] 📋 COMPLETE DATA OBJECT:');
-        console.log('[ONBOARDING]', JSON.stringify(data, null, 2));
-        console.log('[ONBOARDING] 🏠 trainingLocation value:', data.trainingLocation);
-        console.log('[ONBOARDING] 🎯 (check above - is it "gym", "home", or undefined?)');
+        console.log('[ONBOARDING]', JSON.stringify(finalData, null, 2));
+        console.log('[ONBOARDING] 🏠 trainingLocation value:', finalData.trainingLocation);
+        console.log('[ONBOARDING] 🎯 goal value:', finalData.goal);
+        console.log('[ONBOARDING] 🎯 goals array:', finalData.goals);
         console.log('[ONBOARDING] 🎯 ========== END DEBUG ==========');
 
         // Se location è undefined, c'è un bug in LocationStep!
-        if (!data.trainingLocation) {
+        if (!finalData.trainingLocation) {
           console.error('[ONBOARDING] ❌ LOCATION IS MISSING! LocationStep.tsx has a bug!');
           alert(t('onboarding.error.location_missing'));
           setIsSaving(false);
@@ -166,20 +171,20 @@ export default function Onboarding() {
 
         // 1. Salva in localStorage
         console.log('[ONBOARDING] 💾 Saving to localStorage...');
-        localStorage.setItem('onboarding_data', JSON.stringify(data));
+        localStorage.setItem('onboarding_data', JSON.stringify(finalData));
         console.log('[ONBOARDING] ✅ Saved to localStorage');
-        
+
         // 2. Salva in Supabase
         console.log('[ONBOARDING] 🔄 Saving to Supabase...');
-        await saveOnboardingToDatabase(data);
-        
+        await saveOnboardingToDatabase(finalData);
+
         // 3. ✅ BRANCH CONDIZIONALE: Recupero Motorio vs Screening Type
-        if (data.goal === 'motor_recovery') {
+        if (finalData.goal === 'motor_recovery') {
           console.log('[ONBOARDING] 🏥 Motor recovery goal detected → navigating to /recovery-screening');
           navigate('/recovery-screening');
         } else {
           // Controlla il tipo di screening scelto
-          const screeningType = (data as any).screeningType;
+          const screeningType = finalData.screeningType;
           if (screeningType === 'thorough') {
             console.log('[ONBOARDING] 📊 Thorough screening → navigating to /quiz-full');
             navigate('/quiz-full');
@@ -205,8 +210,14 @@ export default function Onboarding() {
 
   const handleStepComplete = (stepData: Partial<OnboardingData>) => {
     console.log(`[ONBOARDING] ✅ Step ${currentStep} completed with data:`, stepData);
+
+    // ✅ FIX: Merge data PRIMA di chiamare nextStep
+    // React setData è asincrono - non possiamo fare affidamento su `data` subito dopo setData()
+    const mergedData = { ...data, ...stepData };
     updateData(stepData);
-    nextStep();
+
+    // Passa i dati mergiati direttamente a nextStep per evitare race condition
+    nextStep(mergedData);
   };
 
   // 5 step: Anagrafica, PersonalInfo, ScreeningType, Location, Goal

@@ -109,6 +109,9 @@ export default function Dashboard() {
   const [showCycleScreening, setShowCycleScreening] = useState(false);
   const [cycleScreeningDismissed, setCycleScreeningDismissed] = useState(false);
 
+  // Screening pending state (user chose "test later" during onboarding)
+  const [screeningPending, setScreeningPending] = useState(false);
+
   useEffect(() => {
     loadData();
     initializePrograms();
@@ -318,15 +321,22 @@ export default function Dashboard() {
     const onboarding = localStorage.getItem('onboarding_data');
     const quiz = localStorage.getItem('quiz_data');
     const screening = localStorage.getItem('screening_data');
+    const pendingScreening = localStorage.getItem('screening_pending');
 
     if (onboarding) setDataStatus(prev => ({ ...prev, onboarding: JSON.parse(onboarding) }));
     if (quiz) setDataStatus(prev => ({ ...prev, quiz: JSON.parse(quiz) }));
     if (screening) setDataStatus(prev => ({ ...prev, screening: JSON.parse(screening) }));
 
+    // Check if user chose "test later" during onboarding
+    if (pendingScreening === 'true') {
+      setScreeningPending(true);
+    }
+
     console.log('📊 DATA STATUS:', {
       hasOnboarding: !!onboarding,
       hasQuiz: !!quiz,
       hasScreening: !!screening,
+      screeningPending: pendingScreening === 'true',
       screeningLevel: screening ? JSON.parse(screening).level : null
     });
   }
@@ -1210,6 +1220,54 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* Banner: Complete Physical Tests (shown when user chose "test later") */}
+        {screeningPending && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/50 rounded-xl p-4 md:p-5"
+          >
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/30 flex items-center justify-center flex-shrink-0">
+                  <ClipboardList className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-amber-200 text-lg">Completa i test fisici</h3>
+                  <p className="text-amber-200/80 text-sm mt-1">
+                    Sei in palestra? Completa i test pratici per ottenere un programma personalizzato sui tuoi massimali reali.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 ml-13 md:ml-0">
+                <button
+                  onClick={() => {
+                    // Navigate to screening based on screeningType
+                    const screeningType = dataStatus.onboarding?.screeningType;
+                    if (screeningType === 'thorough') {
+                      navigate('/screening-full');
+                    } else {
+                      navigate('/screening');
+                    }
+                  }}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/20"
+                >
+                  Fai i test ora
+                </button>
+                <button
+                  onClick={() => {
+                    setScreeningPending(false);
+                    // Don't remove from localStorage - just hide the banner for this session
+                  }}
+                  className="text-amber-300/70 hover:text-amber-200 text-sm font-medium"
+                >
+                  Dopo
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Status Cards - horizontal scroll on mobile, grid on desktop */}
         <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-8 overflow-x-auto pb-2 md:pb-0 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">

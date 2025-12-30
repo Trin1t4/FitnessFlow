@@ -7,7 +7,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WeeklySplit, DayWorkout, Exercise } from '../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Target, Zap, Activity, Info, ChevronDown, ImageIcon } from 'lucide-react';
+import { Target, Zap, Activity, Info, ChevronDown, ImageIcon, Flame } from 'lucide-react';
 import { getExerciseDescription } from '../utils/exerciseDescriptions';
 import { getExerciseImageWithFallback, isStaticExercise } from '@trainsmart/shared';
 
@@ -193,6 +193,21 @@ function ExerciseRow({ exercise, index, isCorrective = false }: ExerciseRowProps
                   {exercise.pattern.replace('_', ' ')}
                 </div>
               </div>
+              {/* Warmup indicator */}
+              {exercise.warmup && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <Flame className="w-3 h-3 text-orange-400" />
+                  <span className="text-[10px] md:text-xs text-orange-300">
+                    {exercise.warmup.ramp ? (
+                      // Rampa forza: mostra schema rampa
+                      `Rampa: ${exercise.warmup.ramp.map(r => `${r.reps}@${r.intensity}`).join(' → ')}`
+                    ) : (
+                      // Standard warmup
+                      `Riscaldamento: ${exercise.warmup.sets}×${exercise.warmup.reps} @ ${exercise.warmup.intensity}`
+                    )}
+                  </span>
+                </div>
+              )}
               {exercise.notes && (
                 <p className="text-xs text-gray-400 mt-0.5 truncate">{exercise.notes}</p>
               )}

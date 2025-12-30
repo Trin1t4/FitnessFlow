@@ -496,9 +496,23 @@ export default function ScreeningFlowFull({ onComplete, userData, userId }) {
   };
 
   const calculateAndSave = (practicalResults) => {
-    // 1. Recupera quiz score
+    // 1. Recupera quiz score - CALCOLA PERCENTUALE CORRETTA
     const quizData = localStorage.getItem('quiz_data');
-    const quizScore = quizData ? JSON.parse(quizData).score : 50;
+    let quizScore = 50; // default
+
+    if (quizData) {
+      const parsed = JSON.parse(quizData);
+      // Se abbiamo correctAnswers e totalQuestions, calcola la percentuale reale
+      if (parsed.correctAnswers !== undefined && parsed.totalQuestions) {
+        quizScore = Math.round((parsed.correctAnswers / parsed.totalQuestions) * 100);
+      } else if (parsed.score !== undefined) {
+        // Fallback: se score è già una percentuale (0-100), usalo
+        // Altrimenti se è un punteggio pesato basso (<20), probabilmente è raw score
+        // In quel caso, stimiamo che il max score sia ~14 per quiz full (7 domande × peso medio 2)
+        const maxPossibleScore = (parsed.totalQuestions || 7) * 2; // peso medio ~2
+        quizScore = parsed.score > 20 ? parsed.score : Math.round((parsed.score / maxPossibleScore) * 100);
+      }
+    }
 
     // 2. Calcola practical score dai pattern
     const patternScores = Object.values(practicalResults);
@@ -565,6 +579,9 @@ export default function ScreeningFlowFull({ onComplete, userData, userId }) {
     };
 
     localStorage.setItem('screening_data', JSON.stringify(screeningData));
+
+    // Clear "test later" flag since tests are now completed
+    localStorage.removeItem('screening_pending');
 
     const mode = Object.values(practicalResults)[0]?.mode || 'CALISTHENICS';
     console.log(`=== SCREENING ${mode} COMPLETED ===`);
