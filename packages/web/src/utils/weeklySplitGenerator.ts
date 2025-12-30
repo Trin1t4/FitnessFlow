@@ -948,8 +948,8 @@ function generateSportSpecificSplit(options: SplitGeneratorOptions): WeeklySplit
 
     days.push({
       dayNumber: 1,
-      dayName: 'Strength A - Lower Focus',
-      focus: `${phaseConfig.focus} - Lower Body`,
+      dayName: 'Forza A - Focus Gambe',
+      focus: `${phaseConfig.focus} - Parte Inferiore`,
       exercises: [
         createSportExercise(keyLifts[0] || 'Back Squat', 'lower_push', 'heavy'),
         createSportExercise(keyLifts[1] || 'Romanian Deadlift', 'lower_pull', 'moderate'),
@@ -960,8 +960,8 @@ function generateSportSpecificSplit(options: SplitGeneratorOptions): WeeklySplit
 
     days.push({
       dayNumber: 2,
-      dayName: 'Strength B - Upper Focus',
-      focus: `${phaseConfig.focus} - Upper Body`,
+      dayName: 'Forza B - Focus Upper',
+      focus: `${phaseConfig.focus} - Parte Superiore`,
       exercises: [
         createSportExercise(keyLifts[2] || 'Bench Press', 'horizontal_push', 'heavy'),
         createSportExercise(keyLifts[3] || 'Barbell Row', 'horizontal_pull', 'moderate'),
@@ -976,8 +976,8 @@ function generateSportSpecificSplit(options: SplitGeneratorOptions): WeeklySplit
     // Day A: Lower Heavy + Upper Volume
     days.push({
       dayNumber: 1,
-      dayName: 'Strength A - Squat Focus',
-      focus: `${phaseConfig.focus} - Squat Day`,
+      dayName: 'Forza A - Focus Squat',
+      focus: `${phaseConfig.focus} - Giorno Squat`,
       exercises: [
         createSportExercise(keyLifts[0] || 'Back Squat', 'lower_push', 'heavy'),
         createSportExercise(keyLifts[2] || 'Bench Press', 'horizontal_push', 'moderate'),
@@ -990,8 +990,8 @@ function generateSportSpecificSplit(options: SplitGeneratorOptions): WeeklySplit
     // Day B: Upper Heavy + Lower Accessory
     days.push({
       dayNumber: 2,
-      dayName: 'Strength B - Press Focus',
-      focus: `${phaseConfig.focus} - Pressing Day`,
+      dayName: 'Forza B - Focus Spinte',
+      focus: `${phaseConfig.focus} - Giorno Spinte`,
       exercises: [
         createSportExercise(keyLifts[2] || 'Bench Press', 'horizontal_push', 'heavy'),
         createSportExercise('Overhead Press', 'vertical_push', 'moderate'),
@@ -1004,8 +1004,8 @@ function generateSportSpecificSplit(options: SplitGeneratorOptions): WeeklySplit
     // Day C: Hinge Heavy + Full Body
     days.push({
       dayNumber: 3,
-      dayName: 'Strength C - Hinge Focus',
-      focus: `${phaseConfig.focus} - Hinge Day`,
+      dayName: 'Forza C - Focus Stacco',
+      focus: `${phaseConfig.focus} - Giorno Hip Hinge`,
       exercises: [
         createSportExercise(keyLifts[1] || 'Romanian Deadlift', 'lower_pull', 'heavy'),
         createSportExercise(keyLifts[3] || 'Hip Thrust', 'lower_push', 'moderate'),
@@ -1021,8 +1021,8 @@ function generateSportSpecificSplit(options: SplitGeneratorOptions): WeeklySplit
     // Day 1: Lower A - Squat Focus
     days.push({
       dayNumber: 1,
-      dayName: 'Lower A - Squat Focus',
-      focus: `${phaseConfig.focus} - Squat Dominant`,
+      dayName: 'Gambe A - Focus Squat',
+      focus: `${phaseConfig.focus} - Dominante Squat`,
       exercises: [
         createSportExercise(keyLifts[0] || 'Back Squat', 'lower_push', 'heavy'),
         createSportExercise(keyLifts[1] || 'Romanian Deadlift', 'lower_pull', 'moderate'),
@@ -1035,8 +1035,8 @@ function generateSportSpecificSplit(options: SplitGeneratorOptions): WeeklySplit
     // Day 2: Upper A - Push Focus
     days.push({
       dayNumber: 2,
-      dayName: 'Upper A - Push Focus',
-      focus: `${phaseConfig.focus} - Horizontal Push`,
+      dayName: 'Upper A - Focus Spinte',
+      focus: `${phaseConfig.focus} - Spinte Orizzontali`,
       exercises: [
         createSportExercise(keyLifts[2] || 'Bench Press', 'horizontal_push', 'heavy'),
         createSportExercise('Overhead Press', 'vertical_push', 'moderate'),
@@ -1049,8 +1049,8 @@ function generateSportSpecificSplit(options: SplitGeneratorOptions): WeeklySplit
     // Day 3: Lower B - Hinge Focus
     days.push({
       dayNumber: 3,
-      dayName: 'Lower B - Hinge Focus',
-      focus: `${phaseConfig.focus} - Hip Hinge Dominant`,
+      dayName: 'Gambe B - Focus Stacco',
+      focus: `${phaseConfig.focus} - Dominante Hip Hinge`,
       exercises: [
         createSportExercise('Conventional Deadlift', 'lower_pull', 'heavy'),
         createSportExercise('Front Squat', 'lower_push', 'moderate'),
@@ -1063,8 +1063,8 @@ function generateSportSpecificSplit(options: SplitGeneratorOptions): WeeklySplit
     // Day 4: Upper B - Pull Focus
     days.push({
       dayNumber: 4,
-      dayName: 'Upper B - Pull Focus',
-      focus: `${phaseConfig.focus} - Vertical Pull`,
+      dayName: 'Upper B - Focus Tirate',
+      focus: `${phaseConfig.focus} - Tirate Verticali`,
       exercises: [
         createSportExercise('Pull-up', 'vertical_pull', 'heavy'),
         createSportExercise(keyLifts[2] || 'Bench Press', 'horizontal_push', 'moderate'),
@@ -1101,7 +1101,7 @@ function generateSportSpecificSplit(options: SplitGeneratorOptions): WeeklySplit
   ].join('\n');
 
   return {
-    splitName: `Sport Performance - ${sportType.charAt(0).toUpperCase() + sportType.slice(1)} (${phase.replace('_', '-')})`,
+    splitName: `Prestazione Sportiva - ${sportType.charAt(0).toUpperCase() + sportType.slice(1)} (${phase.replace('_', '-')})`,
     description,
     days
   };
@@ -1120,20 +1120,20 @@ function generate3DayFullBody(options: SplitGeneratorOptions): WeeklySplit {
   const days: DayWorkout[] = [
     {
       dayNumber: 1,
-      dayName: 'Monday - Full Body A (Squat Focus)',
-      focus: 'Lower Push Dominant + Horizontal Push + Vertical Pull',
+      dayName: 'Giorno 1 - Full Body A',
+      focus: 'Focus Squat + Panca + Tirate',
       exercises: []
     },
     {
       dayNumber: 2,
-      dayName: 'Wednesday - Full Body B (Deadlift Focus)',
-      focus: 'Lower Pull Dominant + Vertical Push + Horizontal Push Variant',
+      dayName: 'Giorno 2 - Full Body B',
+      focus: 'Focus Stacco + Spinte + Rematore',
       exercises: []
     },
     {
       dayNumber: 3,
-      dayName: 'Friday - Full Body C (Balanced)',
-      focus: 'Lower Push Variant + Vertical Pull Variant + Horizontal Push',
+      dayName: 'Giorno 3 - Full Body C',
+      focus: 'Bilanciato - Tutti i pattern',
       exercises: []
     }
   ];
@@ -1189,8 +1189,8 @@ function generate3DayFullBody(options: SplitGeneratorOptions): WeeklySplit {
   }
 
   return {
-    splitName: 'FULL BODY A/B/C (3x/week)',
-    description: 'Allenamento total body con varianti diverse ogni sessione. Ottimale per frequenza 3x/settimana.',
+    splitName: 'Full Body 3x Settimana',
+    description: 'Allenamento total body con varianti diverse ogni sessione. Ottimale per principianti e intermedi.',
     days
   };
 }
@@ -1208,26 +1208,26 @@ function generate4DayUpperLower(options: SplitGeneratorOptions): WeeklySplit {
   const days: DayWorkout[] = [
     {
       dayNumber: 1,
-      dayName: 'Monday - Upper A',
-      focus: 'Horizontal Push + Vertical Pull + Vertical Push + Core',
+      dayName: 'Giorno 1 - Upper A',
+      focus: 'Panca + Tirate + Spalle + Core',
       exercises: []
     },
     {
       dayNumber: 2,
-      dayName: 'Tuesday - Lower A',
-      focus: 'Lower Push + Lower Pull + Core',
+      dayName: 'Giorno 2 - Gambe A',
+      focus: 'Squat + Stacco + Core',
       exercises: []
     },
     {
       dayNumber: 3,
-      dayName: 'Thursday - Upper B',
-      focus: 'Vertical Push + Horizontal Push Variant + Vertical Pull Variant',
+      dayName: 'Giorno 3 - Upper B',
+      focus: 'Spalle + Panca variante + Tirate variante',
       exercises: []
     },
     {
       dayNumber: 4,
-      dayName: 'Friday - Lower B',
-      focus: 'Lower Pull Variant + Lower Push Variant + Core',
+      dayName: 'Giorno 4 - Gambe B',
+      focus: 'Stacco variante + Squat variante + Core',
       exercises: []
     }
   ];
@@ -1277,7 +1277,7 @@ function generate4DayUpperLower(options: SplitGeneratorOptions): WeeklySplit {
   }
 
   return {
-    splitName: 'UPPER/LOWER (4x/week)',
+    splitName: 'Upper/Lower 4x Settimana',
     description: 'Split Upper/Lower classico. Maggior volume per gruppo muscolare, ideale per ipertrofia e forza.',
     days
   };
@@ -1296,38 +1296,38 @@ function generate6DayPPL(options: SplitGeneratorOptions): WeeklySplit {
   const days: DayWorkout[] = [
     {
       dayNumber: 1,
-      dayName: 'Monday - Push A',
-      focus: 'Horizontal Push + Vertical Push + Triceps + Core',
+      dayName: 'Giorno 1 - Push A',
+      focus: 'Panca + Spalle + Tricipiti + Core',
       exercises: []
     },
     {
       dayNumber: 2,
-      dayName: 'Tuesday - Pull A',
-      focus: 'Vertical Pull + Horizontal Pull (Row) + Biceps + Core',
+      dayName: 'Giorno 2 - Pull A',
+      focus: 'Tirate + Rematore + Bicipiti + Core',
       exercises: []
     },
     {
       dayNumber: 3,
-      dayName: 'Wednesday - Legs A',
-      focus: 'Lower Push + Lower Pull + Calves + Core',
+      dayName: 'Giorno 3 - Gambe A',
+      focus: 'Squat + Stacco + Polpacci + Core',
       exercises: []
     },
     {
       dayNumber: 4,
-      dayName: 'Thursday - Push B',
-      focus: 'Vertical Push + Horizontal Push Variant + Triceps',
+      dayName: 'Giorno 4 - Push B',
+      focus: 'Spalle + Panca variante + Tricipiti',
       exercises: []
     },
     {
       dayNumber: 5,
-      dayName: 'Friday - Pull B',
-      focus: 'Horizontal Pull + Vertical Pull Variant + Biceps',
+      dayName: 'Giorno 5 - Pull B',
+      focus: 'Rematore + Tirate variante + Bicipiti',
       exercises: []
     },
     {
       dayNumber: 6,
-      dayName: 'Saturday - Legs B',
-      focus: 'Lower Pull Variant + Lower Push Variant + Calves',
+      dayName: 'Giorno 6 - Gambe B',
+      focus: 'Stacco variante + Squat variante + Polpacci',
       exercises: []
     }
   ];
@@ -1392,7 +1392,7 @@ function generate6DayPPL(options: SplitGeneratorOptions): WeeklySplit {
   }
 
   return {
-    splitName: 'PUSH/PULL/LEGS (6x/week)',
+    splitName: 'Push/Pull/Gambe 6x Settimana',
     description: 'Split PPL avanzato con massimo volume e frequenza. Ogni gruppo muscolare allenato 2x/settimana.',
     days
   };
