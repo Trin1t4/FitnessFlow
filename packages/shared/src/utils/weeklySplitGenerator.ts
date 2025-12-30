@@ -1051,20 +1051,20 @@ function generate3DayFullBody(options: SplitGeneratorOptions): WeeklySplit {
   const days: DayWorkout[] = [
     {
       dayNumber: 1,
-      dayName: 'Monday - Full Body A (Squat Focus)',
-      focus: 'Lower Push Dominant + Horizontal Push + Vertical Pull',
+      dayName: 'Giorno 1 - Full Body A (Focus Squat)',
+      focus: 'Gambe Dominanti + Panca + Tirate Verticali',
       exercises: []
     },
     {
       dayNumber: 2,
-      dayName: 'Wednesday - Full Body B (Deadlift Focus)',
-      focus: 'Lower Pull Dominant + Vertical Push + Horizontal Push Variant',
+      dayName: 'Giorno 2 - Full Body B (Focus Stacco)',
+      focus: 'Stacco Dominante + Spalle + Panca Variante',
       exercises: []
     },
     {
       dayNumber: 3,
-      dayName: 'Friday - Full Body C (Balanced)',
-      focus: 'Lower Push Variant + Vertical Pull Variant + Horizontal Push',
+      dayName: 'Giorno 3 - Full Body C (Bilanciato)',
+      focus: 'Squat Variante + Tirate Variante + Panca',
       exercises: []
     }
   ];
@@ -1120,7 +1120,7 @@ function generate3DayFullBody(options: SplitGeneratorOptions): WeeklySplit {
   }
 
   return {
-    splitName: 'FULL BODY A/B/C (3x/week)',
+    splitName: 'Full Body 3x Settimana',
     description: 'Allenamento total body con varianti diverse ogni sessione. Ottimale per frequenza 3x/settimana.',
     days
   };
@@ -1139,26 +1139,26 @@ function generate4DayUpperLower(options: SplitGeneratorOptions): WeeklySplit {
   const days: DayWorkout[] = [
     {
       dayNumber: 1,
-      dayName: 'Monday - Upper A',
-      focus: 'Horizontal Push + Vertical Pull + Vertical Push + Core',
+      dayName: 'Giorno 1 - Upper A',
+      focus: 'Panca + Tirate + Spalle + Core',
       exercises: []
     },
     {
       dayNumber: 2,
-      dayName: 'Tuesday - Lower A',
-      focus: 'Lower Push + Lower Pull + Core',
+      dayName: 'Giorno 2 - Gambe A',
+      focus: 'Squat + Stacco + Core',
       exercises: []
     },
     {
       dayNumber: 3,
-      dayName: 'Thursday - Upper B',
-      focus: 'Vertical Push + Horizontal Push Variant + Vertical Pull Variant',
+      dayName: 'Giorno 3 - Upper B',
+      focus: 'Spalle + Panca Variante + Tirate Variante',
       exercises: []
     },
     {
       dayNumber: 4,
-      dayName: 'Friday - Lower B',
-      focus: 'Lower Pull Variant + Lower Push Variant + Core',
+      dayName: 'Giorno 4 - Gambe B',
+      focus: 'Stacco Variante + Squat Variante + Core',
       exercises: []
     }
   ];
@@ -1208,7 +1208,7 @@ function generate4DayUpperLower(options: SplitGeneratorOptions): WeeklySplit {
   }
 
   return {
-    splitName: 'UPPER/LOWER (4x/week)',
+    splitName: 'Upper/Lower 4x Settimana',
     description: 'Split Upper/Lower classico. Maggior volume per gruppo muscolare, ideale per ipertrofia e forza.',
     days
   };
@@ -1227,38 +1227,38 @@ function generate6DayPPL(options: SplitGeneratorOptions): WeeklySplit {
   const days: DayWorkout[] = [
     {
       dayNumber: 1,
-      dayName: 'Monday - Push A',
-      focus: 'Horizontal Push + Vertical Push + Triceps + Core',
+      dayName: 'Giorno 1 - Push A',
+      focus: 'Panca + Spalle + Tricipiti + Core',
       exercises: []
     },
     {
       dayNumber: 2,
-      dayName: 'Tuesday - Pull A',
-      focus: 'Vertical Pull + Horizontal Pull (Row) + Biceps + Core',
+      dayName: 'Giorno 2 - Pull A',
+      focus: 'Tirate + Rematore + Bicipiti + Core',
       exercises: []
     },
     {
       dayNumber: 3,
-      dayName: 'Wednesday - Legs A',
-      focus: 'Lower Push + Lower Pull + Calves + Core',
+      dayName: 'Giorno 3 - Gambe A',
+      focus: 'Squat + Stacco + Polpacci + Core',
       exercises: []
     },
     {
       dayNumber: 4,
-      dayName: 'Thursday - Push B',
-      focus: 'Vertical Push + Horizontal Push Variant + Triceps',
+      dayName: 'Giorno 4 - Push B',
+      focus: 'Spalle + Panca Variante + Tricipiti',
       exercises: []
     },
     {
       dayNumber: 5,
-      dayName: 'Friday - Pull B',
-      focus: 'Horizontal Pull + Vertical Pull Variant + Biceps',
+      dayName: 'Giorno 5 - Pull B',
+      focus: 'Rematore + Tirate Variante + Bicipiti',
       exercises: []
     },
     {
       dayNumber: 6,
-      dayName: 'Saturday - Legs B',
-      focus: 'Lower Pull Variant + Lower Push Variant + Calves',
+      dayName: 'Giorno 6 - Gambe B',
+      focus: 'Stacco Variante + Squat Variante + Polpacci',
       exercises: []
     }
   ];
@@ -1323,7 +1323,7 @@ function generate6DayPPL(options: SplitGeneratorOptions): WeeklySplit {
   }
 
   return {
-    splitName: 'PUSH/PULL/LEGS (6x/week)',
+    splitName: 'Push/Pull/Gambe 6x Settimana',
     description: 'Split PPL avanzato con massimo volume e frequenza. Ogni gruppo muscolare allenato 2x/settimana.',
     days
   };
