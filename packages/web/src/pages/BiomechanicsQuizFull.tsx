@@ -447,14 +447,14 @@ function calculateLevel(state: QuizState): { level: Level; label: string; descri
   if (score < 12) {
     return {
       level: 'intermediate',
-      label: 'Consapevole',
+      label: 'Costruzione',
       description: 'Conosci le basi e sai muoverti bene. Il tuo programma sarà calibrato per farti progredire con intensità appropriate.',
     };
   }
 
   return {
     level: 'advanced',
-    label: 'Preparato',
+    label: 'Padronanza',
     description: 'Hai una buona comprensione della teoria e della pratica. Il programma sarà diretto e con meno spiegazioni ridondanti.',
   };
 }

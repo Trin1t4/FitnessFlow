@@ -142,13 +142,13 @@ function getStrengthLevel(e1rm: number, bodyWeight: number, exercise: string): {
   const ratio = e1rm / bodyWeight;
 
   if (ratio < std.beginner) {
-    return { level: 'Principiante', percentile: Math.round((ratio / std.beginner) * 25), color: '#94a3b8' };
+    return { level: 'Fondamenta', percentile: Math.round((ratio / std.beginner) * 25), color: '#94a3b8' };
   } else if (ratio < std.intermediate) {
     const progress = (ratio - std.beginner) / (std.intermediate - std.beginner);
-    return { level: 'Intermedio', percentile: Math.round(25 + progress * 25), color: '#22c55e' };
+    return { level: 'Costruzione', percentile: Math.round(25 + progress * 25), color: '#22c55e' };
   } else if (ratio < std.advanced) {
     const progress = (ratio - std.intermediate) / (std.advanced - std.intermediate);
-    return { level: 'Avanzato', percentile: Math.round(50 + progress * 25), color: '#3b82f6' };
+    return { level: 'Padronanza', percentile: Math.round(50 + progress * 25), color: '#3b82f6' };
   } else if (ratio < std.elite) {
     const progress = (ratio - std.advanced) / (std.elite - std.advanced);
     return { level: 'Elite', percentile: Math.round(75 + progress * 20), color: '#f59e0b' };

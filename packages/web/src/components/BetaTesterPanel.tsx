@@ -26,9 +26,9 @@ import { toast } from 'sonner';
 
 // Configuration options
 const LEVELS = [
-  { id: 'beginner', label: 'Principiante', color: 'emerald', icon: '🌱' },
-  { id: 'intermediate', label: 'Intermedio', color: 'blue', icon: '💪' },
-  { id: 'advanced', label: 'Avanzato', color: 'purple', icon: '🔥' },
+  { id: 'beginner', label: 'Fondamenta', color: 'emerald', icon: '🌱' },
+  { id: 'intermediate', label: 'Costruzione', color: 'blue', icon: '💪' },
+  { id: 'advanced', label: 'Padronanza', color: 'purple', icon: '🔥' },
 ] as const;
 
 const GOALS = [
@@ -193,13 +193,13 @@ export default function BetaTesterPanel({ compact = false }: BetaTesterPanelProp
             onClick={() => applyPreset('beginner-home')}
             className="text-xs px-2 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg transition-colors"
           >
-            🏠 Principiante Casa
+            🏠 Fondamenta Casa
           </button>
           <button
             onClick={() => applyPreset('advanced-gym')}
             className="text-xs px-2 py-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors"
           >
-            🏋️ Avanzato Palestra
+            🏋️ Padronanza Palestra
           </button>
           <button
             onClick={() => applyPreset('rehab')}

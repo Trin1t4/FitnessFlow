@@ -98,7 +98,7 @@ export default function BiomechanicsQuiz() {
       const quizData = {
         score: result.score,
         level: result.level,
-        levelLabel: result.level === 'beginner' ? 'Principiante' : result.level === 'intermediate' ? 'Intermedio' : 'Avanzato',
+        levelLabel: result.level === 'beginner' ? 'Fondamenta' : result.level === 'intermediate' ? 'Costruzione' : 'Padronanza',
         totalQuestions: BETA_QUESTIONS.length,
         correctAnswers: newAnswers.filter(a => a > 0).length,
         answers: newAnswers,
@@ -129,7 +129,7 @@ export default function BiomechanicsQuiz() {
   // Schermata risultato
   if (isComplete) {
     const result = calculateLevel(answers);
-    const levelLabel = result.level === 'beginner' ? 'Principiante' : result.level === 'intermediate' ? 'Intermedio' : 'Avanzato';
+    const levelLabel = result.level === 'beginner' ? 'Fondamenta' : result.level === 'intermediate' ? 'Costruzione' : 'Padronanza';
     const levelColor = result.level === 'beginner' ? 'emerald' : result.level === 'intermediate' ? 'blue' : 'purple';
 
     return (

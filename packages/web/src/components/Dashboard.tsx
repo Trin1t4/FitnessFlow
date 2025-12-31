@@ -1902,7 +1902,7 @@ export default function Dashboard() {
                     onClick={() => handleQuickTest('beginner')}
                     className="bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-2 rounded-lg text-sm font-semibold shadow-md"
                   >
-                    Principiante
+                    Fondamenta
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -1910,7 +1910,7 @@ export default function Dashboard() {
                     onClick={() => handleQuickTest('intermediate')}
                     className="bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white py-2 rounded-lg text-sm font-semibold shadow-md"
                   >
-                    Intermedio
+                    Costruzione
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -1918,7 +1918,7 @@ export default function Dashboard() {
                     onClick={() => handleQuickTest('advanced')}
                     className="bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white py-2 rounded-lg text-sm font-semibold shadow-md"
                   >
-                    Avanzato
+                    Padronanza
                   </motion.button>
                 </div>
               </div>

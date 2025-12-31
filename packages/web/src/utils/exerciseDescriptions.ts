@@ -675,6 +675,259 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
       'Mantieni tensione costante',
       'Non tirare con le braccia, usa gli addominali'
     ]
+  },
+
+  // ============================================
+  // CALISTHENICS - ESERCIZI AGGIUNTIVI
+  // ============================================
+
+  'Squat a Corpo Libero': {
+    description: 'Movimento base per gambe. Scendi come se ti sedessi su una sedia invisibile, mantenendo il peso distribuito sul piede.',
+    technique: [
+      'Piedi larghezza spalle',
+      'Peso su tripode (tallone + base alluce + mignolo)',
+      'Ginocchia in linea con le punte',
+      'Core attivo, schiena neutra'
+    ]
+  },
+
+  'Squat con Salto': {
+    description: 'Squat esplosivo con fase di volo. Sviluppa potenza e forza reattiva nelle gambe.',
+    technique: [
+      'Scendi in squat profondo',
+      'Esplodi verso l\'alto con massima velocità',
+      'Atterra morbido sugli avampiedi',
+      'Ammortizza l\'impatto flettendo le ginocchia'
+    ]
+  },
+
+  'Shrimp Squat': {
+    description: 'Squat su una gamba con gamba posteriore piegata. Esercizio avanzato per forza unilaterale.',
+    technique: [
+      'Afferra la caviglia dietro con la mano',
+      'Scendi lentamente sulla gamba d\'appoggio',
+      'Ginocchio posteriore tocca terra',
+      'Mantieni il busto il più verticale possibile'
+    ]
+  },
+
+  'Skater Squat': {
+    description: 'Squat unilaterale con gamba libera dietro. Ottimo per equilibrio e forza monopodalica.',
+    technique: [
+      'Gamba libera leggermente piegata dietro',
+      'Scendi controllato sulla gamba d\'appoggio',
+      'Braccia avanti per equilibrio',
+      'Non appoggiare la gamba libera a terra'
+    ]
+  },
+
+  'Hip Thrust': {
+    description: 'Esercizio principale per i glutei. Spinta del bacino verso l\'alto con massima attivazione glutea.',
+    technique: [
+      'Scapole appoggiate su panca',
+      'Piedi larghezza anche',
+      'Spingi con i talloni',
+      'Stringi i glutei in cima al movimento',
+      'Mento leggermente verso il petto'
+    ]
+  },
+
+  'Ponte Glutei': {
+    description: 'Ponte a terra per attivazione glutei. Base per progressione verso hip thrust.',
+    technique: [
+      'Sdraiato supino, ginocchia piegate',
+      'Piedi vicino ai glutei',
+      'Spingi bacino verso l\'alto',
+      'Stringi i glutei in cima',
+      'Non iperestendere la schiena'
+    ]
+  },
+
+  'Slider Leg Curl': {
+    description: 'Curl femorali a corpo libero con slider o asciugamano. Ottimo per femorali senza attrezzi.',
+    technique: [
+      'Supino con talloni su slider',
+      'Solleva il bacino (ponte)',
+      'Trascina i talloni verso i glutei',
+      'Mantieni i fianchi alti',
+      'Torna lentamente controllando'
+    ]
+  },
+
+  'Trazioni': {
+    description: 'Esercizio fondamentale per dorsali e bicipiti. Tira il corpo verso la sbarra.',
+    technique: [
+      'Presa salda, leggermente più larga delle spalle',
+      'Scapole retratte e depresse',
+      'Tira i gomiti verso i fianchi',
+      'Mento sopra la sbarra',
+      'Scendi controllato'
+    ]
+  },
+
+  'Rematore Inverso': {
+    description: 'Row orizzontale a corpo libero. Ottimo per dorsali e propedeutico alle trazioni.',
+    technique: [
+      'Corpo rigido come un plank',
+      'Tira il petto verso la sbarra',
+      'Scapole retratte',
+      'Gomiti vicino al corpo',
+      'Scendi controllato'
+    ]
+  },
+
+  'Dead Bug': {
+    description: 'Esercizio anti-estensione per core. Braccia e gambe si muovono in modo opposto.',
+    technique: [
+      'Supino, braccia verso il soffitto',
+      'Ginocchia a 90° sopra i fianchi',
+      'Premi la schiena a terra',
+      'Estendi braccio e gamba opposti',
+      'Mantieni la schiena piatta'
+    ]
+  },
+
+  'Bird Dog': {
+    description: 'Esercizio anti-rotazione per core. Estendi braccio e gamba opposti mantenendo stabilità.',
+    technique: [
+      'Quattro zampe, mani sotto spalle',
+      'Core attivo, schiena neutra',
+      'Estendi braccio e gamba opposti',
+      'Non ruotare i fianchi',
+      'Torna lentamente controllando'
+    ]
+  },
+
+  'Hollow Body Hold': {
+    description: 'Tenuta isometrica anti-estensione. Fondamentale per ginnastica e calisthenics.',
+    technique: [
+      'Supino, braccia sopra la testa',
+      'Solleva spalle e gambe da terra',
+      'Premi la schiena bassa a terra',
+      'Corpo a forma di banana',
+      'Mantieni la posizione senza tremare'
+    ]
+  },
+
+  'L-sit': {
+    description: 'Tenuta isometrica avanzata. Gambe tese in avanti sostenendo il corpo con le braccia.',
+    technique: [
+      'Mani a terra ai lati dei fianchi',
+      'Spingi forte per sollevare il corpo',
+      'Gambe tese e parallele al pavimento',
+      'Core e quadricipiti contratti',
+      'Spalle depresse'
+    ]
+  },
+
+  'Dragon Flag': {
+    description: 'Esercizio core avanzato reso famoso da Bruce Lee. Richiede forza estrema del core.',
+    technique: [
+      'Supino, aggrappato a supporto dietro la testa',
+      'Solleva tutto il corpo mantenendolo rigido',
+      'Solo le spalle toccano la panca',
+      'Scendi lentamente controllando',
+      'Non flettere i fianchi'
+    ]
+  },
+
+  'Copenhagen Plank': {
+    description: 'Plank laterale con adduttori. Rafforza gli adduttori e la stabilità laterale.',
+    technique: [
+      'Gomito a terra, gamba superiore su panca',
+      'Gamba inferiore libera',
+      'Solleva i fianchi creando linea retta',
+      'Attiva gli adduttori della gamba superiore',
+      'Mantieni il core contratto'
+    ]
+  },
+
+  'Pike Push-up': {
+    description: 'Push-up a V invertita. Propedeutico per handstand push-up, enfatizza le spalle.',
+    technique: [
+      'Posizione a V con fianchi alti',
+      'Mani leggermente più larghe delle spalle',
+      'Testa verso le mani',
+      'Gomiti piegano indietro',
+      'Spingi forte tornando in V'
+    ]
+  },
+
+  'Push-up Diamante': {
+    description: 'Push-up con mani vicine a forma di diamante. Enfatizza tricipiti e petto interno.',
+    technique: [
+      'Mani unite formando un diamante',
+      'Gomiti vicino al corpo',
+      'Scendi controllato',
+      'Petto tocca le mani',
+      'Spingi forte tornando su'
+    ]
+  },
+
+  'Push-up Arciere': {
+    description: 'Push-up unilaterale. Un braccio lavora mentre l\'altro assiste. Propedeutico per push-up a un braccio.',
+    technique: [
+      'Mani molto larghe',
+      'Piega un braccio, l\'altro resta teso',
+      'Sposta il peso sul braccio piegato',
+      'Alterna i lati',
+      'Mantieni il core attivo'
+    ]
+  },
+
+  'Rematore con Bilanciere': {
+    description: 'Row con bilanciere per dorsali e trapezi. Movimento fondamentale per la schiena.',
+    technique: [
+      'Busto inclinato a 45°',
+      'Schiena neutra, core attivo',
+      'Tira il bilanciere verso l\'ombelico',
+      'Scapole retratte in cima',
+      'Scendi controllato'
+    ]
+  },
+
+  'Rematore con Manubrio': {
+    description: 'Row unilaterale con manubrio. Ottimo per correggere squilibri e isolare un lato.',
+    technique: [
+      'Una mano e ginocchio su panca',
+      'Schiena parallela al pavimento',
+      'Tira il manubrio verso il fianco',
+      'Gomito vicino al corpo',
+      'Scendi controllato'
+    ]
+  },
+
+  'Pulley Basso': {
+    description: 'Row seduto ai cavi. Movimento controllato per dorsali con tensione costante.',
+    technique: [
+      'Seduto con petto alto',
+      'Tira l\'handle verso l\'ombelico',
+      'Scapole retratte in cima',
+      'Non oscillare con il busto',
+      'Torna controllato mantenendo tensione'
+    ]
+  },
+
+  'Alzate Laterali': {
+    description: 'Isolamento per deltoidi laterali. Braccia tese, movimento controllato.',
+    technique: [
+      'Leggera flessione dei gomiti',
+      'Solleva le braccia lateralmente',
+      'Ferma a livello delle spalle',
+      'Controlla la discesa',
+      'Non oscillare con il corpo'
+    ]
+  },
+
+  'Face Pull': {
+    description: 'Esercizio per deltoidi posteriori e salute delle spalle. Essenziale per bilanciare push e pull.',
+    technique: [
+      'Cavo all\'altezza del viso',
+      'Tira verso il viso separando le mani',
+      'Gomiti alti, rotazione esterna',
+      'Stringi le scapole',
+      'Torna controllato'
+    ]
   }
 };
 
