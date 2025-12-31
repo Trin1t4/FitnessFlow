@@ -2184,21 +2184,23 @@ export default function LiveWorkoutSession({
 
     // Save to database via autoRegulationService
     try {
-      const exerciseLogs = Object.entries(setLogs).map(([exerciseName, sets]) => {
-        const exercise = exercises.find(ex => ex.name === exerciseName)!;
-        const avgRPE = sets.reduce((sum, s) => sum + s.rpe, 0) / sets.length;
+      const exerciseLogs = Object.entries(setLogs)
+        .filter(([, sets]) => sets && sets.length > 0) // Skip exercises with no sets
+        .map(([exerciseName, sets]) => {
+          const exercise = exercises.find(ex => ex.name === exerciseName)!;
+          const avgRPE = sets.reduce((sum, s) => sum + s.rpe, 0) / sets.length;
 
-        return {
-          exercise_name: exerciseName,
-          pattern: exercise.pattern,
-          sets_completed: sets.length,
-          reps_completed: Math.round(sets.reduce((sum, s) => sum + s.reps_completed, 0) / sets.length),
-          weight_used: sets[0].weight_used,
-          exercise_rpe: avgRPE,
-          difficulty_vs_baseline: avgRPE > 8 ? 'harder' as const : avgRPE < 5 ? 'easier' as const : 'as_expected' as const,
-          notes: sets.some(s => s.adjusted) ? 'Volume auto-adjusted during workout' : ''
-        };
-      });
+          return {
+            exercise_name: exerciseName,
+            pattern: exercise.pattern,
+            sets_completed: sets.length,
+            reps_completed: Math.round(sets.reduce((sum, s) => sum + s.reps_completed, 0) / sets.length),
+            weight_used: sets[0]?.weight_used,
+            exercise_rpe: avgRPE,
+            difficulty_vs_baseline: avgRPE > 8 ? 'harder' as const : avgRPE < 5 ? 'easier' as const : 'as_expected' as const,
+            notes: sets.some(s => s.adjusted) ? 'Volume auto-adjusted during workout' : ''
+          };
+        });
 
       // Build workout notes with pain tracking and contextual factors
       const painNote = painAreas.length > 0
