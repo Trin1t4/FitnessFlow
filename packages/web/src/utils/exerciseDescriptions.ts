@@ -842,17 +842,6 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Pike Push-up': {
-    description: 'Push-up a V invertita. Propedeutico per handstand push-up, enfatizza le spalle.',
-    technique: [
-      'Posizione a V con fianchi alti',
-      'Mani leggermente più larghe delle spalle',
-      'Testa verso le mani',
-      'Gomiti piegano indietro',
-      'Spingi forte tornando in V'
-    ]
-  },
-
   'Push-up Diamante': {
     description: 'Push-up con mani vicine a forma di diamante. Enfatizza tricipiti e petto interno.',
     technique: [
