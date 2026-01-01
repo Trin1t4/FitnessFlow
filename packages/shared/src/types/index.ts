@@ -165,3 +165,25 @@ export type {
   AdaptFlowWarning,
   AdaptFlowIntegration,
 } from './biomechanics.types';
+
+// Running / Aerobic Training Types
+export type {
+  RunningLevel,
+  RunningIntensity,
+  HeartRateZone,
+  RunningInterval,
+  RunningSession,
+  RunningWeek,
+  RunningProgram,
+  RunningSessionLog,
+  RunningWeeklySummary,
+  RunningProgressData,
+  AerobicAssessment,
+} from './running.types';
+
+export {
+  HR_ZONES,
+  estimateHRMax,
+  getZone2Range,
+  determineRunningLevel,
+} from './running.types';

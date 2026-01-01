@@ -434,3 +434,9 @@ export {
   analyzeBenchFrame,
   analyzeFullBench
 } from './biomechanics';
+
+// Running Program Generator (Aerobic Training)
+export {
+  generateRunningProgram,
+  assessAerobicCapacity
+} from './runningProgramGenerator';
