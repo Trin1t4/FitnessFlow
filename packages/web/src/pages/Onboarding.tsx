@@ -1,29 +1,35 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { OnboardingData } from '../types/onboarding.types';
+import { OnboardingData, RunningPreferences } from '../types/onboarding.types';
 import { useTranslation } from '../lib/i18n';
+import TrainingTypeChoiceStep, { TrainingFocus } from '../components/onboarding/TrainingTypeChoiceStep';
 import AnagraficaStep from '../components/onboarding/AnagraficaStep';
 import PersonalInfoStep from '../components/onboarding/PersonalInfoStep';
 import ScreeningTypeStep from '../components/onboarding/ScreeningTypeStep';
 import LocationStep from '../components/onboarding/LocationStep';
 import GoalStep from '../components/onboarding/GoalStep';
 import MedicalDisclaimer from '../components/onboarding/MedicalDisclaimer';
+import RunningOnboarding from '../components/RunningOnboarding';
 
-// Onboarding - 5 step
+// Onboarding - 6+ step (dipende dalla scelta)
+// 0. Training Type Choice (pesi/corsa/entrambi) - NEW
 // 1. Anagrafica (nome, cognome, data nascita)
 // 2. Personal Info (genere, età, altezza, peso)
-// 3. Screening Type (approfondito vs leggero) - NEW
-// 4. Location (casa/palestra)
-// 5. Goal (obiettivo)
+// 3. Screening Type (approfondito vs leggero)
+// 4. Location (casa/palestra) - solo se pesi
+// 5. Goal (obiettivo) - solo se pesi
+// 6. Running Onboarding - solo se corsa o entrambi
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [showDisclaimer, setShowDisclaimer] = useState(true);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0); // Start from 0 (training type choice)
   const [data, setData] = useState<Partial<OnboardingData>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [trainingFocus, setTrainingFocus] = useState<TrainingFocus | null>(null);
+  const [showRunningOnboarding, setShowRunningOnboarding] = useState(false);
 
   // Check if user already accepted disclaimer
   useEffect(() => {
@@ -54,9 +60,17 @@ export default function Onboarding() {
     );
   }
 
-  // 5 step: Anagrafica, PersonalInfo, ScreeningType, Location, Goal
-  const totalSteps = 5;
-  const progress = (currentStep / totalSteps) * 100;
+  // Calcola step totali in base alla scelta
+  // Se solo running: 0 (choice) + 1 (anagrafica) + 2 (personal) + running onboarding
+  // Se pesi o entrambi: 0 (choice) + 1-5 (weights steps) + eventuale running
+  const getStepsForFocus = (): number => {
+    if (!trainingFocus) return 1; // Solo step 0
+    if (trainingFocus === 'running') return 3; // 0 + anagrafica + personal info (poi running onboarding separato)
+    return 6; // 0 + 5 weights steps (poi eventuale running onboarding)
+  };
+
+  const totalSteps = getStepsForFocus();
+  const progress = ((currentStep + 1) / totalSteps) * 100;
 
   const updateData = (stepData: Partial<OnboardingData>) => {
     const newData = { ...data, ...stepData };
@@ -141,14 +155,29 @@ export default function Onboarding() {
 
   // ✅ FIX: nextStep ora accetta dati mergiati per evitare race condition con React state
   const nextStep = async (mergedData?: Partial<OnboardingData>) => {
-    if (currentStep < totalSteps) {
+    const finalData = mergedData || data;
+
+    // ═══ CASO RUNNING ONLY ═══
+    // Dopo step 2 (PersonalInfo), vai direttamente a RunningOnboarding
+    if (trainingFocus === 'running' && currentStep === 2) {
+      console.log('[ONBOARDING] 🏃 Running only flow → showing RunningOnboarding');
+      setShowRunningOnboarding(true);
+      return;
+    }
+
+    // ═══ CASO ENTRAMBI ═══
+    // Dopo step 5 (GoalStep), chiedi se vogliono aggiungere corsa
+    if (trainingFocus === 'both' && currentStep === 5) {
+      console.log('[ONBOARDING] 🏃+🏋️ Both flow → showing RunningOnboarding after weights');
+      setShowRunningOnboarding(true);
+      return;
+    }
+
+    if (currentStep < totalSteps - 1) {
       console.log(`[ONBOARDING] ➡️ Moving from step ${currentStep} to ${currentStep + 1}`);
       setCurrentStep(currentStep + 1);
-    } else {
-      // ✅ STEP FINALE - Salva e naviga
-      // Usa mergedData se fornito (dal GoalStep), altrimenti usa data dallo state
-      const finalData = mergedData || data;
-
+    } else if (trainingFocus === 'weights') {
+      // ✅ STEP FINALE SOLO PESI - Salva e naviga
       setIsSaving(true);
       try {
         // 🔍 DEBUG CRITICO - Stampa TUTTO prima di salvare
@@ -202,7 +231,20 @@ export default function Onboarding() {
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
+    // Se siamo in RunningOnboarding, torniamo allo step precedente
+    if (showRunningOnboarding) {
+      console.log('[ONBOARDING] ⬅️ Going back from RunningOnboarding');
+      setShowRunningOnboarding(false);
+      return;
+    }
+
+    // Se siamo allo step 0, non possiamo tornare indietro
+    if (currentStep === 0) {
+      return;
+    }
+
+    // Altrimenti torniamo allo step precedente
+    if (currentStep > 0) {
       console.log(`[ONBOARDING] ⬅️ Moving back from step ${currentStep} to ${currentStep - 1}`);
       setCurrentStep(currentStep - 1);
     }
@@ -220,9 +262,57 @@ export default function Onboarding() {
     nextStep(mergedData);
   };
 
-  // 5 step: Anagrafica, PersonalInfo, ScreeningType, Location, Goal
+  // Handler per la scelta del tipo di allenamento (step 0)
+  const handleTrainingTypeChoice = (choice: TrainingFocus) => {
+    console.log('[ONBOARDING] 🎯 Training focus selected:', choice);
+    setTrainingFocus(choice);
+    setCurrentStep(1); // Vai al prossimo step
+  };
+
+  // Handler per completamento running onboarding
+  const handleRunningOnboardingComplete = async (runningPrefs: RunningPreferences) => {
+    console.log('[ONBOARDING] 🏃 Running onboarding completed:', runningPrefs);
+
+    const finalData = { ...data, running: runningPrefs };
+    setData(finalData);
+    setIsSaving(true);
+
+    try {
+      // Salva in localStorage
+      localStorage.setItem('onboarding_data', JSON.stringify(finalData));
+
+      // Salva in Supabase
+      await saveOnboardingToDatabase(finalData);
+
+      // Naviga alla dashboard o al quiz in base al focus
+      if (trainingFocus === 'running') {
+        // Solo corsa → vai direttamente alla dashboard running
+        console.log('[ONBOARDING] 🏃 Running only → navigating to /running-dashboard');
+        navigate('/running-dashboard');
+      } else {
+        // Entrambi → vai al quiz per i pesi (già completato onboarding pesi)
+        const screeningType = finalData.screeningType;
+        if (screeningType === 'thorough') {
+          navigate('/quiz-full');
+        } else {
+          navigate('/quiz');
+        }
+      }
+    } catch (error) {
+      console.error('[ONBOARDING] ❌ Error saving:', error);
+      alert(t('onboarding.error.save_failed'));
+      setIsSaving(false);
+    }
+  };
+
+  // Render step in base al focus scelto
+  // - Step 0: Scelta tipo allenamento
+  // - Running only: 0 → 1 (Anagrafica) → 2 (PersonalInfo) → RunningOnboarding (gestito sopra)
+  // - Weights/Both: 0 → 1-5 (weights steps) → eventuale RunningOnboarding
   const renderStep = () => {
     switch (currentStep) {
+      case 0:
+        return <TrainingTypeChoiceStep onNext={handleTrainingTypeChoice} />;
       case 1:
         return <AnagraficaStep data={data} onNext={handleStepComplete} />;
       case 2:
@@ -238,28 +328,40 @@ export default function Onboarding() {
     }
   };
 
+  // Se siamo in RunningOnboarding, mostra solo il componente (ha suo header/progress)
+  if (showRunningOnboarding) {
+    return (
+      <RunningOnboarding
+        age={data.personalInfo?.age || 30}
+        onComplete={handleRunningOnboardingComplete}
+        onBack={() => setShowRunningOnboarding(false)}
+        includesWeights={trainingFocus === 'both'}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-white">{t('onboarding.title')}</h1>
-            <span className="text-slate-300">{t('onboarding.step_of').replace('{{current}}', String(currentStep)).replace('{{total}}', String(totalSteps))}</span>
+            <span className="text-slate-300">{t('onboarding.step_of').replace('{{current}}', String(currentStep + 1)).replace('{{total}}', String(totalSteps))}</span>
           </div>
           <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-300" 
-              style={{ width: `${progress}%` }} 
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-300"
+              style={{ width: `${progress}%` }}
             />
           </div>
         </div>
-        
+
         <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 md:p-8 border border-slate-700">
           {renderStep()}
         </div>
         
         <div className="flex gap-4 mt-6">
-          {currentStep > 1 && (
+          {currentStep > 0 && (
             <button
               onClick={prevStep}
               disabled={isSaving}
