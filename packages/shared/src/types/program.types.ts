@@ -3,6 +3,7 @@
  */
 
 import { Level, Goal } from './onboarding.types';
+import { RunningSession } from './running.types';
 
 export type PatternId =
   | 'lower_push'
@@ -95,11 +96,18 @@ export interface Exercise {
   superset?: SupersetConfig; // Configurazione superset (se abbinato ad altro esercizio)
 }
 
+/**
+ * Tipo di giornata di allenamento
+ */
+export type DayType = 'strength' | 'running' | 'mixed' | 'rest';
+
 export interface DayWorkout {
   dayNumber: number;
   dayName: string;
   focus: string;
+  type?: DayType; // Tipo di giornata (default: 'strength')
   exercises: Exercise[];
+  runningSession?: RunningSession; // Sessione running (per giorni 'running' o 'mixed')
   estimatedDuration?: number; // Durata stimata in minuti (incluso riscaldamento)
 }
 

@@ -11,6 +11,8 @@ import type {
   RunningInterval,
   AerobicAssessment,
 } from '../types/running.types';
+import type { DayWorkout, WeeklySplit } from '../types/program.types';
+import type { RunningPreferences } from '../types/onboarding.types';
 import { estimateHRMax, getZone2Range, determineRunningLevel } from '../types/running.types';
 
 /**
@@ -657,7 +659,188 @@ export function assessAerobicCapacity(
   return assessment;
 }
 
+/**
+ * Integra le sessioni running in un WeeklySplit esistente
+ * Usato per combinare programma pesi con sessioni running
+ */
+export function integrateRunningIntoSplit(
+  strengthSplit: WeeklySplit,
+  runningPrefs: RunningPreferences,
+  weekNumber: number = 1,
+  userAge?: number
+): WeeklySplit {
+  if (!runningPrefs.enabled) {
+    return strengthSplit;
+  }
+
+  // Genera il programma running per ottenere le sessioni della settimana
+  const level = determineRunningLevel(runningPrefs.capacity);
+  const runningProgram = generateRunningProgram(level, userAge);
+
+  // Prendi le sessioni della settimana corretta (o la prima se weekNumber > durata)
+  const runningWeekIndex = Math.min(weekNumber - 1, runningProgram.weeks.length - 1);
+  const runningWeek = runningProgram.weeks[runningWeekIndex];
+  const runningSessions = runningWeek.sessions.slice(0, runningPrefs.sessionsPerWeek);
+
+  const strengthDays = [...strengthSplit.days];
+  const newDays: DayWorkout[] = [];
+
+  const integration = runningPrefs.integration;
+
+  switch (integration) {
+    case 'separate_days': {
+      // Inserisci sessioni running in giorni separati
+      // Esempio: Pesi Lu/Me/Ve → Running Ma/Gio
+      const strengthDayNumbers = strengthDays.map(d => d.dayNumber);
+      const allDays = [1, 2, 3, 4, 5, 6, 7]; // Lu-Dom
+      const freeDays = allDays.filter(d => !strengthDayNumbers.includes(d));
+
+      // Assegna sessioni running ai primi giorni liberi disponibili
+      let runningIndex = 0;
+      for (const dayNum of freeDays) {
+        if (runningIndex >= runningSessions.length) break;
+        const session = runningSessions[runningIndex];
+        newDays.push({
+          dayNumber: dayNum,
+          dayName: getDayName(dayNum),
+          focus: `Running: ${session.name}`,
+          type: 'running',
+          exercises: [], // Nessun esercizio di forza
+          runningSession: session,
+          estimatedDuration: session.totalDuration
+        });
+        runningIndex++;
+      }
+      break;
+    }
+
+    case 'post_workout': {
+      // Aggiungi running dopo le sessioni pesi (mixed)
+      // Limita a 15-20 min post-workout
+      let runningIndex = 0;
+      for (const day of strengthDays) {
+        if (runningIndex >= runningSessions.length) break;
+        const session = runningSessions[runningIndex];
+        // Crea versione abbreviata per post-workout (max 20 min)
+        const shortSession = {
+          ...session,
+          name: `Post-Workout: ${session.name}`,
+          totalDuration: Math.min(session.totalDuration, 20),
+          notes: 'Sessione breve post-allenamento'
+        };
+        newDays.push({
+          ...day,
+          type: 'mixed',
+          runningSession: shortSession,
+          estimatedDuration: (day.estimatedDuration || 45) + shortSession.totalDuration
+        });
+        runningIndex++;
+      }
+      // Aggiungi i giorni pesi rimanenti senza running
+      for (let i = newDays.length; i < strengthDays.length; i++) {
+        newDays.push({ ...strengthDays[i], type: 'strength' });
+      }
+      break;
+    }
+
+    case 'hybrid_alternate': {
+      // Alterna giorni pesi e running (ideale per sport)
+      // Esempio: Pesi → Running → Pesi → Running
+      let strengthIndex = 0;
+      let runningIndex = 0;
+      let dayNumber = 1;
+
+      // Distribuisci pesi e running alternandoli
+      const totalDays = strengthDays.length + runningSessions.length;
+      for (let i = 0; i < totalDays && dayNumber <= 7; i++) {
+        if (i % 2 === 0 && strengthIndex < strengthDays.length) {
+          // Giorno pesi
+          const day = strengthDays[strengthIndex];
+          newDays.push({
+            ...day,
+            dayNumber,
+            dayName: getDayName(dayNumber),
+            type: 'strength'
+          });
+          strengthIndex++;
+        } else if (runningIndex < runningSessions.length) {
+          // Giorno running
+          const session = runningSessions[runningIndex];
+          newDays.push({
+            dayNumber,
+            dayName: getDayName(dayNumber),
+            focus: `Running: ${session.name}`,
+            type: 'running',
+            exercises: [],
+            runningSession: session,
+            estimatedDuration: session.totalDuration
+          });
+          runningIndex++;
+        } else if (strengthIndex < strengthDays.length) {
+          // Giorno pesi rimanente
+          const day = strengthDays[strengthIndex];
+          newDays.push({
+            ...day,
+            dayNumber,
+            dayName: getDayName(dayNumber),
+            type: 'strength'
+          });
+          strengthIndex++;
+        }
+        dayNumber++;
+      }
+      break;
+    }
+
+    case 'running_only': {
+      // Solo running, niente pesi
+      for (let i = 0; i < runningSessions.length && i < 6; i++) {
+        const session = runningSessions[i];
+        newDays.push({
+          dayNumber: i + 1,
+          dayName: getDayName(i + 1),
+          focus: session.name,
+          type: 'running',
+          exercises: [],
+          runningSession: session,
+          estimatedDuration: session.totalDuration
+        });
+      }
+      break;
+    }
+
+    default:
+      return strengthSplit;
+  }
+
+  // Ordina per dayNumber
+  newDays.sort((a, b) => a.dayNumber - b.dayNumber);
+
+  // Se integration non è running_only, mantieni anche i giorni pesi originali
+  if (integration !== 'running_only' && integration !== 'post_workout') {
+    // Aggiungi giorni pesi non ancora inclusi
+    for (const strengthDay of strengthDays) {
+      if (!newDays.some(d => d.dayNumber === strengthDay.dayNumber)) {
+        newDays.push({ ...strengthDay, type: 'strength' });
+      }
+    }
+    newDays.sort((a, b) => a.dayNumber - b.dayNumber);
+  }
+
+  return {
+    splitName: `${strengthSplit.splitName} + Running`,
+    description: `${strengthSplit.description} | ${runningSessions.length} sessioni running/settimana`,
+    days: newDays
+  };
+}
+
+function getDayName(dayNumber: number): string {
+  const days = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+  return days[dayNumber - 1] || `Giorno ${dayNumber}`;
+}
+
 export default {
   generateRunningProgram,
   assessAerobicCapacity,
+  integrateRunningIntoSplit,
 };

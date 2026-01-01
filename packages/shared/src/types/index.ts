@@ -35,6 +35,7 @@ export type {
   WarmupSet,
   SupersetConfig,
   Exercise,
+  DayType,
   DayWorkout,
   WeeklySplit,
   Program,
