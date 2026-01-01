@@ -100,7 +100,6 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   'Piegamenti': 'standard-push-up.mp4',
   'Piegamenti sulle Braccia': 'standard-push-up.mp4',
   'Flessioni': 'standard-push-up.mp4',
-  'Piegamenti sulle Ginocchia': 'standard-push-up.mp4',
   'Decline Push-up': 'decline-push-up.mp4',
   'Piegamenti Declinati': 'decline-push-up.mp4',
   'Piegamenti Piedi Elevati': 'decline-push-up.mp4',

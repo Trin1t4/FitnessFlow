@@ -1055,17 +1055,6 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Rematore Inverso Facilitato': {
-    description: 'Rematore inverso con angolo più verticale. Versione più facile per principianti.',
-    technique: [
-      'Sbarra o tavolo ad altezza media',
-      'Piedi più avanti per ridurre difficoltà',
-      'Tira il petto verso la sbarra',
-      'Mantieni il corpo allineato',
-      'Progredisci abbassando la sbarra'
-    ]
-  },
-
   'Inverted Row Singolo Braccio': {
     description: 'Rematore inverso con un braccio solo. Esercizio avanzato per forza unilaterale.',
     technique: [
@@ -1089,17 +1078,6 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
   },
 
   'Inverted Row Piedi Elevati': {
-    description: 'Rematore inverso con piedi su rialzo. Aumenta la difficoltà del movimento.',
-    technique: [
-      'Piedi su sedia o panca',
-      'Corpo più orizzontale',
-      'Tira il petto alla sbarra',
-      'Core sempre attivo',
-      'Scendi lentamente'
-    ]
-  },
-
-  'Rematore Inverso Piedi Elevati': {
     description: 'Rematore inverso con piedi su rialzo. Aumenta la difficoltà del movimento.',
     technique: [
       'Piedi su sedia o panca',
