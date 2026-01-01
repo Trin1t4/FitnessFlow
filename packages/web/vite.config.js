@@ -2,16 +2,39 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Find the monorepo root (contains package.json with workspaces)
+function findMonorepoRoot(startDir) {
+  let dir = startDir;
+  while (dir !== path.dirname(dir)) {
+    const pkgPath = path.join(dir, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      try {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+        if (pkg.workspaces) {
+          return dir;
+        }
+      } catch (e) {}
+    }
+    dir = path.dirname(dir);
+  }
+  return startDir;
+}
+
+const monorepoRoot = findMonorepoRoot(__dirname);
+const sharedPath = path.join(monorepoRoot, 'packages', 'shared', 'src');
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "@shared": path.resolve(__dirname, "../shared"),
-      "@trainsmart/shared": path.resolve(__dirname, "../shared/src"),
+      "@shared": path.join(monorepoRoot, 'packages', 'shared'),
+      "@trainsmart/shared": sharedPath,
     },
   },
   build: {
