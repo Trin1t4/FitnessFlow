@@ -116,6 +116,53 @@ export type PainSeverity = 'mild' | 'moderate' | 'severe';
 // Fase stagionale per sport
 export type SeasonPhase = 'off_season' | 'pre_season' | 'in_season';
 
+// ═══ RUNNING / AEROBIC TRAINING ═══
+
+/**
+ * Obiettivi per l'allenamento running
+ */
+export type RunningGoal =
+  | 'base_aerobica'       // Costruire base aerobica (Zone 2)
+  | 'preparazione_5k'     // Prepararsi per una 5K
+  | 'preparazione_10k'    // Prepararsi per una 10K
+  | 'resistenza_generale' // Resistenza generale
+  | 'complemento_sport'   // Complemento per altri sport
+  | 'dimagrimento_cardio' // Focus brucia grassi
+  | 'recupero_attivo';    // Recupero tra sessioni pesi
+
+/**
+ * Come integrare running con pesi
+ */
+export type RunningIntegration =
+  | 'separate_days'    // Giorni separati (es. Lu/Me/Ve pesi, Ma/Gi running)
+  | 'post_workout'     // Dopo la sessione pesi (15-20min)
+  | 'hybrid_alternate' // Sessioni ibride alternate (per sport)
+  | 'running_only';    // Solo running (niente pesi)
+
+/**
+ * Capacità running attuale (assessment)
+ */
+export interface RunningCapacity {
+  canRun5Min: boolean;
+  canRun10Min: boolean;
+  canRun20Min: boolean;
+  canRun30Min: boolean;
+  currentPace?: string;     // es. "6:30/km"
+  restingHeartRate?: number; // bpm
+}
+
+/**
+ * Preferenze running complete
+ */
+export interface RunningPreferences {
+  enabled: boolean;
+  goal: RunningGoal;
+  integration: RunningIntegration;
+  sessionsPerWeek: number;   // 2-4 sessioni
+  preferredDays?: string[];  // es. ['martedi', 'giovedi', 'sabato']
+  capacity: RunningCapacity;
+}
+
 export interface PainEntry {
   area: PainArea;
   severity: PainSeverity;
@@ -143,6 +190,9 @@ export interface OnboardingData {
 
   // Step 5: Pain/Injury
   painAreas?: PainEntry[];
+
+  // Step 6: Running/Aerobic (optional)
+  running?: RunningPreferences;
 }
 
 /**

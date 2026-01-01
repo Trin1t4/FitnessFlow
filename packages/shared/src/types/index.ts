@@ -17,6 +17,12 @@ export type {
   PainEntry,
   OnboardingData,
   CompleteOnboardingData,
+  // Running/Aerobic
+  RunningGoal,
+  RunningIntegration,
+  RunningCapacity,
+  RunningPreferences,
+  SeasonPhase,
 } from './onboarding.types';
 
 // Program & Screening
