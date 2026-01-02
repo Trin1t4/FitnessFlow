@@ -931,6 +931,20 @@ interface SplitGeneratorOptions {
   muscularFocus?: string; // glutei, addome, petto, dorso, spalle, gambe, braccia, polpacci
   sessionDuration?: number; // Durata sessione disponibile in minuti (15, 20, 30, 45, 60, 90)
   userBodyweight?: number; // Peso corporeo utente in kg - fondamentale per location adapter
+  equipment?: {
+    pullupBar?: boolean;
+    loopBands?: boolean;
+    dumbbells?: boolean;
+    dumbbellMaxKg?: number;
+    barbell?: boolean;
+    kettlebell?: boolean;
+    kettlebellKg?: number;
+    bench?: boolean;
+    rings?: boolean;
+    parallelBars?: boolean;
+    sturdyTable?: boolean;
+    noEquipment?: boolean;
+  };
 }
 
 /**
@@ -2255,7 +2269,7 @@ function adaptWorkoutToTimeLimit(
 }
 
 export function generateWeeklySplit(options: SplitGeneratorOptions): WeeklySplit {
-  const { frequency, goals, location, baselines, userBodyweight } = options;
+  const { frequency, goals, location, baselines, userBodyweight, equipment, trainingType } = options;
 
   console.log(`Generazione split settimanale per ${frequency}x/settimana`);
 
@@ -2285,8 +2299,9 @@ export function generateWeeklySplit(options: SplitGeneratorOptions): WeeklySplit
   // ============================================
   // ADATTAMENTO ESERCIZI PER LOCATION (home/gym)
   // ============================================
-  if (location === 'home') {
-    console.log('\n🏠 Adattamento esercizi per HOME (bodyweight)');
+  if (location === 'home' || location === 'home_gym') {
+    console.log(`\n🏠 Adattamento esercizi per ${location.toUpperCase()} (${trainingType})`);
+    console.log(`  📦 Equipment: pullupBar=${equipment?.pullupBar}, sturdyTable=${equipment?.sturdyTable}`);
 
     // Costruisci i carichi reali e le date dei test dai baseline per matching accurato
     const realLoads: Record<string, number> = {};
@@ -2304,12 +2319,25 @@ export function generateWeeklySplit(options: SplitGeneratorOptions): WeeklySplit
       });
     }
 
+    // Determina homeType basato su trainingType
+    const homeType = trainingType === 'bodyweight' ? 'bodyweight' : 'with_equipment';
+
+    // Converti equipment in formato HomeEquipment per locationAdapter
+    const homeEquipment = equipment ? {
+      barbell: equipment.barbell || false,
+      dumbbellMaxKg: equipment.dumbbellMaxKg || 0,
+      bands: equipment.loopBands || false,
+      pullupBar: equipment.pullupBar || false,
+      bench: equipment.bench || false
+    } : undefined;
+
     split.days.forEach(day => {
       const originalExercises = day.exercises.map(e => e.name);
 
       day.exercises = adaptExercisesForLocation(day.exercises, {
         location: 'home',
-        homeType: 'bodyweight',
+        homeType,
+        equipment: homeEquipment,
         realLoads,
         testDates,
         userBodyweight

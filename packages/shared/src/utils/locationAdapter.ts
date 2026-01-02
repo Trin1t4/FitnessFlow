@@ -550,9 +550,25 @@ function adaptExercise(
     // Casa: dipende da homeType e equipment
     if (homeType === 'bodyweight' || !equipment) {
       // Solo corpo libero
-      // IMPORTANTE: Se l'esercizio è GIÀ bodyweight, NON sostituirlo!
-      // Questo preserva le varianti diverse selezionate per ogni giorno
-      if (isAlreadyBodyweightExercise(exercise.name, exercise.pattern)) {
+      const lowerName = exercise.name.toLowerCase();
+
+      // PRIMA controlla se richiede sbarra e se l'utente non ce l'ha
+      const needsPullupBar = PULLUP_BAR_EXERCISES.some(ex => lowerName.includes(ex) || ex.includes(lowerName));
+      const hasPullupBar = equipment?.pullupBar === true;
+
+      if (needsPullupBar && !hasPullupBar) {
+        // Esercizio richiede sbarra ma non c'è → sostituisci
+        console.log(`🚫 ${exercise.name} richiede sbarra ma non disponibile → sostituzione`);
+        if (NO_PULLUP_BAR_ALTERNATIVES[lowerName]) {
+          newName = NO_PULLUP_BAR_ALTERNATIVES[lowerName];
+          wasReplaced = true;
+        } else {
+          // Fallback: usa alternative per vertical_pull o horizontal_pull
+          newName = findBodyweightAlternative(exercise.name, exercise.pattern, bodyweight, patternRealLoad, patternTestDate);
+          wasReplaced = newName !== exercise.name;
+        }
+      } else if (isAlreadyBodyweightExercise(exercise.name, exercise.pattern)) {
+        // Esercizio già bodyweight e non richiede sbarra (o ce l'ha) → mantieni
         console.log(`✅ ${exercise.name} è già bodyweight, mantenuto`);
         // Mantieni l'esercizio originale, nessuna sostituzione
       } else {
