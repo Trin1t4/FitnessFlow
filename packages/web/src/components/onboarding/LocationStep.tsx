@@ -24,9 +24,10 @@ interface OnboardingData {
 interface LocationStepProps {
   data: Partial<OnboardingData>;
   onNext: (stepData: Partial<OnboardingData>) => void;
+  onBack?: () => void;
 }
 
-export default function LocationStep({ data, onNext }: LocationStepProps) {
+export default function LocationStep({ data, onNext, onBack }: LocationStepProps) {
   const { t } = useTranslation();
   const [selectedLocation, setSelectedLocation] = useState<'gym' | 'home' | 'home_gym'>(
     data.trainingLocation || 'home'
@@ -762,10 +763,19 @@ export default function LocationStep({ data, onNext }: LocationStepProps) {
         </div>
       )}
 
-      <div className="flex justify-end pt-4">
+      {/* Bottoni navigazione */}
+      <div className="flex gap-3 pt-4">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex-1 bg-slate-700 text-white py-3 rounded-lg font-bold hover:bg-slate-600 transition"
+          >
+            ← {t('common.back')}
+          </button>
+        )}
         <button
           onClick={handleNext}
-          className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-3 rounded-lg font-bold text-white hover:from-emerald-600 hover:to-emerald-700 transition shadow-lg shadow-emerald-500/20"
+          className={`${onBack ? 'flex-1' : 'w-full'} bg-gradient-to-r from-emerald-500 to-emerald-600 py-3 rounded-lg font-bold text-white hover:from-emerald-600 hover:to-emerald-700 transition shadow-lg shadow-emerald-500/20`}
         >
           {t('common.continue')}
         </button>

@@ -312,13 +312,13 @@ export default function Onboarding() {
       case 0:
         return <AnagraficaStep data={data} onNext={handleStepComplete} />;
       case 1:
-        return <PersonalInfoStep data={data} onNext={handleStepComplete} />;
+        return <PersonalInfoStep data={data} onNext={handleStepComplete} onBack={prevStep} />;
       case 2:
-        return <ScreeningTypeStep data={data} onNext={handleStepComplete} />;
+        return <ScreeningTypeStep data={data} onNext={handleStepComplete} onBack={prevStep} />;
       case 3:
-        return <LocationStep data={data} onNext={handleStepComplete} />;
+        return <LocationStep data={data} onNext={handleStepComplete} onBack={prevStep} />;
       case 4:
-        return <GoalStep data={data} onNext={handleStepComplete} />;
+        return <GoalStep data={data} onNext={handleStepComplete} onBack={prevStep} />;
       default:
         return null;
     }
@@ -386,19 +386,10 @@ export default function Onboarding() {
           {renderStep()}
         </div>
 
-        <div className="flex gap-4 mt-6">
-          {currentStep > 0 && (
-            <button
-              onClick={prevStep}
-              disabled={isSaving}
-              className="flex-1 bg-slate-700 text-white py-3 rounded-lg font-semibold hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              ← {t('common.back')}
-            </button>
-          )}
-
-          {isSaving && (
-            <div className="flex-1 bg-emerald-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center">
+        {/* Indicatore salvataggio */}
+        {isSaving && (
+          <div className="flex gap-4 mt-6">
+            <div className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center">
               <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
@@ -417,8 +408,8 @@ export default function Onboarding() {
               </svg>
               {t('common.saving')}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
