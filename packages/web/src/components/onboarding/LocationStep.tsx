@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Home, Dumbbell, Warehouse, CheckCircle, Circle } from 'lucide-react';
+import { Home, Dumbbell, Warehouse, CheckCircle, Circle, Calendar } from 'lucide-react';
 import { useTranslation } from '../../lib/i18n';
 
 interface OnboardingData {
   trainingLocation?: 'gym' | 'home' | 'home_gym';
   trainingType?: 'bodyweight' | 'equipment' | 'machines';
+  frequency?: number;
   equipment?: {
     pullupBar?: boolean;
     loopBands?: boolean;
@@ -35,6 +36,7 @@ export default function LocationStep({ data, onNext, onBack }: LocationStepProps
   const [trainingType, setTrainingType] = useState<'bodyweight' | 'equipment' | 'machines'>(
     data.trainingType || 'bodyweight'
   );
+  const [frequency, setFrequency] = useState<number>(data.frequency || 3);
   const [equipment, setEquipment] = useState({
     pullupBar: data.equipment?.pullupBar || false,
     loopBands: data.equipment?.loopBands || false,
@@ -71,11 +73,13 @@ export default function LocationStep({ data, onNext, onBack }: LocationStepProps
   const handleNext = () => {
     console.log('[LOCATION_STEP] 🏠 Saving location:', selectedLocation);
     console.log('[LOCATION_STEP] 🎯 Training type:', trainingType);
+    console.log('[LOCATION_STEP] 📅 Frequency:', frequency);
     console.log('[LOCATION_STEP] 🔧 Equipment:', equipment);
 
     onNext({
       trainingLocation: selectedLocation,
       trainingType,
+      frequency,
       equipment
     });
   };
@@ -762,6 +766,58 @@ export default function LocationStep({ data, onNext, onBack }: LocationStepProps
           </div>
         </div>
       )}
+
+      {/* Selezione Frequenza */}
+      <div className="space-y-4 p-6 bg-slate-900/50 rounded-xl border border-slate-700">
+        <div className="flex items-center gap-3">
+          <Calendar className="w-6 h-6 text-emerald-400" />
+          <div>
+            <h3 className="font-semibold text-white">{t('onboarding.location.frequency') || 'Quante volte a settimana?'}</h3>
+            <p className="text-xs text-slate-400">{t('onboarding.location.frequencyDesc') || 'Includi sia pesi che corsa se li fai'}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-6 gap-2">
+          {[1, 2, 3, 4, 5, 6].map((num) => (
+            <button
+              key={num}
+              onClick={() => setFrequency(num)}
+              className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center ${
+                frequency === num
+                  ? 'border-emerald-500 bg-emerald-500/10'
+                  : 'border-slate-600 hover:border-slate-500'
+              }`}
+            >
+              <span className={`text-xl font-bold ${frequency === num ? 'text-emerald-400' : 'text-white'}`}>
+                {num}
+              </span>
+              <span className="text-xs text-slate-400">
+                {num === 1 ? 'giorno' : 'giorni'}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Info sulla frequenza */}
+        <div className={`p-3 rounded-lg border ${
+          frequency <= 2 ? 'bg-amber-900/20 border-amber-500/30' :
+          frequency <= 4 ? 'bg-emerald-900/20 border-emerald-500/30' :
+          'bg-blue-900/20 border-blue-500/30'
+        }`}>
+          <p className={`text-sm ${
+            frequency <= 2 ? 'text-amber-300' :
+            frequency <= 4 ? 'text-emerald-300' :
+            'text-blue-300'
+          }`}>
+            {frequency === 1 && 'Full body consigliato - ogni sessione allena tutto il corpo'}
+            {frequency === 2 && 'Full body o Upper/Lower - ottimo per iniziare'}
+            {frequency === 3 && 'Push/Pull/Legs o Full body 3x - equilibrio ideale'}
+            {frequency === 4 && 'Upper/Lower 2x o Push/Pull/Legs + extra - buon volume'}
+            {frequency === 5 && 'Split avanzato - permette focus su ogni gruppo'}
+            {frequency === 6 && 'Push/Pull/Legs 2x - alto volume, richiede buon recupero'}
+          </p>
+        </div>
+      </div>
 
       {/* Bottoni navigazione */}
       <div className="flex gap-3 pt-4">

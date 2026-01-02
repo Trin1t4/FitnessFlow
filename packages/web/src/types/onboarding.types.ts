@@ -86,6 +86,11 @@ export interface Anagrafica {
   termsAccepted: boolean;
 }
 
+export interface RunningInterest {
+  enabled: boolean;
+  level?: 'sedentary' | 'beginner' | 'intermediate' | 'advanced';
+}
+
 export interface OnboardingData {
   // Step 0: Anagrafica (required for Stripe & GDPR)
   anagrafica?: Anagrafica;
@@ -93,22 +98,27 @@ export interface OnboardingData {
   // Step 1: Personal Info (include Navy Method measurements)
   personalInfo?: PersonalInfo;
 
-  // Step 2: Location & Equipment
-  trainingLocation?: TrainingLocation;
-  trainingType?: TrainingType;
-  equipment?: Equipment;
-
-  // Step 3: Activity Level
-  activityLevel?: ActivityLevel;
-
-  // Step 4: Goal (supporta multi-goal)
+  // Step 2: Goal (supporta multi-goal)
   goal?: string; // backward compatibility (primo goal)
   goals?: string[]; // multi-goal support (max 2-3)
   sport?: string; // if goal includes sport_performance
   sportRole?: string;
   muscularFocus?: string | string[]; // Multi-select muscular focus (max 3 muscle groups)
 
-  // Step 5: Pain/Injury
+  // Step 3: Running Interest (solo interesse + livello base)
+  runningInterest?: RunningInterest;
+
+  // Step 4: Location, Equipment & Frequency
+  trainingLocation?: TrainingLocation;
+  trainingType?: TrainingType;
+  equipment?: Equipment;
+  frequency?: number; // days per week (1-6)
+
+  // Step 5: Screening Type
+  screeningType?: 'thorough' | 'light';
+
+  // Legacy / Optional
+  activityLevel?: ActivityLevel;
   painAreas?: PainEntry[];
 }
 

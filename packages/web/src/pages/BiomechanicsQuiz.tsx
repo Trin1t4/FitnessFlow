@@ -32,13 +32,13 @@ const BETA_QUESTIONS: BetaQuestion[] = [
     ],
   },
   {
-    id: 'frequency',
+    id: 'consistency',
     icon: Target,
-    question: 'Quante volte a settimana ti alleni (o vorresti allenarti)?',
+    question: 'Negli ultimi 3 mesi, quanto sei stato costante con gli allenamenti?',
     options: [
-      { text: '1-2 volte', value: 0, level: 'beginner' },
-      { text: '3-4 volte', value: 1, level: 'intermediate' },
-      { text: '5+ volte', value: 2, level: 'advanced' },
+      { text: 'Poco costante - ho saltato spesso', value: 0, level: 'beginner' },
+      { text: 'Abbastanza costante - 2-3 volte a settimana', value: 1, level: 'intermediate' },
+      { text: 'Molto costante - raramente salto', value: 2, level: 'advanced' },
     ],
   },
   {

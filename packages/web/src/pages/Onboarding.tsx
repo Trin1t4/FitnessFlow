@@ -1,32 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { OnboardingData, RunningPreferences } from '../types/onboarding.types';
+import { OnboardingData } from '../types/onboarding.types';
 import { useTranslation } from '../lib/i18n';
 import AnagraficaStep from '../components/onboarding/AnagraficaStep';
 import PersonalInfoStep from '../components/onboarding/PersonalInfoStep';
-import ScreeningTypeStep from '../components/onboarding/ScreeningTypeStep';
-import LocationStep from '../components/onboarding/LocationStep';
 import GoalStep from '../components/onboarding/GoalStep';
+import RunningInterestStep from '../components/onboarding/RunningInterestStep';
+import LocationStep from '../components/onboarding/LocationStep';
+import ScreeningTypeStep from '../components/onboarding/ScreeningTypeStep';
 import MedicalDisclaimer from '../components/onboarding/MedicalDisclaimer';
-import RunningOnboarding from '../components/RunningOnboarding';
-import SimpleRunningCapacityStep from '../components/onboarding/SimpleRunningCapacityStep';
 import {
   sportRequiresRunning,
-  getSportRunningConfig,
   SportType
 } from '../utils/sportSpecificTraining';
 
-// Onboarding - 5 step + cardio opzionale alla fine
+// Onboarding - 6 step (running condizionale)
 // 0. Anagrafica (nome, cognome, data nascita)
 // 1. Personal Info (genere, età, altezza, peso)
-// 2. Screening Type (approfondito vs leggero)
-// 3. Location (casa/palestra)
-// 4. Goal (obiettivo)
-// 5. Cardio (opzionale, in base al goal e screening type)
+// 2. Goal (obiettivo)
+// 3. Running Interest (condizionale - solo interesse + livello)
+// 4. Location + Frequenza
+// 5. Screening Type (approfondito vs leggero)
+// → Poi salva e vai al quiz appropriato
 
-// Goal che NON mostrano l'opzione cardio
-const GOALS_WITHOUT_CARDIO = [
+// Goal che NON mostrano l'opzione running
+const GOALS_WITHOUT_RUNNING = [
   'motor_recovery',
   'pre_partum',
   'post_partum',
@@ -40,14 +39,7 @@ export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState<Partial<OnboardingData>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [showRunningOnboarding, setShowRunningOnboarding] = useState(false);
-  const [showSimpleRunning, setShowSimpleRunning] = useState(false);
-  const [sportRunningPreset, setSportRunningPreset] = useState<{
-    goal: 'complemento_sport';
-    integration: 'separate_days' | 'post_workout' | 'hybrid_alternate';
-    sessionsPerWeek: number;
-    sportName: string;
-  } | null>(null);
+  const [skipRunningStep, setSkipRunningStep] = useState(false);
 
   // Check if user already accepted disclaimer
   useEffect(() => {
@@ -76,8 +68,10 @@ export default function Onboarding() {
     );
   }
 
-  const totalSteps = 5; // 0-4 (Anagrafica → Goal)
-  const progress = ((currentStep + 1) / totalSteps) * 100;
+  // Calcola step totali (5 se skip running, 6 se include running)
+  const totalSteps = skipRunningStep ? 5 : 6;
+  const effectiveStep = skipRunningStep && currentStep > 2 ? currentStep - 1 : currentStep;
+  const progress = ((effectiveStep + 1) / totalSteps) * 100;
 
   const updateData = (stepData: Partial<OnboardingData>) => {
     const newData = { ...data, ...stepData };
@@ -144,13 +138,13 @@ export default function Onboarding() {
     }
   };
 
-  // Determina se mostrare cardio in base al goal
-  const shouldShowCardio = (goalData: Partial<OnboardingData>): boolean => {
+  // Determina se mostrare lo step running in base al goal
+  const shouldShowRunningStep = (goalData: Partial<OnboardingData>): boolean => {
     const goals = goalData.goals || [];
     const primaryGoal = goals[0] || goalData.goal;
 
-    // Goal esclusi dal cardio
-    if (GOALS_WITHOUT_CARDIO.includes(primaryGoal || '')) {
+    // Goal esclusi dal running
+    if (GOALS_WITHOUT_RUNNING.includes(primaryGoal || '')) {
       return false;
     }
 
@@ -158,7 +152,7 @@ export default function Onboarding() {
   };
 
   // Determina se lo sport richiede corsa obbligatoria
-  const sportRequiresRunningCheck = (goalData: Partial<OnboardingData>): boolean => {
+  const checkSportRequiresRunning = (goalData: Partial<OnboardingData>): boolean => {
     const isSportGoal = goalData.goals?.includes('prestazioni_sportive') ||
                         goalData.goal === 'prestazioni_sportive';
     const selectedSport = goalData.sport as SportType | undefined;
@@ -199,80 +193,55 @@ export default function Onboarding() {
     }
   };
 
+  // Steps: 0=Anagrafica, 1=PersonalInfo, 2=Goal, 3=Running(condizionale), 4=Location, 5=ScreeningType
   const nextStep = async (mergedData?: Partial<OnboardingData>) => {
     const finalData = mergedData || data;
 
-    if (currentStep < totalSteps - 1) {
-      // Vai al prossimo step
-      console.log(`[ONBOARDING] ➡️ Moving from step ${currentStep} to ${currentStep + 1}`);
-      setCurrentStep(currentStep + 1);
-    } else {
-      // Step finale (GoalStep) - controlla cardio
-      console.log('[ONBOARDING] 🎯 Final step completed, checking cardio...');
+    // Step 2 (Goal) completato → determina se mostrare Running
+    if (currentStep === 2) {
+      const showRunning = shouldShowRunningStep(finalData);
+      console.log(`[ONBOARDING] 🎯 Goal completed, showRunning: ${showRunning}`);
+
+      if (!showRunning) {
+        // Skip running step, vai direttamente a Location (step 4)
+        setSkipRunningStep(true);
+        console.log('[ONBOARDING] ⏭️ Skipping running step → Location');
+        setCurrentStep(4);
+        return;
+      } else {
+        setSkipRunningStep(false);
+      }
+    }
+
+    // Step 5 (ScreeningType) completato → salva e naviga
+    if (currentStep === 5) {
+      console.log('[ONBOARDING] 🎯 Final step completed, saving...');
 
       if (!finalData.trainingLocation) {
         console.error('[ONBOARDING] ❌ LOCATION IS MISSING!');
         alert(t('onboarding.error.location_missing'));
-        setCurrentStep(3);
+        setCurrentStep(4);
         return;
       }
 
-      // 1. Sport che richiede corsa obbligatoria → RunningOnboarding con preset
-      if (sportRequiresRunningCheck(finalData)) {
-        const selectedSport = finalData.sport as SportType;
-        const sportRunningConfig = getSportRunningConfig(selectedSport);
-        console.log(`[ONBOARDING] 🏃 Sport "${selectedSport}" requires running → showing RunningOnboarding`);
-
-        const sportLabels: Record<string, string> = {
-          calcio: 'Calcio', basket: 'Basket', rugby: 'Rugby',
-          boxe: 'Boxe', tennis: 'Tennis', corsa: 'Corsa',
-        };
-
-        setSportRunningPreset({
-          goal: 'complemento_sport',
-          integration: sportRunningConfig.integration,
-          sessionsPerWeek: sportRunningConfig.sessionsPerWeek,
-          sportName: sportLabels[selectedSport] || selectedSport,
-        });
-        setShowRunningOnboarding(true);
-        return;
-      }
-
-      // 2. Goal senza cardio → salva e vai al quiz
-      if (!shouldShowCardio(finalData)) {
-        console.log('[ONBOARDING] ⏭️ Goal without cardio → saving...');
-        await saveAndNavigate(finalData);
-        return;
-      }
-
-      // 3. Mostra opzione cardio in base al tipo di screening
-      if (finalData.screeningType === 'thorough') {
-        // Screening approfondito → RunningOnboarding completo
-        console.log('[ONBOARDING] 🏃 Showing full RunningOnboarding (thorough screening)');
-        setShowRunningOnboarding(true);
-      } else {
-        // Screening veloce → domanda semplice capacità
-        console.log('[ONBOARDING] 🏃 Showing simple running capacity (light screening)');
-        setShowSimpleRunning(true);
-      }
+      await saveAndNavigate(finalData);
+      return;
     }
+
+    // Vai al prossimo step normale
+    console.log(`[ONBOARDING] ➡️ Moving from step ${currentStep} to ${currentStep + 1}`);
+    setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
-    if (showRunningOnboarding) {
-      console.log('[ONBOARDING] ⬅️ Going back from RunningOnboarding');
-      setShowRunningOnboarding(false);
-      setSportRunningPreset(null);
-      return;
-    }
-
-    if (showSimpleRunning) {
-      console.log('[ONBOARDING] ⬅️ Going back from SimpleRunning');
-      setShowSimpleRunning(false);
-      return;
-    }
-
     if (currentStep > 0) {
+      // Se siamo a Location (4) e avevamo skippato running, torna a Goal (2)
+      if (currentStep === 4 && skipRunningStep) {
+        console.log('[ONBOARDING] ⬅️ Going back from Location to Goal (skipped running)');
+        setCurrentStep(2);
+        return;
+      }
+
       console.log(`[ONBOARDING] ⬅️ Moving back from step ${currentStep} to ${currentStep - 1}`);
       setCurrentStep(currentStep - 1);
     }
@@ -285,26 +254,12 @@ export default function Onboarding() {
     nextStep(mergedData);
   };
 
-  // Handler per completamento running onboarding (completo)
-  const handleRunningOnboardingComplete = async (runningPrefs: RunningPreferences) => {
-    console.log('[ONBOARDING] 🏃 Running onboarding completed:', runningPrefs);
-    const finalData = { ...data, running: runningPrefs };
-    setData(finalData);
-    await saveAndNavigate(finalData);
-  };
-
-  // Handler per completamento simple running
-  const handleSimpleRunningComplete = async (runningPrefs: RunningPreferences) => {
-    console.log('[ONBOARDING] 🏃 Simple running completed:', runningPrefs);
-    const finalData = { ...data, running: runningPrefs };
-    setData(finalData);
-    await saveAndNavigate(finalData);
-  };
-
-  // Handler per skip cardio
-  const handleSkipCardio = async () => {
-    console.log('[ONBOARDING] ⏭️ User skipped cardio');
-    await saveAndNavigate(data);
+  // Handler per RunningInterestStep
+  const handleRunningInterestComplete = (stepData: { runningInterest: { enabled: boolean; level?: string } }) => {
+    console.log('[ONBOARDING] 🏃 Running interest completed:', stepData);
+    const mergedData = { ...data, ...stepData };
+    updateData(stepData as Partial<OnboardingData>);
+    nextStep(mergedData);
   };
 
   const renderStep = () => {
@@ -314,57 +269,24 @@ export default function Onboarding() {
       case 1:
         return <PersonalInfoStep data={data} onNext={handleStepComplete} onBack={prevStep} />;
       case 2:
-        return <ScreeningTypeStep data={data} onNext={handleStepComplete} onBack={prevStep} />;
-      case 3:
-        return <LocationStep data={data} onNext={handleStepComplete} onBack={prevStep} />;
-      case 4:
         return <GoalStep data={data} onNext={handleStepComplete} onBack={prevStep} />;
+      case 3:
+        return (
+          <RunningInterestStep
+            data={data}
+            onNext={handleRunningInterestComplete}
+            onBack={prevStep}
+            sportRequiresRunning={checkSportRequiresRunning(data)}
+          />
+        );
+      case 4:
+        return <LocationStep data={data} onNext={handleStepComplete} onBack={prevStep} />;
+      case 5:
+        return <ScreeningTypeStep data={data} onNext={handleStepComplete} onBack={prevStep} />;
       default:
         return null;
     }
   };
-
-  // RunningOnboarding completo (screening approfondito o sport)
-  if (showRunningOnboarding) {
-    return (
-      <RunningOnboarding
-        age={data.personalInfo?.age || 30}
-        onComplete={handleRunningOnboardingComplete}
-        onBack={() => {
-          setShowRunningOnboarding(false);
-          setSportRunningPreset(null);
-        }}
-        includesWeights={true}
-        sportPreset={sportRunningPreset || undefined}
-      />
-    );
-  }
-
-  // SimpleRunning (screening veloce)
-  if (showSimpleRunning) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
-        <div className="max-w-lg mx-auto">
-          <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 md:p-8 border border-slate-700">
-            <SimpleRunningCapacityStep
-              onComplete={handleSimpleRunningComplete}
-              onSkip={handleSkipCardio}
-            />
-          </div>
-
-          <div className="flex gap-4 mt-6">
-            <button
-              onClick={prevStep}
-              disabled={isSaving}
-              className="flex-1 bg-slate-700 text-white py-3 rounded-lg font-semibold hover:bg-slate-600 transition disabled:opacity-50"
-            >
-              ← {t('common.back')}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
@@ -372,7 +294,7 @@ export default function Onboarding() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-white">{t('onboarding.title')}</h1>
-            <span className="text-slate-300">{t('onboarding.step_of').replace('{{current}}', String(currentStep + 1)).replace('{{total}}', String(totalSteps))}</span>
+            <span className="text-slate-300">{t('onboarding.step_of').replace('{{current}}', String(effectiveStep + 1)).replace('{{total}}', String(totalSteps))}</span>
           </div>
           <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
             <div
