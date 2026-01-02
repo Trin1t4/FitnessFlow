@@ -1728,7 +1728,7 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
-  'Assisted Pistol': {
+  'Pistol Squat Assistito': {
     description: 'Pistol squat assistito con supporto. Propedeutico per il pistol completo.',
     technique: [
       'Tieni un supporto per equilibrio',

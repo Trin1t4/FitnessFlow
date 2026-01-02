@@ -23,7 +23,7 @@ const SCREENING_VIDEOS: Record<string, string> = {
   'Air Squat': '/videos/exercises/bodyweight-squat.mp4',
   'Bulgarian Split Squat': '/videos/exercises/bulgarian-split-squat.mp4',
   'Pistol Squat': '/videos/exercises/pistol-squat.mp4',
-  'Pistol Squat Assistito': '/videos/exercises/pistol-squat.mp4',
+  'Pistol Squat Assistito': '/videos/exercises/assisted-pistol-squat.mp4',
   // MANCANO: Squat Assistito, Jump Squat, Shrimp Squat
 
   // === PULL (verificati) ===

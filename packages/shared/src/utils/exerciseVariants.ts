@@ -1106,7 +1106,7 @@ export const EXERCISE_ALTERNATIVES: Record<string, ExerciseAlternative[]> = {
   ],
   'Pistol Squat': [
     { name: 'Shrimp Squat', equipment: 'bodyweight', difficulty: 7, notes: 'Stessa difficoltà' },
-    { name: 'Assisted Pistol', equipment: 'bodyweight', difficulty: 6, notes: 'Con TRX/anelli' },
+    { name: 'Pistol Squat Assistito', equipment: 'bodyweight', difficulty: 6, notes: 'Con TRX/anelli' },
     { name: 'Bulgarian Split Squat profondo', equipment: 'both', difficulty: 6, notes: 'Range completo' },
   ],
 

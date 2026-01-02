@@ -28,7 +28,7 @@ const SCREENING_VIDEOS: Record<string, string> = {
   'Squat a Corpo Libero': '/videos/exercises/deep-squat-hold.mp4',
   'Squat con Salto': '/videos/exercises/squat-jump.mp4',
   'Split Squat Bulgaro': '/videos/exercises/bulgarian-split-squat.mp4',
-  'Pistol Squat Assistito': '/videos/exercises/pistol-squat.mp4',
+  'Pistol Squat Assistito': '/videos/exercises/assisted-pistol-squat.mp4',
   'Shrimp Squat (Squat Gambero)': '/videos/exercises/shrimp-squat.mp4',
   'Pistol Squat': '/videos/exercises/pistol-squat.mp4',
 

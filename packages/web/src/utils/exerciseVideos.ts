@@ -404,6 +404,7 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   'Squat su Box': 'box-squat.mp4',
   'Squat sulla Scatola': 'box-squat.mp4',
   'Assisted Pistol Squat': 'assisted-pistol-squat.mp4',
+  'Assisted Pistol': 'assisted-pistol-squat.mp4',
   'Pistol Squat Assistito': 'assisted-pistol-squat.mp4',
   'Pistol Assistito': 'assisted-pistol-squat.mp4',
 

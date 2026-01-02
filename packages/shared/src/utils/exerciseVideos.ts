@@ -232,6 +232,8 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   'Squat Bulgaro': 'bulgarian-split-squat.mp4',
   'Squat a Pistola': 'pistol-squat.mp4',
   'Squat a Pistola (Assistito)': 'assisted-pistol-squat.mp4',
+  'Pistol Squat Assistito': 'assisted-pistol-squat.mp4',
+  'Assisted Pistol': 'assisted-pistol-squat.mp4',
   'Squat Gamberetto': 'shrimp-squat.mp4',
   'Squat del Pattinatore': 'skater-squat.mp4',
   'Squat con Bilanciere': 'back-squat.mp4',
