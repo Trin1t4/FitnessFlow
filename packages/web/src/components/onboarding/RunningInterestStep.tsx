@@ -1,11 +1,10 @@
 /**
  * RunningInterestStep
- * Step semplificato per onboarding - chiede solo interesse + livello base
- * I test dettagliati (HR zones, walk/run) vanno nello screening
+ * Step per onboarding - chiede interesse, livello, FC riposo e passo
  */
 
 import { useState } from 'react';
-import { Timer, Check, X, AlertCircle } from 'lucide-react';
+import { Timer, Check, X, AlertCircle, Heart, Gauge, Info } from 'lucide-react';
 import { useTranslation } from '../../lib/i18n';
 
 interface RunningInterestStepProps {
@@ -13,11 +12,17 @@ interface RunningInterestStepProps {
     goal?: string;
     goals?: string[];
     sport?: string;
+    personalInfo?: {
+      age?: number;
+    };
   };
   onNext: (stepData: {
     runningInterest: {
       enabled: boolean;
       level?: 'sedentary' | 'beginner' | 'intermediate' | 'advanced';
+      restingHR?: number;
+      currentPace?: string; // formato "MM:SS"
+      maxHR?: number; // calcolato da età
     };
   }) => void;
   onBack?: () => void;
@@ -62,6 +67,14 @@ export default function RunningInterestStep({
     sportRequiresRunning ? true : null
   );
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+  const [restingHR, setRestingHR] = useState<string>('');
+  const [paceMinutes, setPaceMinutes] = useState<string>('');
+  const [paceSeconds, setPaceSeconds] = useState<string>('');
+  const [showHRHelp, setShowHRHelp] = useState(false);
+
+  // Calcola FC max dalla formula Tanaka (più accurata per tutti)
+  const age = data.personalInfo?.age || 30;
+  const maxHR = Math.round(208 - (0.7 * age));
 
   const handleNext = () => {
     if (wantsRunning === false) {
@@ -72,16 +85,25 @@ export default function RunningInterestStep({
         },
       });
     } else if (wantsRunning && selectedLevel) {
-      // Vuole corsa con livello selezionato
+      // Vuole corsa con livello e dati opzionali
+      const currentPace = paceMinutes && paceSeconds
+        ? `${paceMinutes}:${paceSeconds.padStart(2, '0')}`
+        : undefined;
+
       onNext({
         runningInterest: {
           enabled: true,
           level: selectedLevel as 'sedentary' | 'beginner' | 'intermediate' | 'advanced',
+          restingHR: restingHR ? parseInt(restingHR) : undefined,
+          currentPace,
+          maxHR,
         },
       });
     }
   };
 
+  // Per sedentary non chiediamo FC/passo
+  const needsMetrics = selectedLevel && selectedLevel !== 'sedentary';
   const canProceed = wantsRunning === false || (wantsRunning && selectedLevel);
 
   return (
@@ -182,13 +204,99 @@ export default function RunningInterestStep({
         </div>
       )}
 
+      {/* Metriche aggiuntive (solo per livelli non sedentary) */}
+      {needsMetrics && (
+        <div className="space-y-4 bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+          <h3 className="font-semibold text-white flex items-center gap-2">
+            <Gauge className="w-5 h-5 text-emerald-400" />
+            Dati per personalizzare le zone
+            <span className="text-xs text-slate-400 font-normal">(opzionale)</span>
+          </h3>
+
+          {/* FC a riposo */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-slate-300 flex items-center gap-2">
+                <Heart className="w-4 h-4 text-red-400" />
+                FC a riposo (bpm)
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowHRHelp(!showHRHelp)}
+                className="text-slate-400 hover:text-slate-300"
+              >
+                <Info className="w-4 h-4" />
+              </button>
+            </div>
+            {showHRHelp && (
+              <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded">
+                Misura la mattina appena sveglio, prima di alzarti.
+                Conta i battiti per 60 secondi o usa uno smartwatch.
+              </div>
+            )}
+            <input
+              type="number"
+              value={restingHR}
+              onChange={(e) => setRestingHR(e.target.value)}
+              placeholder="es. 65"
+              min="40"
+              max="100"
+              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+            />
+            <p className="text-xs text-slate-500">
+              FC max stimata: <span className="text-emerald-400 font-medium">{maxHR} bpm</span> (basata sull'età)
+            </p>
+          </div>
+
+          {/* Passo abituale */}
+          <div className="space-y-2">
+            <label className="text-sm text-slate-300 flex items-center gap-2">
+              <Timer className="w-4 h-4 text-blue-400" />
+              Passo abituale (min:sec per km)
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={paceMinutes}
+                onChange={(e) => setPaceMinutes(e.target.value)}
+                placeholder="6"
+                min="3"
+                max="15"
+                className="w-20 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-center placeholder-slate-400 focus:border-emerald-500"
+              />
+              <span className="text-white font-bold">:</span>
+              <input
+                type="number"
+                value={paceSeconds}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (parseInt(val) <= 59 || val === '') {
+                    setPaceSeconds(val);
+                  }
+                }}
+                placeholder="30"
+                min="0"
+                max="59"
+                className="w-20 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-center placeholder-slate-400 focus:border-emerald-500"
+              />
+              <span className="text-slate-400">/km</span>
+            </div>
+            <p className="text-xs text-slate-500">
+              Il passo a cui corri normalmente senza affanno
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Info box */}
       {wantsRunning && selectedLevel && (
         <div className="bg-blue-900/30 rounded-lg p-4 border border-blue-800">
           <p className="text-sm text-blue-300">
-            {selectedLevel === 'sedentary' || selectedLevel === 'beginner'
+            {selectedLevel === 'sedentary'
               ? 'Inizieremo con sessioni brevi di camminata/corsa per costruire la base aerobica.'
-              : 'Aggiungeremo sessioni di corsa in Zona 2 per migliorare resistenza e recupero.'}
+              : restingHR
+                ? `Con FC riposo ${restingHR} bpm e max ${maxHR} bpm, calcoleremo le tue zone di allenamento personalizzate.`
+                : 'Aggiungeremo sessioni di corsa in Zona 2 per migliorare resistenza e recupero.'}
           </p>
         </div>
       )}
