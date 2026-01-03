@@ -372,9 +372,13 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   'Neck Flexion': '44 Neck Flexion.mp4',
   'Neck Extension': '45 Neck Extension.mp4',
   'Neck Lateral Flexion': '46 Neck Lateral Flexion.mp4',
+  'Neck Rotation': '47 Neck Rotation.mp4',
+  'Neck Harness Exercise': '48 Neck Harness Exercise.mp4',
   'Flessione Collo': '44 Neck Flexion.mp4',
   'Estensione Collo': '45 Neck Extension.mp4',
   'Flessione Laterale Collo': '46 Neck Lateral Flexion.mp4',
+  'Rotazione Collo': '47 Neck Rotation.mp4',
+  'Esercizio con Imbracatura Collo': '48 Neck Harness Exercise.mp4',
 
   // =============================================
   // PLYOMETRICS / JUMP TRAINING
@@ -424,6 +428,56 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   'Side Plank': 'side-plank.mp4',
   'Plank Laterale Completo': 'side-plank.mp4',
   'Pistol Squat V2': 'pistol-squat-v2.mp4',
+  'V-Up': '55 V-Up.mp4',
+  'V Up': '55 V-Up.mp4',
+  'Hollow Body Rock': '54 Hollow Body Rock.mp4',
+  'Oscillazione Corpo Cavo': '54 Hollow Body Rock.mp4',
+
+  // =============================================
+  // BACK EXTENSION / HYPEREXTENSION
+  // =============================================
+  'Back Extension': '50 Back Extension Roman Chair.mp4',
+  'Back Extension Roman Chair': '50 Back Extension Roman Chair.mp4',
+  'Estensioni Schiena': '50 Back Extension Roman Chair.mp4',
+  'Iperestensioni': '50 Back Extension Roman Chair.mp4',
+  'Reverse Hyperextension': '51 Reverse Hyperextension.mp4',
+  'Iperestensioni Inverse': '51 Reverse Hyperextension.mp4',
+  'Reverse Nordic Curl': '53 Reverse Nordic Curl.mp4',
+  'Nordic Curl Inverso': '53 Reverse Nordic Curl.mp4',
+
+  // =============================================
+  // BENCH PRESS VARIANTI
+  // =============================================
+  'Incline Barbell Bench Press': '57 Incline Barbell Bench Press.mp4',
+  'Panca Inclinata Bilanciere': '57 Incline Barbell Bench Press.mp4',
+  'Incline Dumbbell Bench Press': '58 Incline Dumbbell Bench Press.mp4',
+  'Panca Inclinata con Manubri': '58 Incline Dumbbell Bench Press.mp4',
+  'Decline Bench Press': '59 Decline Bench Press.mp4',
+  'Panca Declinata': '59 Decline Bench Press.mp4',
+
+  // =============================================
+  // CABLE EXERCISES
+  // =============================================
+  'Cable Fly High to Low': '60 Cable Fly High to Low.mp4',
+  'Croci ai Cavi Alto-Basso': '60 Cable Fly High to Low.mp4',
+
+  // =============================================
+  // HANGING EXERCISES
+  // =============================================
+  'Hanging Knee Raise': '56 Hanging Knee Raise.mp4',
+  'Ginocchia al Petto Sospeso': '56 Hanging Knee Raise.mp4',
+
+  // =============================================
+  // TRX / SUSPENSION
+  // =============================================
+  'TRX Row': 'trx-row.mp4',
+  'Row al TRX': 'trx-row.mp4',
+
+  // =============================================
+  // GOBLET SQUAT
+  // =============================================
+  'Goblet Squat': 'goblet-squat.mp4',
+  'Squat Goblet': 'goblet-squat.mp4',
 };
 
 /**
