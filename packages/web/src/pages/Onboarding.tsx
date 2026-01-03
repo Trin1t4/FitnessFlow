@@ -7,6 +7,7 @@ import AnagraficaStep from '../components/onboarding/AnagraficaStep';
 import PersonalInfoStep from '../components/onboarding/PersonalInfoStep';
 import GoalStep from '../components/onboarding/GoalStep';
 import RunningInterestStep from '../components/onboarding/RunningInterestStep';
+import RunningOnboarding from '../components/RunningOnboarding';
 import LocationStep from '../components/onboarding/LocationStep';
 import ScreeningTypeStep from '../components/onboarding/ScreeningTypeStep';
 import MedicalDisclaimer from '../components/onboarding/MedicalDisclaimer';
@@ -14,6 +15,7 @@ import {
   sportRequiresRunning,
   SportType
 } from '../utils/sportSpecificTraining';
+import type { RunningPreferences } from '@trainsmart/shared';
 
 // Onboarding - 6 step (running condizionale)
 // 0. Anagrafica (nome, cognome, data nascita)
@@ -40,6 +42,7 @@ export default function Onboarding() {
   const [data, setData] = useState<Partial<OnboardingData>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [skipRunningStep, setSkipRunningStep] = useState(false);
+  const [showRunningOnboarding, setShowRunningOnboarding] = useState(false);
 
   // Check if user already accepted disclaimer
   useEffect(() => {
@@ -204,6 +207,16 @@ export default function Onboarding() {
 
     // Step 2 (Goal) completato → determina se mostrare Running
     if (currentStep === 2) {
+      // Se lo sport richiede running obbligatoriamente, vai direttamente a RunningOnboarding completo
+      const requiresRunning = checkSportRequiresRunning(finalData);
+      if (requiresRunning) {
+        console.log('[ONBOARDING] 🏃 Sport requires running, showing full RunningOnboarding');
+        setShowRunningOnboarding(true);
+        setSkipRunningStep(false);
+        setCurrentStep(3);
+        return;
+      }
+
       const showRunning = shouldShowRunningStep(finalData);
       console.log(`[ONBOARDING] 🎯 Goal completed, showRunning: ${showRunning}`);
 
@@ -260,8 +273,20 @@ export default function Onboarding() {
   };
 
   // Handler per RunningInterestStep
-  const handleRunningInterestComplete = (stepData: { runningInterest: { enabled: boolean; level?: string } }) => {
+  const handleRunningInterestComplete = (stepData: { runningInterest: { enabled: boolean; level?: string; goal?: string; integration?: string } }) => {
     console.log('[ONBOARDING] 🏃 Running interest completed:', stepData);
+    console.log('[ONBOARDING] 🏃 Full runningInterest object:', JSON.stringify(stepData.runningInterest, null, 2));
+
+    // Verifica che tutti i campi necessari siano presenti se enabled
+    if (stepData.runningInterest.enabled) {
+      if (!stepData.runningInterest.goal) {
+        console.warn('[ONBOARDING] ⚠️ Running enabled but goal is missing!');
+      }
+      if (!stepData.runningInterest.integration) {
+        console.warn('[ONBOARDING] ⚠️ Running enabled but integration is missing!');
+      }
+    }
+
     const mergedData = { ...data, ...stepData };
     updateData(stepData as Partial<OnboardingData>);
     nextStep(mergedData);
@@ -276,10 +301,46 @@ export default function Onboarding() {
       case 2:
         return <GoalStep data={data} onNext={handleStepComplete} onBack={prevStep} />;
       case 3:
+        // Se l'utente ha detto sì al running, mostra l'onboarding completo
+        if (showRunningOnboarding) {
+          return (
+            <RunningOnboarding
+              age={data.personalInfo?.age || 30}
+              onComplete={(runningPrefs: RunningPreferences) => {
+                console.log('[ONBOARDING] 🏃 Running preferences completed:', runningPrefs);
+                // Salva le preferenze running COMPLETE nel campo 'running'
+                const updatedData = { ...data, running: runningPrefs };
+                setData(updatedData);
+                setShowRunningOnboarding(false);
+                // Vai al prossimo step (Location)
+                setCurrentStep(4);
+              }}
+              onBack={() => {
+                setShowRunningOnboarding(false);
+                // L'utente può tornare indietro e dire "no" al running
+              }}
+              includesWeights={true}
+              strengthFrequency={data.activityLevel?.weeklyFrequency || 3}
+            />
+          );
+        }
+
+        // Altrimenti mostra RunningInterestStep per chiedere SE vuole running
         return (
           <RunningInterestStep
             data={data}
-            onNext={handleRunningInterestComplete}
+            onNext={(stepData) => {
+              console.log('[ONBOARDING] 🏃 Running interest:', stepData);
+              updateData(stepData as Partial<OnboardingData>);
+
+              if (stepData.runningInterest?.enabled) {
+                // L'utente VUOLE running → mostra RunningOnboarding completo
+                setShowRunningOnboarding(true);
+              } else {
+                // L'utente NON vuole running → vai direttamente a Location
+                setCurrentStep(4);
+              }
+            }}
             onBack={prevStep}
             sportRequiresRunning={checkSportRequiresRunning(data)}
           />

@@ -44,6 +44,42 @@ export interface PainTrackingServiceResponse<T = void> {
 }
 
 // ============================================================
+// DYNAMIC REHABILITATION THRESHOLD
+// ============================================================
+
+/**
+ * Calcola soglia trigger per riabilitazione in base alla severità
+ * - Severe (7+): 1 sessione → trigger immediato
+ * - Moderate (5-6): 2 sessioni → trigger standard
+ * - Mild (<5): 3 sessioni → trigger conservativo
+ *
+ * @param severity - Severità del dolore (1-10)
+ * @returns Numero di sessioni consecutive necessarie per trigger
+ */
+export function getRehabTriggerThreshold(severity: number): number {
+  if (severity >= 7) return 1;      // Severe: trigger immediato
+  if (severity >= 5) return 2;      // Moderate: 2 sessioni
+  return 3;                         // Mild: 3 sessioni
+}
+
+/**
+ * Verifica se attivare piano riabilitazione
+ *
+ * @param consecutiveIssues - Numero di sessioni consecutive con dolore
+ * @param maxSeverity - Severità massima registrata nelle sessioni
+ * @returns true se deve essere attivata la riabilitazione
+ */
+export function shouldTriggerRehabilitation(
+  consecutiveIssues: number,
+  maxSeverity: number
+): boolean {
+  const threshold = getRehabTriggerThreshold(maxSeverity);
+  const shouldTrigger = consecutiveIssues >= threshold;
+  console.log(`[PainTrackingService] shouldTriggerRehabilitation: consecutive=${consecutiveIssues}, maxSeverity=${maxSeverity}, threshold=${threshold}, trigger=${shouldTrigger}`);
+  return shouldTrigger;
+}
+
+// ============================================================
 // REPORT PAIN (Post-Workout)
 // ============================================================
 
@@ -142,8 +178,10 @@ export async function reportWorkoutPainClientSide(
             console.error(`[PainTrackingService] Error updating ${area}:`, updateError);
           }
 
-          // Check trigger (2+ sessioni E non ancora offerta)
-          if (newCount >= 2 && !tracking.rehabilitation_offered && !triggerArea) {
+          // Check trigger usando soglia dinamica basata sulla severità
+          // Usa severità dal tracking (default 5 = moderate se non presente)
+          const severity = tracking.max_severity || 5;
+          if (shouldTriggerRehabilitation(newCount, severity) && !tracking.rehabilitation_offered && !triggerArea) {
             // Marca come offerta
             await client
               .from('pain_tracking')
@@ -151,6 +189,7 @@ export async function reportWorkoutPainClientSide(
               .eq('user_id', userId)
               .eq('body_area', area);
 
+            console.log(`[PainTrackingService] 🏥 Rehabilitation triggered for ${area} (consecutive=${newCount}, severity=${severity})`);
             triggerArea = area;
           }
         }

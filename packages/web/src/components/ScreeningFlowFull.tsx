@@ -1,8 +1,67 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { CheckCircle, Circle, ArrowRight, ArrowLeft, Info, Check, Timer, RotateCw, X, ZoomIn, Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { CheckCircle, Circle, ArrowRight, ArrowLeft, Info, Check, Timer, RotateCw, X, ZoomIn, Play, Pause, Volume2, VolumeX, BookOpen, Dumbbell } from 'lucide-react';
 import { useTranslation } from '../lib/i18n';
 import { getExerciseImageWithFallback, calculateLevelFromScreening } from '@trainsmart/shared';
+
+// ============================================================
+// DISCREPANCY DETECTION: Quiz teorico vs Test pratici
+// ============================================================
+
+interface ScreeningDiscrepancy {
+  hasDiscrepancy: boolean;
+  type: 'theory_practice_gap' | 'intuitive_mover' | 'balanced' | null;
+  quizScore: number;
+  practicalScore: number;
+  gap: number;
+  feedback: string;
+}
+
+/**
+ * Rileva discrepanza tra conoscenza teorica (quiz) e capacità pratica (test)
+ *
+ * - theory_practice_gap: Conosce la teoria ma non riesce a metterla in pratica
+ * - intuitive_mover: Si muove bene istintivamente ma non conosce la teoria
+ * - balanced: Buon equilibrio tra teoria e pratica
+ */
+function detectScreeningDiscrepancy(
+  quizScore: number,      // 0-100 dal quiz teorico
+  practicalScore: number  // 0-100 dai test pratici
+): ScreeningDiscrepancy {
+  const gap = Math.abs(quizScore - practicalScore);
+  const threshold = 25; // 25% di discrepanza = significativo
+
+  if (gap < threshold) {
+    return {
+      hasDiscrepancy: false,
+      type: 'balanced',
+      quizScore,
+      practicalScore,
+      gap,
+      feedback: 'Buon bilanciamento tra conoscenza teorica e capacità pratica.'
+    };
+  }
+
+  if (quizScore > practicalScore) {
+    return {
+      hasDiscrepancy: true,
+      type: 'theory_practice_gap',
+      quizScore,
+      practicalScore,
+      gap,
+      feedback: `Conosci bene la teoria (${quizScore}%) ma la pratica è indietro (${Math.round(practicalScore)}%). Focus: più pratica, meno studio. Il corpo impara facendo!`
+    };
+  }
+
+  return {
+    hasDiscrepancy: true,
+    type: 'intuitive_mover',
+    quizScore,
+    practicalScore,
+    gap,
+    feedback: `Ti muovi bene istintivamente (${Math.round(practicalScore)}%) ma la teoria è debole (${quizScore}%). Focus: impara i principi base per evitare errori tecnici.`
+  };
+}
 
 // Video disponibili per i test iniziali (SOLO quelli verificati esistenti)
 // Chiavi in italiano per match con i nomi tradotti
@@ -557,6 +616,12 @@ export default function ScreeningFlowFull({ onComplete, userData, userId }) {
       console.log('[SCREENING] ⚠️ Machines mode detected → forcing BEGINNER level');
     }
 
+    // 5.5 Rileva discrepanza tra quiz e test pratici
+    const discrepancy = detectScreeningDiscrepancy(quizScore, parseFloat(practicalScore));
+    if (discrepancy.hasDiscrepancy) {
+      console.log('[SCREENING] 🔍 Discrepancy detected:', discrepancy.type, `(gap: ${discrepancy.gap}%)`);
+    }
+
     // 6. Salva dati completi con BASELINE per ogni pattern
     const screeningData = {
       level: level,
@@ -565,6 +630,9 @@ export default function ScreeningFlowFull({ onComplete, userData, userId }) {
       practicalScore: practicalScore,
       physicalScore: physicalScore,
       patternBaselines: practicalResults, // ← BASELINE per programma
+      discrepancy: discrepancy.hasDiscrepancy ? discrepancy.type : null,
+      discrepancyGap: discrepancy.gap,
+      discrepancyFeedback: discrepancy.feedback,
       completed: true,
       timestamp: new Date().toISOString()
     };
@@ -628,6 +696,63 @@ export default function ScreeningFlowFull({ onComplete, userData, userId }) {
                   <p className="text-sm text-slate-400 mb-2">Score Finale</p>
                   <p className="text-5xl font-bold text-white">{screeningData.finalScore}%</p>
                 </div>
+
+                {/* Discrepancy Feedback - Teoria vs Pratica */}
+                {screeningData.discrepancy && (
+                  <div className={`rounded-lg p-5 mt-6 border-2 ${
+                    screeningData.discrepancy === 'theory_practice_gap'
+                      ? 'bg-amber-500/10 border-amber-500/50'
+                      : 'bg-blue-500/10 border-blue-500/50'
+                  }`}>
+                    <div className="flex items-start gap-4">
+                      {/* Icon */}
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                        screeningData.discrepancy === 'theory_practice_gap'
+                          ? 'bg-amber-500/20'
+                          : 'bg-blue-500/20'
+                      }`}>
+                        {screeningData.discrepancy === 'theory_practice_gap' ? (
+                          <BookOpen className="w-6 h-6 text-amber-400" />
+                        ) : (
+                          <Dumbbell className="w-6 h-6 text-blue-400" />
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1">
+                        <h4 className={`font-semibold text-lg mb-1 ${
+                          screeningData.discrepancy === 'theory_practice_gap'
+                            ? 'text-amber-300'
+                            : 'text-blue-300'
+                        }`}>
+                          {screeningData.discrepancy === 'theory_practice_gap'
+                            ? '📚 Teorico ma Poco Pratico'
+                            : '💪 Intuitivo ma Poco Teorico'}
+                        </h4>
+                        <p className={`text-sm ${
+                          screeningData.discrepancy === 'theory_practice_gap'
+                            ? 'text-amber-200/80'
+                            : 'text-blue-200/80'
+                        }`}>
+                          {screeningData.discrepancyFeedback}
+                        </p>
+                        <div className="flex items-center gap-4 mt-3 text-xs">
+                          <span className="flex items-center gap-1 text-slate-400">
+                            <BookOpen className="w-3.5 h-3.5" />
+                            Quiz: {screeningData.quizScore}%
+                          </span>
+                          <span className="flex items-center gap-1 text-slate-400">
+                            <Dumbbell className="w-3.5 h-3.5" />
+                            Pratico: {screeningData.practicalScore}%
+                          </span>
+                          <span className="text-slate-500">
+                            Gap: {screeningData.discrepancyGap?.toFixed(0) || Math.abs(screeningData.quizScore - screeningData.practicalScore).toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Pattern Baselines */}
                 <div className="bg-slate-700/30 rounded-lg p-6 mt-6 text-left">

@@ -349,7 +349,10 @@ export type {
   MedicalAlert,
   AdaptiveWarmup,
   WarmupExercise,
-  PainTypeEvaluation
+  PainTypeEvaluation,
+  // Pain Nature (v2.0)
+  PainNature,
+  PainNatureEvaluation
 } from './painTracking';
 export {
   // Labels
@@ -357,9 +360,12 @@ export {
   LATERALIZED_PAIN_AREA_LABELS,
   PAIN_TYPE_LABELS,
   PAIN_CHARACTER_LABELS,
+  PAIN_NATURE_LABELS,
+  PAIN_NATURE_DESCRIPTIONS,
   // Core evaluation
   getSeverityCategory,
   evaluatePreWorkoutPain,
+  evaluatePainNature,
   evaluateIntraExercisePain,
   evaluatePostExercisePain,
   evaluateIncompleteSet,

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabaseClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut, Shield, ClipboardList } from 'lucide-react';
+import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut, Shield, ClipboardList, Timer } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from '../lib/i18n';
 import { validateAndNormalizePainAreas, generateProgram, generateProgramWithSplit, inferMissingBaselines } from '@trainsmart/shared';
@@ -43,6 +43,7 @@ import { toast } from 'sonner';
 import { useCurrentProgram, useUserPrograms, useCreateProgram, programKeys } from '../hooks/useProgram';
 import VideoMosaicBackground from './VideoMosaicBackground';
 import { useAppStore } from '../store/useAppStore';
+import AddRunningModal from './AddRunningModal';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -111,6 +112,9 @@ export default function Dashboard() {
 
   // Screening pending state (user chose "test later" during onboarding)
   const [screeningPending, setScreeningPending] = useState(false);
+
+  // Add Running modal state
+  const [showAddRunningModal, setShowAddRunningModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -743,6 +747,222 @@ export default function Dashboard() {
     }
   }, [dataStatus, navigate, queryClient, t]);
 
+  // ===== REGENERATE PROGRAM WITH EXISTING RUNNING PREFS =====
+  const handleRegenerateWithRunning = useCallback(async () => {
+    if (!program || !dataStatus.screening || !dataStatus.onboarding?.runningInterest) {
+      alert('Errore: dati mancanti per rigenerare il programma');
+      return;
+    }
+
+    const runningInterest = dataStatus.onboarding.runningInterest;
+    if (!runningInterest.enabled) {
+      alert('La corsa non è abilitata nelle preferenze');
+      return;
+    }
+
+    setGeneratingProgram(true);
+    console.log('🏃 Regenerating program with existing running prefs:', runningInterest);
+
+    try {
+      const userLevel = fitnessLevelOverride || dataStatus.screening.level || 'beginner';
+      const mappedGoal = dataStatus.onboarding.goal || 'ipertrofia';
+
+      const generatedProgram = generateLocalProgram(userLevel, mappedGoal, dataStatus.onboarding);
+
+      // Salva il nuovo programma
+      const saveResult = await createProgram({
+        name: generatedProgram.name + ' + Corsa',
+        description: `Programma ${userLevel} per ${mappedGoal} con corsa integrata`,
+        level: userLevel as 'beginner' | 'intermediate' | 'advanced',
+        goal: mappedGoal,
+        location: dataStatus.onboarding.trainingLocation || 'gym',
+        training_type: dataStatus.onboarding.trainingType || 'bodyweight',
+        frequency: generatedProgram.frequency || 3,
+        split: generatedProgram.split,
+        days_per_week: generatedProgram.frequency || 3,
+        weekly_split: generatedProgram.weeklySplit || { days: [] },
+        exercises: generatedProgram.exercises || [],
+        total_weeks: generatedProgram.totalWeeks || 8,
+        start_date: new Date().toISOString(),
+        is_active: true,
+        status: 'active',
+        pain_areas: dataStatus.onboarding.painAreas || [],
+        pattern_baselines: dataStatus.screening.patternBaselines || {},
+        available_equipment: dataStatus.onboarding.equipment || {},
+        metadata: {
+          screeningScores: {
+            final: dataStatus.screening.finalScore,
+            quiz: dataStatus.quiz?.score,
+            practical: dataStatus.screening.practicalScore,
+            physical: dataStatus.screening.physicalScore
+          },
+          runningRegenerated: true,
+          runningPrefs: runningInterest
+        }
+      });
+
+      if (saveResult.success) {
+        console.log('✅ Program regenerated with running:', saveResult.data?.id);
+        localStorage.removeItem('currentProgram');
+        await queryClient.invalidateQueries({ queryKey: programKeys.all });
+        await refetchProgram();
+        alert('✅ Programma rigenerato con la corsa!\n\nLe sessioni di running sono ora integrate nel tuo programma.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        console.error('Failed to save:', saveResult.error);
+        alert('Errore nel salvataggio. Riprova.');
+      }
+    } catch (error) {
+      console.error('Error regenerating with running:', error);
+      alert('Errore durante la rigenerazione del programma.');
+    } finally {
+      setGeneratingProgram(false);
+    }
+  }, [program, dataStatus, fitnessLevelOverride, queryClient, refetchProgram, createProgram]);
+
+  // ===== ADD RUNNING TO EXISTING PROGRAM =====
+  const handleAddRunning = useCallback(async (runningPrefs: {
+    enabled: boolean;
+    level: 'sedentary' | 'beginner' | 'intermediate' | 'advanced';
+    goal: string;
+    integration: 'post_workout' | 'separate_days';
+    restingHR?: number;
+    currentPace?: string;
+    maxHR: number;
+  }) => {
+    if (!program || !dataStatus.screening) {
+      alert('Errore: programma o screening non trovato');
+      return;
+    }
+
+    setGeneratingProgram(true);
+    console.log('🏃 Adding running to existing program with prefs:', runningPrefs);
+
+    try {
+      // Salva le preferenze running nell'onboarding
+      const currentOnboarding = dataStatus.onboarding || {};
+      const updatedOnboarding = {
+        ...currentOnboarding,
+        runningInterest: {
+          enabled: true,
+          level: runningPrefs.level,
+          goal: runningPrefs.goal,
+          integration: runningPrefs.integration,
+          restingHR: runningPrefs.restingHR,
+          currentPace: runningPrefs.currentPace,
+          maxHR: runningPrefs.maxHR,
+        }
+      };
+
+      // Salva onboarding aggiornato
+      localStorage.setItem('onboarding_data', JSON.stringify(updatedOnboarding));
+      setDataStatus(prev => ({ ...prev, onboarding: updatedOnboarding }));
+
+      // Rigenera il programma con la corsa
+      const userLevel = fitnessLevelOverride || dataStatus.screening.level || 'beginner';
+      const mappedGoal = updatedOnboarding.goal || 'ipertrofia';
+
+      const generatedProgram = generateLocalProgram(userLevel, mappedGoal, updatedOnboarding);
+
+      // Salva il nuovo programma
+      const saveResult = await createProgram({
+        name: generatedProgram.name + ' + Corsa',
+        description: `Programma ${userLevel} per ${mappedGoal} con corsa integrata`,
+        level: userLevel as 'beginner' | 'intermediate' | 'advanced',
+        goal: mappedGoal,
+        location: updatedOnboarding.trainingLocation || 'gym',
+        training_type: updatedOnboarding.trainingType || 'bodyweight',
+        frequency: generatedProgram.frequency || 3,
+        split: generatedProgram.split,
+        days_per_week: generatedProgram.frequency || 3,
+        weekly_split: generatedProgram.weeklySplit || { days: [] },
+        exercises: generatedProgram.exercises || [],
+        total_weeks: generatedProgram.totalWeeks || 8,
+        start_date: new Date().toISOString(),
+        is_active: true,
+        status: 'active',
+        pain_areas: updatedOnboarding.painAreas || [],
+        pattern_baselines: dataStatus.screening.patternBaselines || {},
+        available_equipment: updatedOnboarding.equipment || {},
+        metadata: {
+          screeningScores: {
+            final: dataStatus.screening.finalScore,
+            quiz: dataStatus.quiz?.score,
+            practical: dataStatus.screening.practicalScore,
+            physical: dataStatus.screening.physicalScore
+          },
+          runningAdded: true,
+          runningPrefs: runningPrefs
+        }
+      });
+
+      if (saveResult.success) {
+        console.log('✅ Program with running saved:', saveResult.data?.id);
+        localStorage.removeItem('currentProgram');
+        await queryClient.invalidateQueries({ queryKey: programKeys.all });
+        await refetchProgram();
+        setShowAddRunningModal(false);
+        alert('✅ Corsa aggiunta al programma!\n\nIl tuo programma è stato rigenerato con le sessioni di corsa.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        console.error('Failed to save:', saveResult.error);
+        alert('Errore nel salvataggio. Riprova.');
+      }
+    } catch (error) {
+      console.error('Error adding running:', error);
+      alert('Errore durante l\'aggiunta della corsa.');
+    } finally {
+      setGeneratingProgram(false);
+    }
+  }, [program, dataStatus, fitnessLevelOverride, queryClient, refetchProgram]);
+
+  // Check if program has running sessions
+  const programHasRunning = useMemo(() => {
+    if (!program?.weekly_split?.days) return false;
+    return program.weekly_split.days.some((day: any) => day.runningSession);
+  }, [program]);
+
+  // Check for missing onboarding parts
+  const missingOnboardingParts = useMemo(() => {
+    const missing: string[] = [];
+    const onboarding = dataStatus.onboarding;
+
+    if (!onboarding) return ['onboarding']; // Complete onboarding missing
+
+    // Debug logging
+    console.log('[DASHBOARD] 🏃 Checking running interest:', {
+      runningInterest: onboarding.runningInterest,
+      enabled: onboarding.runningInterest?.enabled,
+      integration: onboarding.runningInterest?.integration,
+      goal: onboarding.runningInterest?.goal,
+    });
+
+    // Check if running interest was never asked (old users) or is incomplete
+    const ri = onboarding.runningInterest;
+    if (ri === undefined || ri === null) {
+      console.log('[DASHBOARD] ⚠️ runningInterest is undefined/null → running_interest');
+      missing.push('running_interest');
+    }
+    // Check if enabled is explicitly undefined (user never answered)
+    else if (ri.enabled === undefined) {
+      console.log('[DASHBOARD] ⚠️ runningInterest.enabled is undefined → running_interest');
+      missing.push('running_interest');
+    }
+    // Check if running is enabled but goal not set
+    else if (ri.enabled === true && !ri.goal) {
+      console.log('[DASHBOARD] ⚠️ enabled but no goal → running_integration');
+      missing.push('running_integration');
+    }
+    // Check if running is enabled but integration not set
+    else if (ri.enabled === true && !ri.integration) {
+      console.log('[DASHBOARD] ⚠️ enabled but no integration → running_integration');
+      missing.push('running_integration');
+    }
+
+    console.log('[DASHBOARD] 📋 Missing parts:', missing);
+    return missing;
+  }, [dataStatus.onboarding]);
+
   // ===== PROGRAM GENERATION (uses extracted utils) =====
 
   /**
@@ -773,25 +993,41 @@ export default function Dashboard() {
     const legsGoalType = onboarding?.legsGoalType || undefined;
     const gender = onboarding?.personalInfo?.gender || 'M';
 
-    // ✅ RUNNING: Converti runningInterest in runningPrefs
-    const runningInterest = onboarding?.runningInterest;
-    let runningPrefs = undefined;
-    if (runningInterest?.enabled) {
-      // Mappa il livello alla capacità
-      const levelToCapacity: Record<string, any> = {
-        'beginner': { experience: 'none', currentPace: undefined, restingHeartRate: undefined },
-        'intermediate': { experience: 'some', currentPace: '6:00/km', restingHeartRate: 65 },
-        'advanced': { experience: 'regular', currentPace: '5:00/km', restingHeartRate: 55 }
+    // ✅ RUNNING: Gestione preferenze running (priorità a RunningPreferences complete)
+    let runningPrefs: any = undefined;
+
+    // Priorità 1: RunningPreferences complete (da RunningOnboarding)
+    if ((onboarding as any)?.running?.enabled) {
+      runningPrefs = (onboarding as any).running;
+      console.log('🏃 Using complete RunningPreferences:', runningPrefs);
+    }
+    // Priorità 2: Legacy runningInterest (backward compatibility)
+    else if (onboarding?.runningInterest?.enabled) {
+      // Mappa il livello alla capacità con formato corretto
+      const levelToCapacity: Record<string, { canRun5Min: boolean; canRun10Min: boolean; canRun20Min: boolean; canRun30Min: boolean }> = {
+        'sedentary': { canRun5Min: false, canRun10Min: false, canRun20Min: false, canRun30Min: false },
+        'beginner': { canRun5Min: true, canRun10Min: true, canRun20Min: false, canRun30Min: false },
+        'intermediate': { canRun5Min: true, canRun10Min: true, canRun20Min: true, canRun30Min: false },
+        'advanced': { canRun5Min: true, canRun10Min: true, canRun20Min: true, canRun30Min: true }
+      };
+
+      // Mappa goal principale a RunningGoal
+      const goalToRunningGoal: Record<string, string> = {
+        'dimagrimento': 'dimagrimento_cardio',
+        'resistenza': 'resistenza_generale',
+        'prestazioni_sportive': 'complemento_sport',
+        'sport_performance': 'complemento_sport',
+        'corsa': 'base_aerobica'
       };
 
       runningPrefs = {
         enabled: true,
-        goal: finalGoal === 'dimagrimento' ? 'weight_loss' : 'improve_endurance',
-        integration: 'separate', // Default: sessioni separate
-        sessionsPerWeek: 2, // Default: 2 sessioni/settimana
-        capacity: levelToCapacity[runningInterest.level || 'beginner'] || levelToCapacity['beginner']
+        goal: goalToRunningGoal[finalGoal] || 'base_aerobica',
+        integration: 'separate_days',
+        sessionsPerWeek: 2,
+        capacity: levelToCapacity[onboarding.runningInterest.level || 'beginner']
       };
-      console.log('🏃 Running preferences configured:', runningPrefs);
+      console.log('🏃 Converted legacy runningInterest to runningPrefs:', runningPrefs);
     }
 
     // ⚠️ VALIDAZIONE: Avvisa se location mancante
@@ -836,7 +1072,8 @@ export default function Dashboard() {
       sportRole,
       legsGoalType,
       gender,
-      runningPrefs // ✅ Passa le preferenze running
+      runningPrefs, // ✅ Passa le preferenze running
+      userAge: onboarding?.personalInfo?.age || 30 // ✅ Passa età per zone HR accurate
     });
 
     // Aggiungi campi richiesti dal formato esistente
@@ -1726,6 +1963,96 @@ export default function Dashboard() {
                     <p className="text-slate-300">Frequenza: <span className="font-display font-semibold text-white">{program.frequency}x/settimana</span></p>
                   </div>
 
+                  {/* Banner Completa Profilo - se mancano parti dell'onboarding */}
+                  {missingOnboardingParts.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/50 rounded-xl p-4"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-amber-500/30 flex items-center justify-center flex-shrink-0">
+                            <AlertCircle className="w-5 h-5 text-amber-400" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-amber-200">Completa il tuo profilo</h3>
+                            <p className="text-amber-200/70 text-sm">
+                              {missingOnboardingParts.includes('running_interest')
+                                ? 'Non ci hai ancora detto se vuoi integrare la corsa nel tuo allenamento'
+                                : missingOnboardingParts.includes('running_integration')
+                                ? 'Scegli come integrare la corsa: insieme ai pesi o in giorni separati'
+                                : 'Alcune informazioni mancano per ottimizzare il tuo programma'}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setShowAddRunningModal(true)}
+                          className="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 whitespace-nowrap"
+                        >
+                          Completa Ora
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Banner Aggiungi Corsa - se programma non ha running MA l'utente ha già completato onboarding */}
+                  {!programHasRunning && missingOnboardingParts.length === 0 && dataStatus.onboarding?.runningInterest?.enabled === false && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-4 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/50 rounded-xl p-4"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-green-500/30 flex items-center justify-center flex-shrink-0">
+                            <Timer className="w-5 h-5 text-green-400" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-green-200">Vuoi aggiungere la corsa?</h3>
+                            <p className="text-green-200/70 text-sm">Migliora resistenza e recupero con sessioni di running</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setShowAddRunningModal(true)}
+                          className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/20 whitespace-nowrap"
+                        >
+                          + Aggiungi Corsa
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Banner Rigenera con Corsa - utente ha abilitato corsa ma programma non la include */}
+                  {!programHasRunning && missingOnboardingParts.length === 0 && dataStatus.onboarding?.runningInterest?.enabled === true && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-4 bg-gradient-to-r from-teal-500/20 to-cyan-500/20 border border-teal-500/50 rounded-xl p-4"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-teal-500/30 flex items-center justify-center flex-shrink-0">
+                            <Timer className="w-5 h-5 text-teal-400" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-teal-200">Corsa non ancora integrata</h3>
+                            <p className="text-teal-200/70 text-sm">
+                              Hai scelto di integrare la corsa ({dataStatus.onboarding?.runningInterest?.integration === 'post_workout' ? 'dopo i pesi' : 'giorni separati'}), ma il programma attuale non la include
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleRegenerateWithRunning}
+                          disabled={generatingProgram}
+                          className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:from-teal-600 hover:to-cyan-700 transition-all shadow-lg shadow-teal-500/20 whitespace-nowrap disabled:opacity-50"
+                        >
+                          {generatingProgram ? 'Rigenerando...' : 'Rigenera con Corsa'}
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
                   {/* NUOVO: Visualizza split settimanale se disponibile */}
                   {program.weekly_split?.days?.length > 0 ? (
                     <div>
@@ -2379,6 +2706,14 @@ export default function Dashboard() {
             : [],
           injuriesAvoided: program?.pain_areas?.length || 0
         }}
+      />
+
+      {/* Add Running Modal - For existing users to add running to their program */}
+      <AddRunningModal
+        isOpen={showAddRunningModal}
+        onClose={() => setShowAddRunningModal(false)}
+        onConfirm={handleAddRunning}
+        userAge={dataStatus.onboarding?.personalInfo?.age}
       />
     </div>
   );

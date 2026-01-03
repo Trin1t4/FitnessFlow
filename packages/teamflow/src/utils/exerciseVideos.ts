@@ -1,15 +1,10 @@
 /**
  * Exercise Video Mapping
- * Mappa ogni esercizio al suo video su Supabase Storage
+ * Mappa ogni esercizio al suo video locale in /videos/exercises/
  */
 
-// URL base di Supabase Storage
-// Costruito dinamicamente dall'URL Supabase configurato
-const getSupabaseStorageUrl = () => {
-  const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || 'https://mhcdxqhhlrujbjxtgnmz.supabase.co';
-  return `${supabaseUrl}/storage/v1/object/public/exercise-videos`;
-};
-const SUPABASE_STORAGE_URL = getSupabaseStorageUrl();
+// Path base per i video locali
+const VIDEO_BASE_PATH = '/videos/exercises';
 
 /**
  * Converte nome esercizio in nome file video
@@ -293,12 +288,12 @@ const VIDEO_OVERRIDES: Record<string, string> = {
 export function getExerciseVideoUrl(exerciseName: string): string {
   // Check override manuale
   if (VIDEO_OVERRIDES[exerciseName]) {
-    return `${SUPABASE_STORAGE_URL}/${VIDEO_OVERRIDES[exerciseName]}`;
+    return `${VIDEO_BASE_PATH}/${VIDEO_OVERRIDES[exerciseName]}`;
   }
 
   // Genera URL automatico
   const fileName = exerciseNameToFileName(exerciseName);
-  return `${SUPABASE_STORAGE_URL}/${fileName}`;
+  return `${VIDEO_BASE_PATH}/${fileName}`;
 }
 
 /**

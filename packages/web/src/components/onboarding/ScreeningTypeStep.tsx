@@ -12,7 +12,7 @@ type ScreeningType = 'thorough' | 'light';
 
 export default function ScreeningTypeStep({ data, onNext, onBack }: ScreeningTypeStepProps) {
   const [selectedType, setSelectedType] = React.useState<ScreeningType | null>(
-    (data as any).screeningType || null
+    (data as any).screeningType || 'thorough'  // Pre-seleziona approfondito
   );
 
   const handleSelect = (type: ScreeningType) => {
@@ -38,7 +38,8 @@ export default function ScreeningTypeStep({ data, onNext, onBack }: ScreeningTyp
       ],
       icon: ClipboardCheck,
       color: 'emerald',
-      recommended: true
+      recommended: true,
+      warning: null
     },
     {
       type: 'light' as ScreeningType,
@@ -52,8 +53,9 @@ export default function ScreeningTypeStep({ data, onNext, onBack }: ScreeningTyp
         'Durata: ~5 minuti'
       ],
       icon: Zap,
-      color: 'blue',
-      recommended: false
+      color: 'amber',
+      recommended: false,
+      warning: 'Valutazione meno accurata - consigliato solo se hai meno di 5 minuti'
     }
   ];
 
@@ -80,10 +82,10 @@ export default function ScreeningTypeStep({ data, onNext, onBack }: ScreeningTyp
                 ring: 'ring-emerald-500/30'
               }
             : {
-                bg: 'bg-blue-500/20',
-                border: 'border-blue-500',
-                text: 'text-blue-400',
-                ring: 'ring-blue-500/30'
+                bg: 'bg-amber-500/20',
+                border: 'border-amber-500',
+                text: 'text-amber-400',
+                ring: 'ring-amber-500/30'
               };
 
           return (
@@ -136,12 +138,39 @@ export default function ScreeningTypeStep({ data, onNext, onBack }: ScreeningTyp
                       </div>
                     ))}
                   </div>
+
+                  {/* Warning banner for light screening */}
+                  {option.warning && (
+                    <div className="mt-3 p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                      <p className="text-xs text-amber-400 flex items-center gap-1">
+                        <span>⚠️</span>
+                        <span>{option.warning}</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </button>
           );
         })}
       </div>
+
+      {/* Warning se seleziona light */}
+      {selectedType === 'light' && (
+        <div className="p-4 bg-amber-500/20 border border-amber-500/50 rounded-lg">
+          <div className="flex items-start gap-3">
+            <span className="text-amber-400 text-xl">⚠️</span>
+            <div>
+              <p className="text-amber-200 font-medium">Attenzione</p>
+              <p className="text-amber-300/80 text-sm mt-1">
+                Lo screening rapido produce programmi meno personalizzati.
+                Raccomandiamo lo screening approfondito per risultati migliori,
+                specialmente se hai dolori o limitazioni fisiche.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Info note */}
       <div className="p-4 bg-slate-700/30 rounded-lg border border-slate-600/50">

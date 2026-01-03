@@ -669,7 +669,20 @@ export function integrateRunningIntoSplit(
   weekNumber: number = 1,
   userAge?: number
 ): WeeklySplit {
+  // 🔍 LOGGING: Debug dell'integrazione running
+  console.log('[RUNNING] integrateRunningIntoSplit called:', {
+    strengthDays: strengthSplit.days.length,
+    enabled: runningPrefs.enabled,
+    goal: runningPrefs.goal,
+    integration: runningPrefs.integration,
+    sessionsPerWeek: runningPrefs.sessionsPerWeek,
+    capacity: runningPrefs.capacity,
+    weekNumber,
+    userAge
+  });
+
   if (!runningPrefs.enabled) {
+    console.log('[RUNNING] ❌ Not enabled, returning original split');
     return strengthSplit;
   }
 
@@ -809,8 +822,29 @@ export function integrateRunningIntoSplit(
       break;
     }
 
-    default:
-      return strengthSplit;
+    default: {
+      // Fallback: usa 'separate_days' per valori non riconosciuti
+      console.warn(`[RUNNING] ⚠️ Integration value '${integration}' not recognized, defaulting to 'separate_days'`);
+      const strengthDayNumbers = strengthDays.map(d => d.dayNumber);
+      const allDays = [1, 2, 3, 4, 5, 6, 7];
+      const freeDays = allDays.filter(d => !strengthDayNumbers.includes(d));
+      let runningIndex = 0;
+      for (const dayNum of freeDays) {
+        if (runningIndex >= runningSessions.length) break;
+        const session = runningSessions[runningIndex];
+        newDays.push({
+          dayNumber: dayNum,
+          dayName: getDayName(dayNum),
+          focus: `Running: ${session.name}`,
+          type: 'running',
+          exercises: [],
+          runningSession: session,
+          estimatedDuration: session.totalDuration
+        });
+        runningIndex++;
+      }
+      break;
+    }
   }
 
   // Ordina per dayNumber
@@ -826,6 +860,18 @@ export function integrateRunningIntoSplit(
     }
     newDays.sort((a, b) => a.dayNumber - b.dayNumber);
   }
+
+  // 🔍 LOGGING: Risultato finale dell'integrazione
+  const runningDaysCount = newDays.filter(d => d.type === 'running').length;
+  const strengthDaysCount = newDays.filter(d => d.type === 'strength').length;
+  const mixedDaysCount = newDays.filter(d => d.type === 'mixed').length;
+  console.log('[RUNNING] ✅ Integrazione completata:', {
+    totalDays: newDays.length,
+    runningDays: runningDaysCount,
+    strengthDays: strengthDaysCount,
+    mixedDays: mixedDaysCount,
+    integration
+  });
 
   return {
     splitName: `${strengthSplit.splitName} + Running`,

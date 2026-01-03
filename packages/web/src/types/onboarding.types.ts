@@ -3,6 +3,8 @@
  * Definizioni complete per il flow di onboarding
  */
 
+import type { RunningPreferences } from '@trainsmart/shared';
+
 export type TrainingLocation = 'gym' | 'home' | 'home_gym';
 
 export type TrainingType = 'bodyweight' | 'equipment' | 'machines';
@@ -105,8 +107,11 @@ export interface OnboardingData {
   sportRole?: string;
   muscularFocus?: string | string[]; // Multi-select muscular focus (max 3 muscle groups)
 
-  // Step 3: Running Interest (solo interesse + livello base)
+  // Step 3: Running Interest (legacy - solo interesse + livello base)
   runningInterest?: RunningInterest;
+
+  // Step 3: Running Preferences (COMPLETO - da RunningOnboarding)
+  running?: RunningPreferences;
 
   // Step 4: Location, Equipment & Frequency
   trainingLocation?: TrainingLocation;

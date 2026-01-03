@@ -63,6 +63,15 @@ export type PainCharacter =
 /** Lateralità */
 export type Laterality = 'left' | 'right' | 'bilateral' | 'central';
 
+/** Natura del dolore - per pre-workout screening dettagliato */
+export type PainNature =
+  | 'muscular_soreness'  // DOMS, indolenzimento post-allenamento (OK - procedi)
+  | 'joint_stiffness'    // Rigidità articolare (warm-up extra)
+  | 'sharp_acute'        // Dolore acuto/pungente (STOP)
+  | 'deep_ache'          // Dolore profondo sordo (valuta severità)
+  | 'burning_nerve'      // Bruciore/irradiato (STOP + medico)
+  | 'unknown';           // Non specificato
+
 /** Timing del dolore riportato */
 export type PainTiming = 'pre_workout' | 'during_warmup' | 'during_exercise' | 'post_exercise' | 'post_workout';
 
@@ -531,6 +540,26 @@ export const PAIN_CHARACTER_LABELS: Record<PainCharacter, string> = {
   radiating: 'Irradiato'
 };
 
+/** Label italiane per natura del dolore */
+export const PAIN_NATURE_LABELS: Record<PainNature, string> = {
+  muscular_soreness: 'Indolenzimento muscolare (DOMS)',
+  joint_stiffness: 'Rigidità articolare',
+  sharp_acute: 'Dolore acuto/pungente',
+  deep_ache: 'Dolore profondo e sordo',
+  burning_nerve: 'Bruciore o dolore irradiato',
+  unknown: 'Non saprei descriverlo'
+};
+
+/** Descrizioni estese per ogni natura di dolore */
+export const PAIN_NATURE_DESCRIPTIONS: Record<PainNature, string> = {
+  muscular_soreness: 'Sensazione di indolenzimento tipica dopo l\'allenamento, muscoli "pesanti"',
+  joint_stiffness: 'Difficoltà a muovere l\'articolazione, sensazione di "bloccato"',
+  sharp_acute: 'Dolore improvviso e pungente, come una "fitta"',
+  deep_ache: 'Dolore costante in profondità, non superficiale',
+  burning_nerve: 'Sensazione di bruciore o dolore che si irradia lungo l\'arto',
+  unknown: 'Difficile da descrivere o classificare'
+};
+
 /** Rischio per tipo di dolore */
 const PAIN_TYPE_RISK: Record<PainType, { risk: 'low' | 'medium' | 'high' | 'critical'; canContinue: boolean }> = {
   muscular_doms: { risk: 'low', canContinue: true },      // DOMS è normale!
@@ -824,6 +853,204 @@ export function evaluatePreWorkoutPain(
     shouldLogForFuture: true,
     flagExercise: true,
     cooldownDays: COOLDOWN_DAYS_BY_SEVERITY.critical
+  };
+}
+
+/**
+ * Risultato della valutazione natura dolore
+ */
+export interface PainNatureEvaluation {
+  canProceed: boolean;
+  action: PainAction;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  message: string;
+  emoji: string;
+  recommendations: string[];
+  requiresMedicalAttention: boolean;
+  warmupAdaptation?: 'extra_focus' | 'gentle_only' | 'skip_area';
+}
+
+/**
+ * SCENARIO 1B: Valuta NATURA del dolore PRE-WORKOUT
+ * Complementa evaluatePreWorkoutPain con informazioni sulla qualità del dolore
+ *
+ * @param nature - Tipo di sensazione riportata dall'utente
+ * @param severity - Intensità 1-10
+ * @param area - Zona anatomica interessata
+ */
+export function evaluatePainNature(
+  nature: PainNature,
+  severity: number,
+  area: ExtendedPainArea
+): PainNatureEvaluation {
+  const areaLabel = EXTENDED_PAIN_AREA_LABELS[area] || area;
+
+  // DOMS / Indolenzimento muscolare = quasi sempre OK
+  if (nature === 'muscular_soreness') {
+    if (severity <= 5) {
+      return {
+        canProceed: true,
+        action: 'continue',
+        riskLevel: 'low',
+        message: `Indolenzimento muscolare (${severity}/10) a ${areaLabel} - Normale post-allenamento`,
+        emoji: '✅',
+        recommendations: [
+          'L\'indolenzimento muscolare (DOMS) è normale',
+          'Warm-up adeguato per la zona',
+          'Puoi allenarti normalmente',
+          'Il movimento aiuterà a ridurre la rigidità'
+        ],
+        requiresMedicalAttention: false,
+        warmupAdaptation: 'extra_focus'
+      };
+    } else {
+      return {
+        canProceed: true,
+        action: 'deload',
+        riskLevel: 'medium',
+        message: `Indolenzimento intenso (${severity}/10) a ${areaLabel} - Riduci intensità`,
+        emoji: '⚠️',
+        recommendations: [
+          'DOMS molto intenso - riduci carico del 20%',
+          'Evita esercizi eccentrici pesanti',
+          'Focus su mobilità e recupero attivo',
+          'Idratazione e stretching post-workout'
+        ],
+        requiresMedicalAttention: false,
+        warmupAdaptation: 'extra_focus'
+      };
+    }
+  }
+
+  // Rigidità articolare = warm-up extra, procedi con cautela
+  if (nature === 'joint_stiffness') {
+    if (severity <= 4) {
+      return {
+        canProceed: true,
+        action: 'continue',
+        riskLevel: 'low',
+        message: `Rigidità articolare (${severity}/10) a ${areaLabel} - Warm-up prolungato`,
+        emoji: '🔄',
+        recommendations: [
+          'Warm-up extra di 5-10 minuti per la zona',
+          'Movimenti articolari lenti e controllati',
+          'La rigidità dovrebbe diminuire con il movimento',
+          'Se persiste dopo il warm-up, rivaluta'
+        ],
+        requiresMedicalAttention: false,
+        warmupAdaptation: 'extra_focus'
+      };
+    } else {
+      return {
+        canProceed: true,
+        action: 'deload',
+        riskLevel: 'medium',
+        message: `Rigidità articolare significativa (${severity}/10) a ${areaLabel}`,
+        emoji: '⚠️',
+        recommendations: [
+          'Warm-up prolungato (10+ minuti)',
+          'Evita carichi pesanti su questa articolazione',
+          'Preferisci esercizi a ROM ridotto',
+          'Se non migliora, considera riposo'
+        ],
+        requiresMedicalAttention: false,
+        warmupAdaptation: 'gentle_only'
+      };
+    }
+  }
+
+  // Dolore acuto/pungente = STOP, potenziale lesione
+  if (nature === 'sharp_acute') {
+    return {
+      canProceed: false,
+      action: severity >= 6 ? 'rest_day' : 'substitute',
+      riskLevel: severity >= 6 ? 'critical' : 'high',
+      message: `⚠️ Dolore acuto (${severity}/10) a ${areaLabel} - Non proseguire`,
+      emoji: '🛑',
+      recommendations: [
+        'STOP - Il dolore acuto è un segnale d\'allarme',
+        'Non forzare il movimento',
+        'Evita esercizi che coinvolgono questa zona',
+        severity >= 6 ? 'Giorno di riposo consigliato' : 'Sostituisci con esercizi alternativi',
+        'Se persiste oltre 48h, consulta un professionista'
+      ],
+      requiresMedicalAttention: severity >= 7,
+      warmupAdaptation: 'skip_area'
+    };
+  }
+
+  // Dolore profondo sordo = valuta in base alla severità
+  if (nature === 'deep_ache') {
+    if (severity <= 3) {
+      return {
+        canProceed: true,
+        action: 'deload',
+        riskLevel: 'medium',
+        message: `Dolore profondo lieve (${severity}/10) a ${areaLabel} - Monitora`,
+        emoji: '👀',
+        recommendations: [
+          'Procedi con cautela',
+          'Riduci carico del 15-20%',
+          'Monitora durante l\'allenamento',
+          'Se aumenta, interrompi l\'esercizio'
+        ],
+        requiresMedicalAttention: false,
+        warmupAdaptation: 'gentle_only'
+      };
+    } else {
+      return {
+        canProceed: false,
+        action: severity >= 6 ? 'rest_day' : 'substitute',
+        riskLevel: 'high',
+        message: `Dolore profondo (${severity}/10) a ${areaLabel} - Evita la zona`,
+        emoji: '⚠️',
+        recommendations: [
+          'Dolore profondo persistente richiede attenzione',
+          'Evita esercizi per questa zona oggi',
+          'Sostituisci con alternative che non la coinvolgono',
+          'Se persiste per più giorni, consulta un professionista'
+        ],
+        requiresMedicalAttention: severity >= 5,
+        warmupAdaptation: 'skip_area'
+      };
+    }
+  }
+
+  // Bruciore/dolore irradiato = STOP + consiglio medico
+  if (nature === 'burning_nerve') {
+    return {
+      canProceed: false,
+      action: 'rest_day',
+      riskLevel: 'critical',
+      message: `🚨 Dolore nervoso (${severity}/10) a ${areaLabel} - STOP IMMEDIATO`,
+      emoji: '🚨',
+      recommendations: [
+        'STOP IMMEDIATO - Possibile coinvolgimento nervoso',
+        'Non allenarti oggi',
+        'Evita movimenti che riproducono il dolore',
+        'Consulta un medico o fisioterapista',
+        'Questo tipo di dolore richiede valutazione professionale'
+      ],
+      requiresMedicalAttention: true,
+      warmupAdaptation: 'skip_area'
+    };
+  }
+
+  // Unknown / Non specificato = cautela
+  return {
+    canProceed: severity <= 4,
+    action: severity <= 4 ? 'deload' : 'substitute',
+    riskLevel: severity <= 4 ? 'medium' : 'high',
+    message: `Dolore non specificato (${severity}/10) a ${areaLabel}`,
+    emoji: '❓',
+    recommendations: [
+      'Difficile valutare senza più dettagli',
+      severity <= 4 ? 'Procedi con cautela, monitora' : 'Meglio evitare la zona oggi',
+      'Se riesci a descrivere meglio, rivaluta',
+      'In caso di dubbio, scegli la cautela'
+    ],
+    requiresMedicalAttention: severity >= 6,
+    warmupAdaptation: severity <= 4 ? 'gentle_only' : 'skip_area'
   };
 }
 
