@@ -1,374 +1,448 @@
 /**
- * EVIDENCE-BASED PAIN LOAD REDUCTION
+ * Pain Load Reduction System (Simplified)
+ * TrainSmart - Sistema di riduzione carico basato su fastidio
  *
- * Based on Pain Science and Sports Medicine literature:
+ * Questo sistema riduce automaticamente il carico quando l'utente segnala fastidio.
+ * NON classifica il tipo di dolore - lascia questo ai professionisti.
  *
- * References:
- * - Smith et al. (2017) "A Framework for Rehabilitation of Athletes with Pain"
- * - Moseley & Butler (2015) "Explain Pain Supercharged"
- * - Rio et al. (2016) "Isometric Exercise for Tendinopathy Pain Relief"
- * - Littlewood et al. (2015) "Exercise for Tendinopathy"
- *
- * Key principles:
- * 1. Pain ≠ Damage (central sensitization, fear-avoidance)
- * 2. Movement is medicine (graded exposure)
- * 3. Pain during exercise acceptable if:
- *    - Not exceeding 3-4/10 during
- *    - Returns to baseline within 24h
- *    - No progressive worsening
- * 4. Chronic pain requires different approach than acute
- * 5. Context matters (sport, history, psychology)
+ * Principi:
+ * 1. Fastidio lieve → riduci leggermente, continua
+ * 2. Fastidio moderato → riduci significativamente
+ * 3. Fastidio severo → stop, consiglia professionista
+ * 4. Fastidio ricorrente → consiglia professionista
  */
 
-export type PainType = 'acute' | 'subacute' | 'chronic' | 'doms' | 'unknown';
-export type PainCharacter = 'sharp' | 'dull' | 'burning' | 'throbbing' | 'aching' | 'stiffness';
-export type PainTiming = 'constant' | 'movement_only' | 'after_exercise' | 'morning_stiffness' | 'load_dependent';
-export type MovementPhase = 'eccentric' | 'concentric' | 'isometric' | 'all_phases' | 'end_range';
+// =============================================================================
+// TYPES (Semplificati)
+// =============================================================================
 
-export interface PainAssessment {
-  /** Pain intensity 0-10 VAS */
+/** Severità del fastidio - scala semplice */
+export type DiscomfortSeverity = 'none' | 'mild' | 'moderate' | 'severe';
+
+/** Report fastidio dall'utente */
+export interface DiscomfortReport {
+  /** Intensità 0-10 (verrà convertita in severity) */
   intensity: number;
-  /** Type based on duration */
-  type: PainType;
-  /** Character of pain */
-  character?: PainCharacter;
-  /** When pain occurs */
-  timing?: PainTiming;
-  /** Body area affected */
+  /** Zona del corpo */
   area: string;
-  /** Does pain increase during exercise? */
+  /** Il fastidio aumenta durante l'esercizio? */
   increasesDuringExercise?: boolean;
-  /** Does pain return to baseline within 24h? */
-  returnsToBaseline24h?: boolean;
-  /** Has pain been progressively worsening? */
-  progressiveWorsening?: boolean;
-  /** Which movement phase triggers pain? */
-  triggerPhase?: MovementPhase;
-  /** Previous injury history */
-  hasInjuryHistory?: boolean;
-  /** Is there swelling/inflammation? */
-  hasSwelling?: boolean;
+  /** È ricorrente (segnalato in sessioni precedenti)? */
+  isRecurring?: boolean;
 }
 
+/** Risultato della riduzione carico */
 export interface LoadReductionResult {
-  /** Volume multiplier (0.0 - 1.0, where 0 = skip exercise) */
+  /** Moltiplicatore volume (0.0 - 1.0, dove 0 = salta esercizio) */
   volumeMultiplier: number;
-  /** Intensity multiplier (0.0 - 1.0) */
+  /** Moltiplicatore intensità (0.0 - 1.0) */
   intensityMultiplier: number;
-  /** Rest multiplier (1.0 - 2.0) */
+  /** Moltiplicatore riposo (1.0 - 2.0) */
   restMultiplier: number;
-  /** ROM restriction recommendation */
-  romRestriction?: 'full' | 'partial' | 'isometric_only' | 'avoid';
-  /** Acceptable pain threshold during exercise (0-10) */
-  acceptablePainThreshold: number;
-  /** Should completely skip affected exercises? */
+  /** Saltare completamente l'esercizio? */
   skipExercise: boolean;
-  /** Specific modifications */
-  modifications: string[];
-  /** Warning messages */
-  warnings: string[];
-  /** When to seek medical attention */
-  redFlags: string[];
-  /** Confidence level of recommendation */
+  /** Messaggio per l'utente */
+  message: string;
+  /** Suggerimenti specifici */
+  suggestions: string[];
+  /** Consigliare visita da professionista? */
+  consultProfessional: boolean;
+  /** Livello di confidenza nella raccomandazione */
   confidence: 'high' | 'moderate' | 'low';
 }
 
+// =============================================================================
+// SEVERITY CLASSIFICATION (Semplice, non clinica)
+// =============================================================================
+
 /**
- * RED FLAGS - Immediate medical attention required
- * Based on clinical screening guidelines
+ * Converte intensità numerica (0-10) in severità
  */
-const RED_FLAG_PATTERNS: Array<{ check: (p: PainAssessment) => boolean; message: string }> = [
+export function intensityToSeverity(intensity: number): DiscomfortSeverity {
+  if (intensity <= 0) return 'none';
+  if (intensity <= 3) return 'mild';
+  if (intensity <= 6) return 'moderate';
+  return 'severe';
+}
+
+/**
+ * Converte severità in range numerico per display
+ */
+export function severityToIntensityRange(severity: DiscomfortSeverity): string {
+  switch (severity) {
+    case 'none':
+      return '0';
+    case 'mild':
+      return '1-3';
+    case 'moderate':
+      return '4-6';
+    case 'severe':
+      return '7-10';
+  }
+}
+
+// =============================================================================
+// RED FLAGS - Situazioni che richiedono attenzione immediata
+// =============================================================================
+
+interface RedFlag {
+  check: (report: DiscomfortReport) => boolean;
+  message: string;
+}
+
+const RED_FLAGS: RedFlag[] = [
   {
-    check: (p) => p.intensity >= 9 && p.type === 'acute' && p.hasSwelling === true,
-    message: '⚠️ STOP: Dolore acuto severo con gonfiore - Consulta un medico'
+    check: (r) => r.intensity >= 8 && r.increasesDuringExercise === true,
+    message:
+      'Fastidio intenso che peggiora con il movimento. ' +
+      'Ti consigliamo di fermarti e consultare un professionista.'
   },
   {
-    check: (p) => p.progressiveWorsening === true && p.type === 'chronic',
-    message: '⚠️ Dolore cronico in peggioramento - Valutazione medica raccomandata'
+    check: (r) => r.isRecurring === true && r.intensity >= 5,
+    message:
+      'Fastidio ricorrente. Questo potrebbe indicare un problema che richiede ' +
+      'attenzione professionale. Considera di consultare un fisioterapista o medico sportivo.'
   },
   {
-    check: (p) => p.character === 'sharp' && p.timing === 'constant' && p.intensity >= 7,
-    message: '⚠️ Dolore costante e acuto - Non allenarti, consulta specialista'
-  },
-  {
-    check: (p) => p.area.toLowerCase().includes('chest') || p.area.toLowerCase().includes('petto'),
-    message: '⚠️ Dolore toracico - Escludi cause cardiache prima di allenarti'
+    check: (r) =>
+      r.area.toLowerCase().includes('chest') ||
+      r.area.toLowerCase().includes('petto') ||
+      r.area.toLowerCase().includes('torace'),
+    message:
+      'Fastidio al petto durante l\'esercizio. Per sicurezza, fermati e ' +
+      'consulta un medico prima di continuare.'
   }
 ];
 
 /**
- * Pain type classification based on duration
+ * Verifica se ci sono red flags nel report
  */
-export function classifyPainType(daysWithPain: number): PainType {
-  if (daysWithPain <= 3) return 'acute';
-  if (daysWithPain <= 14) return 'subacute';
-  if (daysWithPain > 90) return 'chronic';
-  return 'subacute';
+function checkRedFlags(report: DiscomfortReport): string[] {
+  return RED_FLAGS.filter((flag) => flag.check(report)).map((flag) => flag.message);
+}
+
+// =============================================================================
+// LOAD REDUCTION CALCULATION
+// =============================================================================
+
+/**
+ * Calcola la riduzione del carico basata sul report di fastidio.
+ *
+ * Logica semplice e trasparente:
+ * - Nessun fastidio → 100% del programma
+ * - Fastidio lieve → 80% volume/intensità
+ * - Fastidio moderato → 50-60% volume/intensità
+ * - Fastidio severo → stop esercizio
+ * - Ricorrente → consiglia professionista
+ */
+export function calculateLoadReduction(
+  report: DiscomfortReport
+): LoadReductionResult {
+  const severity = intensityToSeverity(report.intensity);
+  const redFlagMessages = checkRedFlags(report);
+  const hasRedFlags = redFlagMessages.length > 0;
+
+  // Se ci sono red flags, stop immediato
+  if (hasRedFlags) {
+    return {
+      volumeMultiplier: 0,
+      intensityMultiplier: 0,
+      restMultiplier: 1,
+      skipExercise: true,
+      message: redFlagMessages[0],
+      suggestions: [
+        'Fermati e riposa',
+        'Non forzare attraverso il dolore',
+        'Consulta un professionista prima di riprendere'
+      ],
+      consultProfessional: true,
+      confidence: 'high'
+    };
+  }
+
+  // Logica basata su severità
+  switch (severity) {
+    case 'none':
+      return {
+        volumeMultiplier: 1.0,
+        intensityMultiplier: 1.0,
+        restMultiplier: 1.0,
+        skipExercise: false,
+        message: 'Nessun fastidio segnalato. Procedi normalmente.',
+        suggestions: [],
+        consultProfessional: false,
+        confidence: 'high'
+      };
+
+    case 'mild':
+      return {
+        volumeMultiplier: 0.8,
+        intensityMultiplier: 0.8,
+        restMultiplier: 1.2,
+        skipExercise: false,
+        message:
+          'Fastidio lieve rilevato. Riduciamo leggermente il carico per sicurezza.',
+        suggestions: [
+          'Esegui il movimento con attenzione alla forma',
+          'Se il fastidio aumenta, fermati',
+          'Aumenta leggermente i tempi di recupero'
+        ],
+        consultProfessional: false,
+        confidence: 'high'
+      };
+
+    case 'moderate':
+      return {
+        volumeMultiplier: 0.5,
+        intensityMultiplier: 0.6,
+        restMultiplier: 1.5,
+        skipExercise: false,
+        message:
+          'Fastidio moderato rilevato. Riduciamo significativamente il carico.',
+        suggestions: [
+          'Riduci il range di movimento se necessario',
+          'Fermati se il fastidio supera 5/10',
+          'Considera un esercizio alternativo',
+          report.isRecurring
+            ? 'Il fastidio sembra ricorrente - valuta una visita specialistica'
+            : 'Monitora il fastidio nelle prossime sessioni'
+        ],
+        consultProfessional: report.isRecurring === true,
+        confidence: 'moderate'
+      };
+
+    case 'severe':
+      return {
+        volumeMultiplier: 0,
+        intensityMultiplier: 0,
+        restMultiplier: 1,
+        skipExercise: true,
+        message:
+          'Fastidio significativo rilevato. Saltiamo questo esercizio oggi.',
+        suggestions: [
+          'Non forzare attraverso il dolore',
+          'Passa a un esercizio alternativo per altri gruppi muscolari',
+          'Applica ghiaccio se appropriato dopo l\'allenamento',
+          'Se il fastidio persiste, consulta un professionista'
+        ],
+        consultProfessional: true,
+        confidence: 'high'
+      };
+  }
+}
+
+// =============================================================================
+// QUICK HELPERS
+// =============================================================================
+
+/**
+ * Versione semplificata per chiamate rapide
+ */
+export function quickLoadReduction(
+  intensity: number,
+  isRecurring: boolean = false
+): LoadReductionResult {
+  return calculateLoadReduction({
+    intensity,
+    area: 'general',
+    isRecurring
+  });
 }
 
 /**
- * Determine if pain is likely DOMS vs pathological
+ * Verifica se un esercizio dovrebbe essere saltato
  */
-export function isDOMS(assessment: PainAssessment): boolean {
-  return (
-    assessment.timing === 'morning_stiffness' &&
-    assessment.character === 'aching' &&
-    assessment.intensity <= 5 &&
-    assessment.returnsToBaseline24h !== false &&
-    !assessment.hasSwelling
+export function shouldSkipExercise(
+  intensity: number,
+  isRecurring: boolean = false
+): boolean {
+  const result = quickLoadReduction(intensity, isRecurring);
+  return result.skipExercise;
+}
+
+/**
+ * Ottieni il moltiplicatore di volume per un dato livello di fastidio
+ */
+export function getVolumeMultiplier(intensity: number): number {
+  const result = quickLoadReduction(intensity);
+  return result.volumeMultiplier;
+}
+
+/**
+ * Ottieni il moltiplicatore di intensità per un dato livello di fastidio
+ */
+export function getIntensityMultiplier(intensity: number): number {
+  const result = quickLoadReduction(intensity);
+  return result.intensityMultiplier;
+}
+
+// =============================================================================
+// EXERCISE-SPECIFIC ADJUSTMENTS
+// =============================================================================
+
+/** Aree del corpo e esercizi correlati */
+const AREA_EXERCISE_SENSITIVITY: Record<string, string[]> = {
+  lower_back: [
+    'deadlift',
+    'squat',
+    'good_morning',
+    'bent_over_row',
+    'romanian_deadlift'
+  ],
+  knee: [
+    'squat',
+    'lunge',
+    'leg_press',
+    'leg_extension',
+    'step_up'
+  ],
+  shoulder: [
+    'overhead_press',
+    'lateral_raise',
+    'bench_press',
+    'pull_up',
+    'dip'
+  ],
+  hip: [
+    'squat',
+    'deadlift',
+    'lunge',
+    'hip_thrust',
+    'leg_press'
+  ]
+};
+
+/**
+ * Verifica se un esercizio è sensibile per una data area
+ */
+export function isExerciseSensitiveForArea(
+  exerciseName: string,
+  area: string
+): boolean {
+  const normalizedExercise = exerciseName.toLowerCase().replace(/\s+/g, '_');
+  const sensitiveExercises = AREA_EXERCISE_SENSITIVITY[area.toLowerCase()] || [];
+
+  return sensitiveExercises.some(
+    (sensitive) =>
+      normalizedExercise.includes(sensitive) || sensitive.includes(normalizedExercise)
   );
 }
 
 /**
- * Calculate evidence-based load reduction
- *
- * Algorithm based on:
- * 1. Pain intensity (primary factor)
- * 2. Pain type (acute vs chronic - different approaches)
- * 3. Pain behavior (increases/decreases with exercise)
- * 4. 24h response (key indicator)
- * 5. Progressive worsening (red flag)
+ * Calcola riduzione carico specifica per esercizio
  */
-export function calculatePainLoadReduction(assessment: PainAssessment): LoadReductionResult {
-  const result: LoadReductionResult = {
-    volumeMultiplier: 1.0,
-    intensityMultiplier: 1.0,
-    restMultiplier: 1.0,
-    acceptablePainThreshold: 4, // Default: pain up to 4/10 acceptable
-    skipExercise: false,
-    modifications: [],
-    warnings: [],
-    redFlags: [],
-    confidence: 'moderate'
-  };
+export function calculateExerciseSpecificReduction(
+  exerciseName: string,
+  report: DiscomfortReport
+): LoadReductionResult {
+  const baseReduction = calculateLoadReduction(report);
 
-  // Check for red flags first
-  RED_FLAG_PATTERNS.forEach(flag => {
-    if (flag.check(assessment)) {
-      result.redFlags.push(flag.message);
-    }
-  });
-
-  // If red flags present, recommend skipping
-  if (result.redFlags.length > 0) {
-    result.skipExercise = true;
-    result.volumeMultiplier = 0;
-    result.intensityMultiplier = 0;
-    result.confidence = 'high';
-    return result;
+  // Se l'esercizio è particolarmente sensibile per l'area interessata,
+  // aumenta la riduzione
+  if (isExerciseSensitiveForArea(exerciseName, report.area)) {
+    return {
+      ...baseReduction,
+      volumeMultiplier: baseReduction.volumeMultiplier * 0.8,
+      intensityMultiplier: baseReduction.intensityMultiplier * 0.8,
+      message:
+        baseReduction.message +
+        ` Questo esercizio coinvolge direttamente la zona interessata.`,
+      suggestions: [
+        ...baseReduction.suggestions,
+        'Considera un\'alternativa che non carichi questa zona'
+      ]
+    };
   }
 
-  // Check if likely DOMS
-  if (isDOMS(assessment)) {
-    result.modifications.push('DOMS rilevato - allenamento attivo aiuta il recupero');
-    result.volumeMultiplier = 0.8;
-    result.intensityMultiplier = 0.7;
-    result.acceptablePainThreshold = 5;
-    result.confidence = 'high';
-    return result;
-  }
-
-  // ========================================
-  // INTENSITY-BASED REDUCTION (Primary factor)
-  // ========================================
-
-  if (assessment.intensity <= 2) {
-    // Minimal pain - proceed with minor adjustments
-    result.volumeMultiplier = 0.95;
-    result.intensityMultiplier = 0.95;
-    result.acceptablePainThreshold = 4;
-    result.modifications.push('Dolore minimo - procedi con attenzione');
-    result.confidence = 'high';
-  }
-  else if (assessment.intensity <= 4) {
-    // Mild pain - moderate reduction
-    result.volumeMultiplier = 0.75;
-    result.intensityMultiplier = 0.80;
-    result.restMultiplier = 1.25;
-    result.acceptablePainThreshold = 4;
-    result.modifications.push('Riduci range of motion se necessario');
-    result.confidence = 'high';
-  }
-  else if (assessment.intensity <= 6) {
-    // Moderate pain - significant reduction
-    result.volumeMultiplier = 0.50;
-    result.intensityMultiplier = 0.65;
-    result.restMultiplier = 1.5;
-    result.acceptablePainThreshold = 3;
-    result.romRestriction = 'partial';
-    result.modifications.push('Evita il range di movimento doloroso');
-    result.modifications.push('Considera varianti isometriche');
-    result.confidence = 'moderate';
-  }
-  else if (assessment.intensity <= 8) {
-    // High pain - minimal loading
-    result.volumeMultiplier = 0.25;
-    result.intensityMultiplier = 0.40;
-    result.restMultiplier = 2.0;
-    result.acceptablePainThreshold = 2;
-    result.romRestriction = 'isometric_only';
-    result.modifications.push('Solo esercizi isometrici a bassa intensità');
-    result.warnings.push('Valuta se è opportuno allenarti oggi');
-    result.confidence = 'moderate';
-  }
-  else {
-    // Severe pain - skip
-    result.skipExercise = true;
-    result.volumeMultiplier = 0;
-    result.intensityMultiplier = 0;
-    result.romRestriction = 'avoid';
-    result.warnings.push('Dolore troppo intenso - salta questo esercizio');
-    result.confidence = 'high';
-  }
-
-  // ========================================
-  // TYPE-BASED ADJUSTMENTS
-  // ========================================
-
-  if (assessment.type === 'acute') {
-    // Acute pain: be more conservative
-    result.volumeMultiplier *= 0.8;
-    result.intensityMultiplier *= 0.8;
-    result.acceptablePainThreshold = Math.min(result.acceptablePainThreshold, 3);
-    result.modifications.push('Dolore acuto: approccio conservativo');
-  }
-  else if (assessment.type === 'chronic') {
-    // Chronic pain: graded exposure approach
-    // Research shows movement helps chronic pain
-    result.volumeMultiplier = Math.max(0.5, result.volumeMultiplier * 1.1);
-    result.acceptablePainThreshold = Math.min(5, result.acceptablePainThreshold + 1);
-    result.modifications.push('Dolore cronico: esposizione graduale raccomandata');
-    result.modifications.push('Monitora risposta nelle 24h successive');
-  }
-
-  // ========================================
-  // BEHAVIOR-BASED ADJUSTMENTS
-  // ========================================
-
-  // Pain that increases during exercise
-  if (assessment.increasesDuringExercise === true) {
-    result.volumeMultiplier *= 0.7;
-    result.acceptablePainThreshold = Math.max(2, result.acceptablePainThreshold - 1);
-    result.warnings.push('Se il dolore aumenta oltre 3/10, ferma l\'esercizio');
-  }
-
-  // Pain that doesn't return to baseline in 24h
-  if (assessment.returnsToBaseline24h === false) {
-    result.volumeMultiplier *= 0.6;
-    result.intensityMultiplier *= 0.7;
-    result.warnings.push('Il dolore non è rientrato - riduci ulteriormente');
-    result.confidence = 'low';
-  }
-
-  // Progressive worsening
-  if (assessment.progressiveWorsening === true) {
-    result.volumeMultiplier *= 0.5;
-    result.intensityMultiplier *= 0.6;
-    result.warnings.push('Peggioramento progressivo - considera pausa o consulto medico');
-    result.confidence = 'low';
-  }
-
-  // ========================================
-  // MOVEMENT PHASE MODIFICATIONS
-  // ========================================
-
-  if (assessment.triggerPhase) {
-    switch (assessment.triggerPhase) {
-      case 'eccentric':
-        result.modifications.push('Evita fase eccentrica lenta - usa concentrico + drop');
-        break;
-      case 'concentric':
-        result.modifications.push('Riduci esplosività concentrica');
-        break;
-      case 'end_range':
-        result.romRestriction = 'partial';
-        result.modifications.push('Limita il range di movimento');
-        break;
-      case 'isometric':
-        result.modifications.push('Evita pause in posizione statica');
-        break;
-    }
-  }
-
-  // ========================================
-  // SWELLING CHECK
-  // ========================================
-
-  if (assessment.hasSwelling) {
-    result.volumeMultiplier *= 0.5;
-    result.warnings.push('Gonfiore presente - possibile infiammazione attiva');
-    if (assessment.type === 'acute') {
-      result.skipExercise = true;
-      result.redFlags.push('Gonfiore acuto - riposo e ghiaccio raccomandati');
-    }
-  }
-
-  // Ensure multipliers stay in valid range
-  result.volumeMultiplier = Math.max(0, Math.min(1, result.volumeMultiplier));
-  result.intensityMultiplier = Math.max(0, Math.min(1, result.intensityMultiplier));
-  result.restMultiplier = Math.max(1, Math.min(2, result.restMultiplier));
-
-  // Round to 2 decimal places
-  result.volumeMultiplier = Math.round(result.volumeMultiplier * 100) / 100;
-  result.intensityMultiplier = Math.round(result.intensityMultiplier * 100) / 100;
-  result.restMultiplier = Math.round(result.restMultiplier * 100) / 100;
-
-  return result;
+  return baseReduction;
 }
 
-/**
- * Simple load reduction for backward compatibility
- * Maps pain intensity (0-10) to load reduction percentage
- */
-export function getSimplePainReduction(painIntensity: number): number {
-  const result = calculatePainLoadReduction({
-    intensity: painIntensity,
-    type: 'unknown',
-    area: 'general'
+// =============================================================================
+// DISCLAIMER (sempre visibile)
+// =============================================================================
+
+export const DISCOMFORT_DISCLAIMER =
+  'TrainSmart adatta automaticamente il tuo allenamento quando segnali fastidio, ' +
+  'ma non può sostituire il parere di un professionista sanitario. ' +
+  'Se il fastidio persiste o peggiora, consulta un fisioterapista o medico sportivo.';
+
+// =============================================================================
+// LEGACY COMPATIBILITY
+// =============================================================================
+
+/** @deprecated Use DiscomfortSeverity instead */
+export type PainType = 'acute' | 'subacute' | 'chronic' | 'doms' | 'unknown';
+
+/** @deprecated Use DiscomfortReport instead */
+export interface PainAssessment {
+  intensity: number;
+  type?: PainType;
+  area: string;
+  increasesDuringExercise?: boolean;
+  returnsToBaseline24h?: boolean;
+  progressiveWorsening?: boolean;
+  hasInjuryHistory?: boolean;
+  hasSwelling?: boolean;
+}
+
+/** @deprecated Use calculateLoadReduction instead */
+export function calculateEvidenceBasedLoadReduction(
+  assessment: PainAssessment
+): LoadReductionResult {
+  return calculateLoadReduction({
+    intensity: assessment.intensity,
+    area: assessment.area,
+    increasesDuringExercise: assessment.increasesDuringExercise,
+    isRecurring: assessment.hasInjuryHistory
+  });
+}
+
+/** @deprecated Use calculateLoadReduction instead */
+export function calculatePainLoadReduction(assessment: PainAssessment): LoadReductionResult & {
+  romRestriction?: string;
+  acceptablePainThreshold: number;
+  modifications: string[];
+  warnings: string[];
+  redFlags: string[];
+} {
+  const result = calculateLoadReduction({
+    intensity: assessment.intensity,
+    area: assessment.area,
+    increasesDuringExercise: assessment.increasesDuringExercise,
+    isRecurring: assessment.hasInjuryHistory
   });
 
+  return {
+    ...result,
+    acceptablePainThreshold: 4,
+    modifications: result.suggestions,
+    warnings: result.consultProfessional ? ['Consulta un professionista'] : [],
+    redFlags: result.skipExercise ? [result.message] : []
+  };
+}
+
+/** @deprecated Use quickLoadReduction instead */
+export function getSimplePainReduction(painIntensity: number): number {
+  const result = quickLoadReduction(painIntensity);
   return Math.round((1 - result.volumeMultiplier) * 100);
 }
 
-/**
- * Check if exercise should be modified for pain area
- */
+/** @deprecated Use isExerciseSensitiveForArea instead */
 export function shouldModifyForPain(
   exerciseName: string,
   painArea: string,
   painIntensity: number
 ): { modify: boolean; suggestion: string } {
-  const exerciseLower = exerciseName.toLowerCase();
-  const painLower = painArea.toLowerCase();
+  const isSensitive = isExerciseSensitiveForArea(exerciseName, painArea);
 
-  // Pain area to exercise mapping
-  const painExerciseMap: Record<string, string[]> = {
-    'knee': ['squat', 'leg press', 'lunge', 'affondi', 'leg extension', 'leg curl', 'step'],
-    'ginocchio': ['squat', 'leg press', 'lunge', 'affondi', 'leg extension', 'leg curl', 'step'],
-    'lower_back': ['deadlift', 'stacco', 'good morning', 'row', 'rematore', 'back extension'],
-    'schiena': ['deadlift', 'stacco', 'good morning', 'row', 'rematore', 'back extension'],
-    'shoulder': ['press', 'military', 'alzate', 'raise', 'dip', 'bench', 'panca'],
-    'spalla': ['press', 'military', 'alzate', 'raise', 'dip', 'bench', 'panca'],
-    'hip': ['squat', 'deadlift', 'lunge', 'hip thrust', 'abductor', 'adductor'],
-    'anca': ['squat', 'deadlift', 'lunge', 'hip thrust', 'abductor', 'adductor'],
-    'wrist': ['curl', 'push-up', 'plank', 'front squat', 'clean'],
-    'polso': ['curl', 'push-up', 'plank', 'front squat', 'clean'],
-    'elbow': ['curl', 'tricep', 'push-up', 'press', 'pull'],
-    'gomito': ['curl', 'tricep', 'push-up', 'press', 'pull']
-  };
-
-  const affectedExercises = painExerciseMap[painLower] || [];
-  const isAffected = affectedExercises.some(ex => exerciseLower.includes(ex));
-
-  if (!isAffected) {
+  if (!isSensitive) {
     return { modify: false, suggestion: '' };
   }
 
-  // Determine modification based on intensity
   if (painIntensity >= 7) {
     return {
       modify: true,
-      suggestion: `Sostituisci ${exerciseName} con un\'alternativa che non coinvolga ${painArea}`
+      suggestion: `Sostituisci ${exerciseName} con un'alternativa che non coinvolga ${painArea}`
     };
   } else if (painIntensity >= 4) {
     return {
@@ -384,9 +458,18 @@ export function shouldModifyForPain(
 }
 
 export default {
+  calculateLoadReduction,
+  quickLoadReduction,
+  shouldSkipExercise,
+  getVolumeMultiplier,
+  getIntensityMultiplier,
+  isExerciseSensitiveForArea,
+  calculateExerciseSpecificReduction,
+  intensityToSeverity,
+  severityToIntensityRange,
+  DISCOMFORT_DISCLAIMER,
+  // Legacy exports
   calculatePainLoadReduction,
   getSimplePainReduction,
-  shouldModifyForPain,
-  classifyPainType,
-  isDOMS
+  shouldModifyForPain
 };

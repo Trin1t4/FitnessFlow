@@ -133,28 +133,8 @@ export {
   getCorrectiveExercises
 } from './painManagement';
 
-// Functional Screening
-export type {
-  ScreeningTest,
-  ScreeningProtocol,
-  ScreeningResults,
-  TestResult,
-  MovementProfile
-} from './functionalScreening';
-export {
-  LOWER_BACK_QUICK_SCREEN,
-  LOWER_BACK_COMPREHENSIVE_SCREEN,
-  HIP_QUICK_SCREEN,
-  KNEE_QUICK_SCREEN,
-  SHOULDER_QUICK_SCREEN,
-  SCREENING_PROTOCOLS,
-  interpretScreeningResults,
-  generateScreeningReport,
-  getAvailableScreeningProtocols,
-  getScreeningProtocol,
-  createScreeningResultTemplate,
-  quickPainAssessment
-} from './functionalScreening';
+// Functional Screening - DEPRECATED: Use movementCheck instead
+// Old exports removed - see Movement Check System section for new API
 
 // Movement-Specific Corrective Exercises
 export type { CorrectiveExercise } from './movementSpecificCorrectiveExercises';
@@ -277,22 +257,61 @@ export {
   MUSCLE_MASS_DECAY_CURVE
 } from './detrainingModel';
 
-// Pain Load Reduction (evidence-based)
+// Pain Load Reduction (simplified - fitness-first)
 export type {
+  DiscomfortSeverity,
+  DiscomfortReport,
+  LoadReductionResult,
+  // Legacy compatibility
   PainType as LoadPainType,
-  PainCharacter as LoadPainCharacter,
-  PainTiming as LoadPainTiming,
-  MovementPhase,
-  PainAssessment,
-  LoadReductionResult
+  PainAssessment
 } from './painLoadReduction';
 export {
+  calculateLoadReduction,
+  quickLoadReduction,
+  shouldSkipExercise,
+  getVolumeMultiplier,
+  getIntensityMultiplier,
+  isExerciseSensitiveForArea,
+  calculateExerciseSpecificReduction,
+  intensityToSeverity,
+  severityToIntensityRange,
+  DISCOMFORT_DISCLAIMER,
+  // Legacy compatibility
   calculatePainLoadReduction,
   getSimplePainReduction,
-  shouldModifyForPain,
-  classifyPainType,
-  isDOMS
+  shouldModifyForPain
 } from './painLoadReduction';
+
+// Movement Check System (fitness-first screening)
+export type {
+  BodyArea,
+  FundamentalMovement,
+  MovementCheck,
+  MovementCheckResult,
+  MovementProfile as MovementCheckProfile
+} from './movementCheck';
+export {
+  MOVEMENT_CHECKS,
+  evaluateMovementChecks,
+  isMovementAppropriate,
+  getChecksForArea,
+  getCheckForMovement,
+  createEmptyResults,
+  MOVEMENT_TO_EXERCISE_CATEGORY,
+  getCategoriesToAvoid,
+  getSafeCategories,
+  MOVEMENT_CHECK_COUNT
+} from './movementCheck';
+
+// Exercise Anatomical Classification
+export type { BodyRegion } from './exerciseAnatomicalClassification';
+export {
+  EXERCISE_ANATOMICAL_DATABASE,
+  getExerciseProfile,
+  getExercisesByCategory,
+  isExerciseContraindicated
+} from './exerciseAnatomicalClassification';
 
 // Workout Tracking & Missed Sessions
 export type {

@@ -13,7 +13,7 @@ import {
   getExercisesByCategory,
   isExerciseContraindicated
 } from './exerciseAnatomicalClassification';
-import { ANATOMICAL_RECOVERY_PROTOCOLS, getProtocolByMovement } from './anatomicalRecoveryProtocols';
+// anatomicalRecoveryProtocols rimosso - non più supportato
 
 // =============================================================================
 // TYPES
@@ -52,7 +52,7 @@ export interface PainAdaptedProgram {
     rationale: string;
   }>;
   summary: string;
-  protocol_recommendation?: string;
+  // protocol_recommendation rimosso - non più supportato
 }
 
 // =============================================================================
@@ -323,19 +323,10 @@ export function generatePainAdaptedProgram(
 
   const summary = `Pain-Adapted Program: ${kept} exercises kept, ${modified} modified, ${replaced} replaced. Total: ${originalExercises.length} exercises.`;
 
-  // Check if there's a relevant recovery protocol
-  let protocolRecommendation: string | undefined;
-  if (painfulMovements.length > 0) {
-    const protocol = getProtocolByMovement(painfulMovements[0]);
-    if (protocol) {
-      protocolRecommendation = `Recommended Protocol: ${protocol.protocol_name}. Consider following structured recovery phases.`;
-    }
-  }
-
   return {
     modified_exercises: modifiedExercises,
-    summary,
-    protocol_recommendation: protocolRecommendation
+    summary
+    // protocol_recommendation rimosso
   };
 }
 
@@ -769,13 +760,10 @@ export function analyzeProgramPainPatterns(
       `🎯 Most problematic movement: "${mostProblematic[0]}" appears in ${mostProblematic[1]} exercises.`
     );
 
-    // Suggest protocol
-    const protocol = getProtocolByMovement(mostProblematic[0]);
-    if (protocol) {
-      recommendations.push(
-        `📋 Recommended: Follow "${protocol.protocol_name}" for structured recovery.`
-      );
-    }
+    // Se il fastidio persiste, consiglia un professionista
+    recommendations.push(
+      '📋 Se il fastidio persiste, consulta un professionista.'
+    );
   }
 
   return {

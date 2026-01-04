@@ -151,42 +151,17 @@ export {
   deleteComment,
 } from './socialService';
 
-// Pain Tracking Service
-export {
-  initPainTrackingService,
-  reportWorkoutPain,
-  reportWorkoutPainClientSide,
-  getPainTracking,
-  getPainTrackingByArea,
-  getPendingRehabilitationOffers,
-  resetPainTracking,
-  resetAllPainTracking,
-} from './painTrackingService';
+// Pain Tracking Service - DEPRECATED: Use discomfortTrackingService instead
+// Old exports removed - see Discomfort Tracking Service section below
 
-// Rehabilitation Service
-export {
-  initRehabilitationService,
-  respondToRehabilitation,
-  getActiveRehabilitations,
-  getRehabilitationByArea,
-  getRehabilitationProgram,
-  getRehabilitationSessionExercises,
-  completeRehabilitationSession,
-  completeRehabilitation,
-  pauseRehabilitation,
-  resumeRehabilitation,
-  getRehabilitationHistory,
-  getRehabilitationDashboardCards,
-  REHABILITATION_PROGRAMS,
-} from './rehabilitationService';
+// Rehabilitation Service - DEPRECATED: Use exerciseAdaptationService instead
+// Old exports removed - see Exercise Adaptation Service section below
 
 // Default exports for convenience
 export { default as autoRegulationService } from './autoRegulationService';
 export { default as streakService } from './streakService';
 export { default as personalRecordsService } from './personalRecordsService';
 export { default as achievementService } from './achievementService';
-export { default as painTrackingService } from './painTrackingService';
-export { default as rehabilitationService } from './rehabilitationService';
 export { default as followService } from './followService';
 export { default as socialService } from './socialService';
 
@@ -212,7 +187,7 @@ export {
   getSkipStats,
   checkSkipPattern,
   getRecentSkips,
-  calculateLoadReduction,
+  calculateLoadReduction as calculateSkipLoadReduction,
   generateSkipFeedback,
   MUSCLE_GROUP_NAMES,
   type SkipReason,
@@ -249,3 +224,42 @@ export {
   shouldValidateEstimatedWeight,
 } from './baselineInferenceService';
 export { default as baselineInferenceService } from './baselineInferenceService';
+
+// Discomfort Tracking Service (Simplified - fitness-first)
+export {
+  initDiscomfortService,
+  reportDiscomfort,
+  getDiscomfortStatus,
+  getLoadMultiplierForArea,
+  hasActiveDiscomfort,
+  clearDiscomfort,
+  clearAllDiscomfort,
+  isExerciseAffectedByDiscomfort,
+  getExerciseLoadMultiplier,
+  AREA_TO_EXERCISE_CATEGORIES,
+  DISCOMFORT_DISCLAIMER as DISCOMFORT_SERVICE_DISCLAIMER,
+  // Legacy aliases
+  initRehabilitationService as initDiscomfortRehabService,
+  initPainTrackingService as initDiscomfortPainService,
+  reportWorkoutPain as reportDiscomfortPain,
+  getPainStatus as getDiscomfortPainStatus,
+  resetPainTracking as resetDiscomfortTracking,
+} from './discomfortTrackingService';
+
+// Exercise Adaptation Service (with levels - fitness-first)
+export {
+  initAdaptationService,
+  getAdaptationRoutine,
+  getExercisesForLevel,
+  startAdaptation,
+  completeAdaptationSession,
+  getAdaptationDashboard,
+  ADAPTATION_ROUTINES,
+  // Legacy aliases
+  initRehabilitationService as initExerciseAdaptationRehabService,
+  REHABILITATION_PROGRAMS as ADAPTATION_PROGRAMS_LEGACY,
+  getRehabilitationProgram as getAdaptationProgram,
+  startRehabilitation as startAdaptationRehab,
+  completeRehabSession as completeAdaptationSessionRehab,
+  getRehabilitationDashboard as getAdaptationDashboardRehab,
+} from './exerciseAdaptationService';

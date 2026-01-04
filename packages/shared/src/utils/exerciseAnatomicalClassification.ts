@@ -5,7 +5,18 @@
  * Used for pain-based exercise substitution and program modification.
  */
 
-import { BodyRegion } from './goldenStandardTests';
+// BodyRegion definito localmente (non più importato da goldenStandardTests)
+export type BodyRegion =
+  | 'cervical_spine'
+  | 'thoracic_spine'
+  | 'lumbar_spine'
+  | 'hip'
+  | 'knee'
+  | 'ankle'
+  | 'shoulder'
+  | 'scapula'
+  | 'elbow'
+  | 'wrist';
 
 export interface ExerciseAnatomicalProfile {
   exerciseName: string;

@@ -1629,3 +1629,242 @@ export function isMovementStoppedThisSession(
     m => m.area === area && m.movement === movement
   );
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INJURY HISTORY - Controindicazioni Permanenti
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { InjuryRecord } from '../types';
+
+/**
+ * Exercise interface per il filtro
+ */
+interface Exercise {
+  name: string;
+  tags?: string[];
+  [key: string]: unknown;
+}
+
+/**
+ * Filtra esercizi basandosi su injury history permanente
+ *
+ * Logic:
+ * - Se isRecent = true → applica sia contraindications che cautions come hard blocks
+ * - Se isRecent = false → applica solo contraindications come hard blocks, cautions come warnings
+ */
+export function filterByInjuryHistory(
+  exercises: Exercise[],
+  injuryHistory: InjuryRecord[]
+): {
+  filtered: Exercise[];
+  removed: { exercise: string; reason: string; severity: 'blocked' | 'warning' }[];
+  warnings: { exercise: string; reason: string }[];
+} {
+  if (!injuryHistory || injuryHistory.length === 0) {
+    return { filtered: exercises, removed: [], warnings: [] };
+  }
+
+  const removed: { exercise: string; reason: string; severity: 'blocked' | 'warning' }[] = [];
+  const warnings: { exercise: string; reason: string }[] = [];
+
+  // Raccogli tutte le controindicazioni
+  const allContraindications = new Set<string>();
+  const allCautions = new Set<string>();
+  const injuryMap = new Map<string, InjuryRecord>();
+
+  injuryHistory.forEach(injury => {
+    injury.contraindications.forEach((c: string) => {
+      allContraindications.add(c);
+      injuryMap.set(c, injury);
+    });
+
+    if (injury.isRecent) {
+      // Se recente, anche le cautions diventano controindicazioni hard
+      injury.cautions.forEach((c: string) => {
+        allContraindications.add(c);
+        injuryMap.set(c, injury);
+      });
+    } else {
+      // Se non recente, cautions sono solo warnings
+      injury.cautions.forEach((c: string) => {
+        allCautions.add(c);
+        injuryMap.set(c, injury);
+      });
+    }
+  });
+
+  const filtered = exercises.filter(ex => {
+    const exerciseName = ex.name.toLowerCase().replace(/\s+/g, '_');
+    const exerciseTags = ex.tags || [];
+
+    // Check se l'esercizio è controindicato (hard block)
+    for (const contra of allContraindications) {
+      const contraLower = contra.toLowerCase();
+
+      if (
+        exerciseName.includes(contraLower) ||
+        exerciseTags.some(tag => tag.toLowerCase().includes(contraLower)) ||
+        matchesContraindication(ex, contra)
+      ) {
+        const injury = injuryMap.get(contra);
+        removed.push({
+          exercise: ex.name,
+          reason: `Controindicato per: ${injury?.label || 'infortunio precedente'}`,
+          severity: 'blocked'
+        });
+        return false;
+      }
+    }
+
+    // Check cautions (warning only, non bloccante)
+    for (const caution of allCautions) {
+      const cautionLower = caution.toLowerCase();
+
+      if (
+        exerciseName.includes(cautionLower) ||
+        exerciseTags.some(tag => tag.toLowerCase().includes(cautionLower)) ||
+        matchesContraindication(ex, caution)
+      ) {
+        const injury = injuryMap.get(caution);
+        warnings.push({
+          exercise: ex.name,
+          reason: `Attenzione per: ${injury?.label || 'infortunio precedente'} - procedi con cautela`
+        });
+      }
+    }
+
+    return true;
+  });
+
+  return { filtered, removed, warnings };
+}
+
+/**
+ * Matching avanzato per controindicazioni
+ */
+function matchesContraindication(exercise: Exercise, contraindication: string): boolean {
+  const contraMap: Record<string, string[]> = {
+    'single_leg_plyometrics_heavy': ['box jump', 'depth jump', 'single leg jump', 'plyometric'],
+    'deep_squats_heavy': ['squat', 'front squat', 'back squat'],
+    'upright_rows': ['upright row'],
+    'behind_neck_press': ['behind neck', 'behind the neck'],
+    'behind_neck_pulldown': ['behind neck pulldown', 'behind the neck lat'],
+    'good_morning': ['good morning'],
+    'russian_twist': ['russian twist'],
+    'sit_ups_full': ['sit up', 'sit-up'],
+    'deep_hip_flexion_over_90': ['deep squat', 'ass to grass', 'pistol squat'],
+    'spinal_rotation_loaded': ['russian twist', 'woodchop', 'rotational'],
+    'leg_extension_full_rom': ['leg extension'],
+    'explosive_calf_work': ['calf jump', 'calf explosive', 'pogo'],
+    'dips_deep': ['dip'],
+    'heavy_overhead_press': ['overhead press', 'military press', 'shoulder press'],
+    'cutting_movements_uncontrolled': ['cutting', 'agility drill'],
+    'deep_pivot_sports': ['pivot', 'basketball', 'tennis'],
+    'high_impact_jumping': ['box jump', 'depth jump', 'plyometric'],
+    'heavy_leg_press_deep': ['leg press'],
+    'wide_grip_bench': ['wide grip bench'],
+    'extreme_external_rotation_loaded': ['external rotation', 'face pull heavy'],
+    'overhead_throwing': ['throwing', 'baseball'],
+    'bench_press_very_deep': ['bench press'],
+    'romanian_deadlift_heavy_flexion': ['romanian deadlift', 'rdl'],
+    'conventional_deadlift': ['deadlift'],
+    'back_squat_heavy': ['back squat'],
+    'bent_over_row_heavy': ['bent over row', 'barbell row'],
+    'neck_bridges': ['neck bridge'],
+    'heavy_shrugs': ['shrug'],
+    'overhead_press_heavy': ['overhead press', 'military press'],
+    'deep_squats_narrow_stance': ['narrow squat'],
+    'lateral_lunges_deep': ['lateral lunge', 'side lunge'],
+    'lunges_forward': ['forward lunge', 'lunge'],
+    'step_ups_high': ['step up'],
+    'box_jumps_high': ['box jump'],
+    'depth_jumps': ['depth jump'],
+    'running_sprints': ['sprint'],
+    'calf_raises_heavy': ['calf raise'],
+    'plyometrics': ['plyometric', 'jump'],
+    'lateral_jumping_uncontrolled': ['lateral jump', 'side jump'],
+    'single_leg_balance_unstable': ['single leg balance', 'pistol'],
+    'lateral_movements_fast': ['lateral shuffle', 'agility'],
+    'squats_very_deep': ['deep squat', 'ass to grass'],
+    'leg_press_deep': ['leg press'],
+    'lunges_very_deep': ['deep lunge'],
+    'hyperextension_back': ['back extension', 'hyperextension'],
+    'deadlift_conventional': ['conventional deadlift'],
+    'overhead_press_standing': ['standing overhead', 'standing press'],
+    'hip_adduction_across_midline': ['hip adduction', 'adductor'],
+    'internal_rotation_hip_loaded': ['hip internal rotation']
+  };
+
+  const exerciseName = exercise.name.toLowerCase();
+  const patterns = contraMap[contraindication] || [];
+
+  return patterns.some(pattern => exerciseName.includes(pattern));
+}
+
+/**
+ * Utility per ottenere tutte le controindicazioni attive
+ */
+export function getActiveContraindications(injuryHistory: InjuryRecord[]): {
+  hardBlocks: string[];
+  softWarnings: string[];
+} {
+  const hardBlocks: string[] = [];
+  const softWarnings: string[] = [];
+
+  injuryHistory.forEach(injury => {
+    hardBlocks.push(...injury.contraindications);
+
+    if (injury.isRecent) {
+      hardBlocks.push(...injury.cautions);
+    } else {
+      softWarnings.push(...injury.cautions);
+    }
+  });
+
+  return {
+    hardBlocks: [...new Set(hardBlocks)],
+    softWarnings: [...new Set(softWarnings)]
+  };
+}
+
+/**
+ * Verifica se un singolo esercizio è controindicato
+ */
+export function isExerciseContraindicatedByInjury(
+  exerciseName: string,
+  injuryHistory: InjuryRecord[]
+): { isBlocked: boolean; reason?: string; isWarning?: boolean } {
+  if (!injuryHistory || injuryHistory.length === 0) {
+    return { isBlocked: false };
+  }
+
+  const { hardBlocks, softWarnings } = getActiveContraindications(injuryHistory);
+  const exercise: Exercise = { name: exerciseName };
+
+  // Check hard blocks
+  for (const contra of hardBlocks) {
+    if (matchesContraindication(exercise, contra)) {
+      const injury = injuryHistory.find(i =>
+        i.contraindications.includes(contra) || i.cautions.includes(contra)
+      );
+      return {
+        isBlocked: true,
+        reason: `Controindicato per: ${injury?.label || 'infortunio precedente'}`
+      };
+    }
+  }
+
+  // Check soft warnings
+  for (const caution of softWarnings) {
+    if (matchesContraindication(exercise, caution)) {
+      const injury = injuryHistory.find(i => i.cautions.includes(caution));
+      return {
+        isBlocked: false,
+        isWarning: true,
+        reason: `Attenzione per: ${injury?.label || 'infortunio precedente'}`
+      };
+    }
+  }
+
+  return { isBlocked: false };
+}

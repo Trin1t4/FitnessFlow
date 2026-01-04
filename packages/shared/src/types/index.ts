@@ -17,6 +17,7 @@ export type {
   PainEntry,
   OnboardingData,
   CompleteOnboardingData,
+  InjuryRecord,
   // Running/Aerobic
   RunningGoal,
   RunningIntegration,
@@ -44,34 +45,52 @@ export type {
   VolumeCalculation,
 } from './program.types';
 
-// Rehabilitation & Pain Tracking
+// Rehabilitation & Pain Tracking - DEPRECATED
+// Use discomfortTracking.types or exerciseAdaptation.types instead
+// Old exports removed - see Discomfort Tracking and Exercise Adaptation sections below
+
+// Discomfort Tracking (Simplified - fitness-first)
 export type {
-  TrackedBodyArea,
-  RehabilitationStatus,
-  RehabilitationPhase,
-  PainTracking,
-  PainTrackingSummary,
-  ActiveRehabilitation,
-  RehabilitationSession,
-  RehabilitationExerciseLog,
-  RehabilitationExercise,
-  RehabilitationProgram,
-  ReportPainResponse,
-  RespondToRehabilitationResponse,
-  CompleteRehabSessionResponse,
-  CompleteRehabilitationResponse,
-  ReportPainInput,
-  RespondToRehabilitationInput,
-  CompleteRehabSessionInput,
-  RehabilitationDashboardCard,
-} from './rehabilitation.types';
+  TrackedBodyArea as DiscomfortBodyArea,
+  DiscomfortRecord,
+  DiscomfortSummary,
+  DiscomfortStatus,
+  ReportDiscomfortResponse,
+  ReportDiscomfortInput,
+} from './discomfortTracking.types';
 
 export {
-  TRACKED_BODY_AREAS,
-  PAIN_TO_REHAB_MAPPING,
-  REHABILITATION_PHASES,
-  BODY_AREA_LABELS,
-} from './rehabilitation.types';
+  TRACKED_BODY_AREAS as DISCOMFORT_BODY_AREAS,
+  BODY_AREA_LABELS as DISCOMFORT_AREA_LABELS,
+  SESSIONS_FOR_PROFESSIONAL_ADVICE,
+  STANDARD_LOAD_REDUCTION,
+  RECURRING_LOAD_REDUCTION,
+} from './discomfortTracking.types';
+
+// Exercise Adaptation (with levels - fitness-first)
+export type {
+  AdaptationLevel,
+  AdaptationStatus,
+  ActiveAdaptation,
+  AdaptationSession,
+  AdaptationExerciseLog,
+  AdaptationExercise,
+  AdaptationRoutine,
+  DiscomfortTracking,
+  AdaptationDashboardCard,
+  RespondToAdaptationResponse,
+  CompleteAdaptationSessionResponse,
+  CompleteAdaptationResponse,
+  RespondToAdaptationInput,
+  CompleteAdaptationSessionInput,
+} from './exerciseAdaptation.types';
+
+export {
+  ADAPTATION_LEVELS,
+  DISCOMFORT_THRESHOLD,
+  SESSIONS_TO_LEVEL_UP,
+  SESSIONS_TO_RESOLVE,
+} from './exerciseAdaptation.types';
 
 // Social Features
 export type {
