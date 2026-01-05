@@ -585,3 +585,14 @@ export {
   type LearningPeriodStatus,
   type WeightedRIRResult,
 } from './fix-09-auto-regulation-improvements';
+
+// Program Normalizer - Unifica i 3 formati programma
+export type { NormalizedDay, NormalizedProgram } from './programNormalizer';
+export {
+  normalizeProgram,
+  isCanonicalFormat,
+  needsNormalization,
+  getExercisesForDay,
+  findExerciseByName,
+  updateExerciseWeight
+} from './programNormalizer';

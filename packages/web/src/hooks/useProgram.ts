@@ -1,12 +1,16 @@
 /**
  * React Query hooks for Program data
  * Sostituisce fetch diretti con cached queries
+ *
+ * IMPORTANTE: Tutti i programmi vengono normalizzati via normalizeProgram()
+ * per garantire una struttura dati unificata (weekly_schedule[])
  */
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabaseClient';
 import { useAppStore } from '../store/useAppStore';
+import { normalizeProgram, type NormalizedProgram } from '@trainsmart/shared';
 
 // Query Keys (centralized)
 export const programKeys = {
@@ -61,14 +65,23 @@ export function useCurrentProgram() {
         return null;
       }
 
-      console.log('[useCurrentProgram] Program fetched:', {
+      console.log('[useCurrentProgram] Program fetched (raw):', {
         id: data?.id,
         name: data?.name,
         hasWeeklySplit: !!data?.weekly_split,
+        hasWeeklySchedule: !!data?.weekly_schedule,
         exercisesCount: data?.exercises?.length || 0
       });
 
-      return data;
+      // NORMALIZZA IL PROGRAMMA per garantire struttura unificata
+      const normalized = normalizeProgram(data) as NormalizedProgram;
+
+      console.log('[useCurrentProgram] Program normalized:', {
+        id: normalized?.id,
+        weeklyScheduleDays: normalized?.weekly_schedule?.length || 0
+      });
+
+      return normalized;
     },
     enabled: !!userId, // Solo se c'è userId
     staleTime: 5 * 60 * 1000, // 5min
@@ -94,7 +107,9 @@ export function useUserPrograms() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+
+      // Normalizza tutti i programmi
+      return (data || []).map(p => normalizeProgram(p) as NormalizedProgram);
     },
     enabled: !!userId,
     staleTime: 10 * 60 * 1000, // 10min (more stable)
