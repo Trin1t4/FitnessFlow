@@ -345,7 +345,7 @@ export default function Onboarding() {
                   enabled: true,
                   goal: (goalMapping[ri.goal || ''] || 'base_aerobica') as RunningPreferences['goal'],
                   integration: ri.integration === 'post_workout' ? 'post_workout' : 'separate_days',
-                  sessionsPerWeek: ri.integration === 'post_workout' ? 2 : 3,
+                  sessionsPerWeek: ri.sessionsPerWeek || (ri.integration === 'post_workout' ? 2 : 3),
                   capacity: {
                     ...levelToCapacity[ri.level || 'sedentary'],
                     currentPace: ri.currentPace,

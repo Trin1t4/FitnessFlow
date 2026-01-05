@@ -15,6 +15,9 @@ interface RunningInterestStepProps {
     personalInfo?: {
       age?: number;
     };
+    activityLevel?: {
+      weeklyFrequency?: number;
+    };
   };
   onNext: (stepData: {
     runningInterest: {
@@ -22,6 +25,7 @@ interface RunningInterestStepProps {
       level?: 'sedentary' | 'beginner' | 'intermediate' | 'advanced';
       goal?: string;
       integration?: 'post_workout' | 'separate_days';
+      sessionsPerWeek?: number;
       restingHR?: number;
       currentPace?: string;
       maxHR?: number;
@@ -48,35 +52,126 @@ const INTEGRATION_OPTIONS = [
   },
 ];
 
-// Obiettivi running per livello
+// Obiettivi running per livello con spiegazioni chiare per principianti
 const RUNNING_GOALS_BY_LEVEL: Record<string, Array<{
   key: string;
   label: string;
   sublabel: string;
   emoji: string;
+  howTo?: string; // Spiegazione di come raggiungerlo
 }>> = {
   sedentary: [
-    { key: 'build_base', label: 'Costruire base aerobica', sublabel: 'Riuscire a correre 20-30 min continuativi', emoji: '🌱' },
-    { key: 'weight_loss', label: 'Perdere peso', sublabel: 'Cardio per dimagrimento', emoji: '⚖️' },
-    { key: 'health', label: 'Migliorare la salute', sublabel: 'Benefici cardiovascolari generali', emoji: '❤️' },
+    {
+      key: 'build_base',
+      label: 'Costruire base aerobica',
+      sublabel: 'Riuscire a correre 20-30 min continuativi',
+      emoji: '🌱',
+      howTo: 'Alterna camminata e corsa leggera. Punta a respirare facilmente, dovresti riuscire a parlare mentre corri.'
+    },
+    {
+      key: 'weight_loss',
+      label: 'Perdere peso',
+      sublabel: 'Cardio per dimagrimento',
+      emoji: '⚖️',
+      howTo: 'Corsa lenta e costante per bruciare grassi. La chiave è la costanza, non la velocità.'
+    },
+    {
+      key: 'health',
+      label: 'Migliorare la salute',
+      sublabel: 'Benefici cardiovascolari generali',
+      emoji: '❤️',
+      howTo: 'Movimento regolare a bassa intensità. Anche 20 minuti portano benefici al cuore e all\'umore.'
+    },
   ],
   beginner: [
-    { key: 'build_base', label: 'Costruire base aerobica', sublabel: 'Correre 30+ min senza fermarsi', emoji: '🌱' },
-    { key: 'run_5k', label: 'Completare una 5K', sublabel: 'Correre 5 km senza fermarsi', emoji: '🏅' },
-    { key: 'weight_loss', label: 'Perdere peso', sublabel: 'Cardio per dimagrimento', emoji: '⚖️' },
-    { key: 'improve_endurance', label: 'Migliorare resistenza', sublabel: 'Aumentare capacità aerobica', emoji: '💪' },
+    {
+      key: 'build_base',
+      label: 'Costruire base aerobica',
+      sublabel: 'Correre 30+ min senza fermarsi',
+      emoji: '🌱',
+      howTo: 'Corri a un ritmo "conversazionale" - dovresti riuscire a parlare. Non importa la velocità, conta la durata.'
+    },
+    {
+      key: 'run_5k',
+      label: 'Completare una 5K',
+      sublabel: 'Correre 5 km senza fermarsi',
+      emoji: '🏅',
+      howTo: 'Prima costruisci la resistenza (30 min di corsa), poi aumenta gradualmente la distanza. In 8 settimane ce la fai!'
+    },
+    {
+      key: 'weight_loss',
+      label: 'Perdere peso',
+      sublabel: 'Cardio per dimagrimento',
+      emoji: '⚖️',
+      howTo: 'Corsa lenta (ritmo facile) + esercizi di forza = combinazione perfetta per bruciare grassi.'
+    },
+    {
+      key: 'improve_endurance',
+      label: 'Migliorare resistenza',
+      sublabel: 'Aumentare capacità aerobica',
+      emoji: '💪',
+      howTo: 'Aumenta gradualmente il tempo di corsa settimanale (max +10% a settimana). La pazienza paga!'
+    },
   ],
   intermediate: [
-    { key: 'run_5k_time', label: 'Migliorare tempo 5K', sublabel: 'Correre 5 km più velocemente', emoji: '⏱️' },
-    { key: 'run_10k', label: 'Completare una 10K', sublabel: 'Correre 10 km senza fermarsi', emoji: '🏅' },
-    { key: 'improve_endurance', label: 'Migliorare resistenza', sublabel: 'Aumentare capacità aerobica', emoji: '💪' },
-    { key: 'weight_loss', label: 'Perdere peso', sublabel: 'Cardio per dimagrimento', emoji: '⚖️' },
+    {
+      key: 'run_5k_time',
+      label: 'Migliorare tempo 5K',
+      sublabel: 'Correre 5 km più velocemente',
+      emoji: '⏱️',
+      howTo: 'Mix di corse lente (80%) e ripetute veloci (20%). Es: 4x400m veloci con recupero tra una e l\'altra.'
+    },
+    {
+      key: 'run_10k',
+      label: 'Completare una 10K',
+      sublabel: 'Correre 10 km senza fermarsi',
+      emoji: '🏅',
+      howTo: 'Un lungo settimanale che cresce ogni settimana + corse facili. La forza nelle gambe aiuta!'
+    },
+    {
+      key: 'improve_endurance',
+      label: 'Migliorare resistenza',
+      sublabel: 'Aumentare capacità aerobica',
+      emoji: '💪',
+      howTo: 'Corse lunghe a ritmo facile costruiscono il "motore aerobico". Usa il test della conversazione!'
+    },
+    {
+      key: 'weight_loss',
+      label: 'Perdere peso',
+      sublabel: 'Cardio per dimagrimento',
+      emoji: '⚖️',
+      howTo: 'Corse più lunghe a ritmo moderato + allenamento di forza = metabolismo più attivo.'
+    },
   ],
   advanced: [
-    { key: 'run_10k_time', label: 'Migliorare tempo 10K', sublabel: 'Correre 10 km più velocemente', emoji: '⏱️' },
-    { key: 'half_marathon', label: 'Preparare mezza maratona', sublabel: 'Correre 21 km', emoji: '🏆' },
-    { key: 'speed_work', label: 'Aumentare velocità', sublabel: 'Interval training e ripetute', emoji: '⚡' },
-    { key: 'improve_endurance', label: 'Migliorare resistenza', sublabel: 'Aumentare volume settimanale', emoji: '💪' },
+    {
+      key: 'run_10k_time',
+      label: 'Migliorare tempo 10K',
+      sublabel: 'Correre 10 km più velocemente',
+      emoji: '⏱️',
+      howTo: 'Periodizzazione: base aerobica → soglia → velocità. Ripetute, tempo run e lunghi progressivi.'
+    },
+    {
+      key: 'half_marathon',
+      label: 'Preparare mezza maratona',
+      sublabel: 'Correre 21 km',
+      emoji: '🏆',
+      howTo: 'Lungo settimanale fino a 18-20km, corse di qualità infrasettimanali, e tanta pazienza!'
+    },
+    {
+      key: 'speed_work',
+      label: 'Aumentare velocità',
+      sublabel: 'Interval training e ripetute',
+      emoji: '⚡',
+      howTo: 'Ripetute in pista, fartlek, hill sprints. Max 2 sessioni intense a settimana con recupero adeguato.'
+    },
+    {
+      key: 'improve_endurance',
+      label: 'Migliorare resistenza',
+      sublabel: 'Aumentare volume settimanale',
+      emoji: '💪',
+      howTo: 'Aumenta il chilometraggio settimanale del 10% ogni settimana, poi fai una settimana di scarico.'
+    },
   ],
 };
 
@@ -169,6 +264,7 @@ export default function RunningInterestStep({
   const [hasRunningExperience, setHasRunningExperience] = useState<boolean | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
   const [selectedIntegration, setSelectedIntegration] = useState<'post_workout' | 'separate_days' | null>(null);
+  const [sessionsPerWeek, setSessionsPerWeek] = useState<number | null>(null);
   const [restingHR, setRestingHR] = useState<string>('');
   const [paceMinutes, setPaceMinutes] = useState<string>('');
   const [paceSeconds, setPaceSeconds] = useState<string>('');
@@ -236,7 +332,8 @@ export default function RunningInterestStep({
         enabled: true,
         level: calculatedLevel,
         goal: selectedGoal,
-        integration: selectedIntegration
+        integration: selectedIntegration,
+        sessionsPerWeek
       });
 
       onNext({
@@ -245,6 +342,7 @@ export default function RunningInterestStep({
           level: calculatedLevel,
           goal: selectedGoal,
           integration: selectedIntegration,
+          sessionsPerWeek: sessionsPerWeek || undefined,
           restingHR: restingHR ? parseInt(restingHR) : undefined,
           currentPace,
           maxHR,
@@ -260,9 +358,9 @@ export default function RunningInterestStep({
 
   // Determina se possiamo procedere
   // Se l'utente dice NO → può procedere
-  // Se dice SÌ (o sport lo richiede) → deve completare esperienza, goal e integration
+  // Se dice SÌ (o sport lo richiede) → deve completare esperienza, goal, integration e frequenza
   const needsRunningDetails = wantsRunning === true || sportRequiresRunning;
-  const hasCompletedRunningDetails = hasRunningExperience !== null && selectedGoal && selectedIntegration;
+  const hasCompletedRunningDetails = hasRunningExperience !== null && selectedGoal && selectedIntegration && sessionsPerWeek;
   const canProceed = wantsRunning === false || (needsRunningDetails && hasCompletedRunningDetails);
 
   // Messaggio di cosa manca
@@ -271,6 +369,7 @@ export default function RunningInterestStep({
     if (hasRunningExperience === null) return 'Indica se hai esperienza con la corsa';
     if (!selectedGoal) return 'Seleziona un obiettivo per la corsa';
     if (!selectedIntegration) return 'Scegli come integrare la corsa';
+    if (!sessionsPerWeek) return 'Seleziona quante sessioni di corsa a settimana';
     return null;
   };
   const missingMessage = getMissingMessage();
@@ -283,10 +382,24 @@ export default function RunningInterestStep({
     hasRunningExperience,
     selectedGoal,
     selectedIntegration,
+    sessionsPerWeek,
     hasCompletedRunningDetails,
     canProceed,
     missingMessage
   });
+
+  // Calcola sessioni disponibili in base all'integrazione
+  const strengthFrequency = data.activityLevel?.weeklyFrequency || 3;
+  const getFrequencyOptions = () => {
+    if (selectedIntegration === 'post_workout') {
+      // Post workout: 2-3 sessioni (stessi giorni dei pesi)
+      return [2, 3];
+    } else {
+      // Giorni separati: 2-4 sessioni
+      return [2, 3, 4];
+    }
+  };
+  const frequencyOptions = getFrequencyOptions();
 
   return (
     <div className="space-y-6">
@@ -528,24 +641,57 @@ export default function RunningInterestStep({
               <button
                 key={goal.key}
                 onClick={() => setSelectedGoal(goal.key)}
-                className={`w-full p-4 rounded-xl border-2 text-left transition-all flex items-center justify-between ${
+                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
                   selectedGoal === goal.key
                     ? 'border-blue-500 bg-blue-900/30'
                     : 'border-slate-700 hover:border-slate-500'
                 }`}
               >
-                <div className="flex items-center gap-4">
-                  <span className="text-2xl">{goal.emoji}</span>
-                  <div>
-                    <div className="font-semibold text-white">{goal.label}</div>
-                    <div className="text-sm text-slate-400">{goal.sublabel}</div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl">{goal.emoji}</span>
+                    <div>
+                      <div className="font-semibold text-white">{goal.label}</div>
+                      <div className="text-sm text-slate-400">{goal.sublabel}</div>
+                    </div>
                   </div>
+                  {selectedGoal === goal.key && (
+                    <Check className="w-6 h-6 text-blue-500 flex-shrink-0" />
+                  )}
                 </div>
-                {selectedGoal === goal.key && (
-                  <Check className="w-6 h-6 text-blue-500" />
+                {/* Spiegazione dettagliata quando selezionato */}
+                {selectedGoal === goal.key && goal.howTo && (
+                  <div className="mt-3 pt-3 border-t border-blue-700/50">
+                    <p className="text-sm text-blue-200 flex items-start gap-2">
+                      <span className="text-blue-400">💡</span>
+                      <span>{goal.howTo}</span>
+                    </p>
+                  </div>
                 )}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Banner preparazione atletica - mostrato quando l'utente ha selezionato un obiettivo */}
+      {selectedGoal && (wantsRunning || sportRequiresRunning) && (
+        <div className="bg-gradient-to-r from-amber-900/40 to-orange-900/40 rounded-xl p-4 border border-amber-700/50">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">🏋️</span>
+            <div>
+              <h4 className="font-semibold text-amber-200 mb-1">
+                Corsa + Preparazione Atletica = Risultati migliori
+              </h4>
+              <p className="text-sm text-amber-100/80">
+                Anche per chi vuole solo correre, gli esercizi di forza (a corpo libero o in palestra)
+                sono fondamentali: <strong>prevengono infortuni</strong>, migliorano la <strong>postura di corsa</strong> e
+                ti fanno diventare un <strong>runner più forte e veloce</strong>.
+              </p>
+              <p className="text-xs text-amber-200/60 mt-2">
+                Il tuo programma includerà esercizi mirati per gambe, core e stabilità.
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -560,7 +706,11 @@ export default function RunningInterestStep({
             {INTEGRATION_OPTIONS.map((option) => (
               <button
                 key={option.key}
-                onClick={() => setSelectedIntegration(option.key)}
+                onClick={() => {
+                  setSelectedIntegration(option.key);
+                  // Reset frequenza quando cambia integration
+                  setSessionsPerWeek(null);
+                }}
                 className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
                   selectedIntegration === option.key
                     ? 'border-emerald-500 bg-emerald-900/30'
@@ -586,14 +736,44 @@ export default function RunningInterestStep({
         </div>
       )}
 
+      {/* Selezione frequenza running */}
+      {selectedIntegration && (wantsRunning || sportRequiresRunning) && (
+        <div className="space-y-4">
+          <h3 className="font-semibold text-white">
+            Quante sessioni di corsa a settimana?
+          </h3>
+          <div className="flex justify-center gap-4">
+            {frequencyOptions.map((num) => (
+              <button
+                key={num}
+                onClick={() => setSessionsPerWeek(num)}
+                className={`w-20 h-20 rounded-2xl border-2 font-bold text-2xl transition-all ${
+                  sessionsPerWeek === num
+                    ? 'border-emerald-500 bg-emerald-900/30 text-emerald-400'
+                    : 'border-slate-700 text-slate-400 hover:border-emerald-300'
+                }`}
+              >
+                {num}
+              </button>
+            ))}
+          </div>
+          <p className="text-center text-sm text-slate-400">
+            {selectedIntegration === 'post_workout'
+              ? 'Corsa breve (15-20 min) dopo i tuoi allenamenti con i pesi'
+              : 'Sessioni dedicate nei giorni senza pesi'}
+          </p>
+        </div>
+      )}
+
       {/* Riepilogo finale */}
-      {wantsRunning && selectedGoal && selectedIntegration && (
+      {wantsRunning && selectedGoal && selectedIntegration && sessionsPerWeek && (
         <div className="bg-emerald-900/30 rounded-lg p-4 border border-emerald-800">
           <h4 className="font-semibold text-emerald-300 mb-2">Riepilogo</h4>
           <ul className="text-sm text-emerald-200 space-y-1">
             <li>• Livello: <span className="font-medium">{levelInfo.label}</span></li>
             <li>• Obiettivo: <span className="font-medium">{availableGoals.find(g => g.key === selectedGoal)?.label}</span></li>
             <li>• Modalità: <span className="font-medium">{selectedIntegration === 'post_workout' ? 'Dopo i pesi' : 'Giorni separati'}</span></li>
+            <li>• Frequenza: <span className="font-medium">{sessionsPerWeek} sessioni/settimana</span></li>
           </ul>
         </div>
       )}
