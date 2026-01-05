@@ -68,6 +68,16 @@ export interface WorkoutLogInput {
   nutrition_quality?: 'good' | 'normal' | 'poor';
   hydration?: 'good' | 'normal' | 'poor';
   context_adjustment?: number;
+
+  // Location adaptation tracking
+  /** True se la sessione è stata adattata per una location diversa */
+  is_location_adapted?: boolean;
+  /** Location originale del programma */
+  original_location?: 'gym' | 'home' | 'home_gym';
+  /** Location effettiva dove si è svolto l'allenamento */
+  actual_location?: 'gym' | 'home' | 'home_gym';
+  /** Se true, questa sessione non influenza l'auto-regulation */
+  exclude_from_progression?: boolean;
 }
 
 export interface ExerciseLog {
@@ -179,11 +189,16 @@ export async function logWorkout(
         mood: input.mood,
         sleep_quality: input.sleep_quality,
         notes: input.notes,
-        // NEW: Contextual factors
+        // Contextual factors
         stress_level: input.stress_level,
         nutrition_quality: input.nutrition_quality,
         hydration: input.hydration,
-        context_adjustment: input.context_adjustment
+        context_adjustment: input.context_adjustment,
+        // Location adaptation tracking
+        is_location_adapted: input.is_location_adapted || false,
+        original_location: input.original_location,
+        actual_location: input.actual_location,
+        exclude_from_progression: input.exclude_from_progression || false
       })
       .select()
       .single();

@@ -312,6 +312,8 @@ interface LiveWorkoutSessionProps {
   onWorkoutComplete?: (logs: any[]) => void;
   onLocationChange?: (newLocation: 'gym' | 'home', equipment: Record<string, boolean>) => Promise<void>;
   recoveryData?: RecoveryData; // Dati dal RecoveryScreening pre-workout
+  /** Location originale del programma (per tracking auto-regulation) */
+  originalLocation?: 'gym' | 'home' | 'home_gym';
 }
 
 export default function LiveWorkoutSession({
@@ -323,7 +325,8 @@ export default function LiveWorkoutSession({
   exercises: initialExercises,
   onWorkoutComplete,
   onLocationChange,
-  recoveryData
+  recoveryData,
+  originalLocation = 'gym'
 }: LiveWorkoutSessionProps) {
   const { t } = useTranslation();
 
@@ -2249,11 +2252,16 @@ export default function LiveWorkoutSession({
         mood: mood as any,
         sleep_quality: sleepQuality,
         notes: workoutNotes,
-        // NEW: Additional context data
+        // Additional context data
         stress_level: stressLevel,
         nutrition_quality: nutritionQuality,
         hydration: hydration,
-        context_adjustment: contextAdjustment
+        context_adjustment: contextAdjustment,
+        // Location adaptation tracking
+        is_location_adapted: locationSwitched,
+        original_location: originalLocation,
+        actual_location: currentLocation,
+        exclude_from_progression: locationSwitched // Escludi sessioni adattate dall'auto-regulation
       });
 
       // CALIBRAZIONE PESI: Salva i pesi effettivamente usati per esercizi con peso stimato

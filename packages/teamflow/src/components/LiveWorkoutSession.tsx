@@ -150,6 +150,8 @@ interface LiveWorkoutSessionProps {
   dayName: string;
   exercises: Exercise[];
   onWorkoutComplete?: (logs: any[]) => void;
+  /** Location originale del programma (per tracking auto-regulation) */
+  originalLocation?: 'gym' | 'home' | 'home_gym';
 }
 
 export default function LiveWorkoutSession({
@@ -159,7 +161,8 @@ export default function LiveWorkoutSession({
   programId,
   dayName,
   exercises: initialExercises,
-  onWorkoutComplete
+  onWorkoutComplete,
+  originalLocation = 'gym'
 }: LiveWorkoutSessionProps) {
   const { t } = useTranslation();
 
@@ -205,6 +208,7 @@ export default function LiveWorkoutSession({
   const [setLogs, setSetLogs] = useState<Record<string, SetLog[]>>({});
   const [workoutStartTime, setWorkoutStartTime] = useState<Date | null>(null);
   const [locationSwitched, setLocationSwitched] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<'gym' | 'home' | 'home_gym'>(originalLocation);
 
   // Current set state
   const [showRPEInput, setShowRPEInput] = useState(false);
@@ -1500,11 +1504,16 @@ export default function LiveWorkoutSession({
         mood: mood as any,
         sleep_quality: sleepQuality,
         notes: workoutNotes,
-        // NEW: Additional context data
+        // Additional context data
         stress_level: stressLevel,
         nutrition_quality: nutritionQuality,
         hydration: hydration,
-        context_adjustment: contextAdjustment
+        context_adjustment: contextAdjustment,
+        // Location adaptation tracking
+        is_location_adapted: locationSwitched,
+        original_location: originalLocation,
+        actual_location: currentLocation,
+        exclude_from_progression: locationSwitched // Escludi sessioni adattate dall'auto-regulation
       });
 
       if (onWorkoutComplete) {
