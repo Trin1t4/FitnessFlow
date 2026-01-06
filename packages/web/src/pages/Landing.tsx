@@ -36,11 +36,11 @@ export default function Landing() {
               TrainSmart
             </h1>
             <p className="text-xl md:text-2xl text-slate-300 mb-4">
-              L'app che ascolta il tuo corpo
+              L'allenamento che si adatta a TE, non il contrario
             </p>
             <p className="text-lg text-slate-400 mb-8 max-w-2xl mx-auto">
               Hai dolori? TrainSmart li rileva e adatta automaticamente gli esercizi.
-              Il primo sistema che protegge le tue articolazioni PRIMA che succeda qualcosa.
+              Non ti dice di fermarti. Ti dice COME continuare.
             </p>
 
             {/* CTA Buttons */}
@@ -749,6 +749,35 @@ export default function Landing() {
             Crea il tuo account gratuito
             <ArrowRight className="w-5 h-5" />
           </Link>
+        </div>
+      </section>
+
+      {/* ===== MEDICAL DISCLAIMER ===== */}
+      <section className="py-8 bg-slate-800/30 border-t border-slate-700">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="flex items-center justify-center gap-2 text-amber-400 mb-3">
+              <AlertTriangle className="w-5 h-5" />
+              <span className="font-semibold text-sm">Avvertenza Importante</span>
+            </div>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              TrainSmart fornisce programmi di allenamento generati algoritmicamente basati su
+              metodologie scientifiche. <strong className="text-slate-300">Non sostituisce il parere medico</strong>.
+              Consulta sempre un medico prima di iniziare qualsiasi programma di allenamento,
+              specialmente se hai condizioni mediche preesistenti, dolori cronici, o non ti alleni da tempo.
+              Il sistema Pain Detect adatta gli esercizi ma <strong className="text-slate-300">non è uno strumento diagnostico</strong>.
+              L'utente si allena a proprio rischio.
+            </p>
+            <div className="flex items-center justify-center gap-4 mt-4 text-xs text-slate-500">
+              <Link to="/privacy-policy" className="hover:text-emerald-400 transition">
+                Privacy Policy
+              </Link>
+              <span>•</span>
+              <Link to="/terms-of-service" className="hover:text-emerald-400 transition">
+                Termini di Servizio
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
