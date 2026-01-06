@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { X, Info, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Dumbbell, Clock, PlayCircle, XCircle, PlusCircle } from 'lucide-react';
+import { X, Info, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Dumbbell, Clock, PlayCircle, XCircle, PlusCircle, Footprints } from 'lucide-react';
 import { RecoveryScreening } from '../pages/RecoveryScreening';
 import type { RecoveryData } from '../pages/RecoveryScreening';
+import RunningSessionView, { RunningCompletionData } from '../components/RunningSessionView';
+import { toast } from 'sonner';
 import { useTranslation } from '../lib/i18n';
 import {
   getAlternativesWithParams,
@@ -42,6 +44,9 @@ export default function Workout() {
   const [resumeModalType, setResumeModalType] = useState<'same_day' | 'different_day'>('same_day');
   const [missedExercises, setMissedExercises] = useState<string[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Running session state
+  const [showRunningSession, setShowRunningSession] = useState(false);
 
   useEffect(() => {
     loadProgram();
@@ -348,7 +353,74 @@ export default function Workout() {
   }
 
   function handleStartWorkout() {
+    const todayWorkout = program?.weekly_schedule?.[currentDay];
+
+    // CHECK: Se è giorno running puro, mostra interfaccia running dedicata
+    if (todayWorkout?.type === 'running' && todayWorkout?.runningSession) {
+      console.log('[Workout] Running day detected, showing RunningSessionView');
+      setShowRunningSession(true);
+      return;
+    }
+
+    // CHECK: Safety guard - se exercises è vuoto e non è running, mostra errore
+    if (!todayWorkout?.exercises || todayWorkout.exercises.length === 0) {
+      if (todayWorkout?.type !== 'running') {
+        console.warn('[Workout] Day has no exercises and is not running type');
+        toast.error('Giornata senza esercizi programmati');
+        return;
+      }
+    }
+
+    // Giorno normale (strength/mixed) → procedi con recovery screening
     setShowRecoveryScreening(true);
+  }
+
+  // Handler per running session completion
+  async function handleRunningComplete(data: RunningCompletionData) {
+    console.log('[Workout] Running session completed:', data);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user && program) {
+        const todayWorkout = program.weekly_schedule[currentDay];
+
+        // Salva nel workout_logs
+        const { error } = await supabase.from('workout_logs').insert({
+          user_id: user.id,
+          program_id: program.id,
+          day_name: todayWorkout?.dayName || `Running Day ${currentDay + 1}`,
+          split_type: 'running',
+          session_rpe: data.rpe,
+          session_duration_minutes: data.actualDuration,
+          completed: data.completed,
+          exercises_completed: 1,
+          total_exercises: 1,
+          notes: [
+            data.notes,
+            data.distance ? `Distanza: ${data.distance} km` : null,
+            data.avgHeartRate ? `FC media: ${data.avgHeartRate} bpm` : null,
+            data.feltEasy ? 'Sessione percepita facile' : null,
+          ].filter(Boolean).join(' | ') || null,
+        });
+
+        if (error) {
+          console.error('[Workout] Error saving running session:', error);
+          toast.error('Errore nel salvataggio');
+        } else {
+          toast.success('Sessione running salvata!');
+        }
+      }
+    } catch (error) {
+      console.error('[Workout] Error in handleRunningComplete:', error);
+    }
+
+    setShowRunningSession(false);
+    navigate('/dashboard');
+  }
+
+  function handleRunningCancel() {
+    setShowRunningSession(false);
   }
 
   async function handleRecoveryComplete(data: RecoveryData) {
@@ -825,6 +897,16 @@ console.log("📊 MULTIPLIER:", { volumeMultiplier, intensityMultiplier, restMul
           </button>
         </div>
       </div>
+
+      {/* Running Session View */}
+      {showRunningSession && program?.weekly_schedule?.[currentDay]?.runningSession && (
+        <RunningSessionView
+          session={program.weekly_schedule[currentDay].runningSession}
+          dayName={program.weekly_schedule[currentDay].dayName || `Giorno ${currentDay + 1}`}
+          onComplete={handleRunningComplete}
+          onCancel={handleRunningCancel}
+        />
+      )}
 
       {showRecoveryScreening && (
         <RecoveryScreening

@@ -23,6 +23,7 @@ export default function Register() {
     privacy: false,
     terms: false,
     dataProcessing: false,
+    healthData: false, // Art. 9 GDPR - separato e opzionale
     marketing: false, // opzionale
   });
 
@@ -106,7 +107,7 @@ export default function Register() {
             privacy_policy: consents.privacy,
             terms_of_service: consents.terms,
             data_processing: consents.dataProcessing,
-            health_data_processing: consents.dataProcessing, // Same as dataProcessing for health data
+            health_data_processing: consents.healthData, // Art. 9 GDPR - consenso SEPARATO
             marketing_emails: consents.marketing,
           }, {
             user_agent: navigator.userAgent
@@ -370,7 +371,7 @@ export default function Register() {
                 </span>
               </label>
 
-              {/* Data Processing (per dati sanitari) */}
+              {/* Data Processing (base) */}
               <label className="flex items-start gap-3 cursor-pointer group">
                 <input
                   type="checkbox"
@@ -379,10 +380,29 @@ export default function Register() {
                   className="mt-1 w-4 h-4 rounded border-slate-500 bg-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-800"
                 />
                 <span className="text-sm text-slate-300 group-hover:text-white transition">
-                  Acconsento al trattamento dei miei dati relativi alla salute (zone di dolore, condizioni fisiche)
-                  per la personalizzazione del programma di allenamento{' '}
+                  Acconsento al trattamento dei miei dati personali per la fornitura del servizio{' '}
                   <span className="text-red-400">*</span>
                 </span>
+              </label>
+
+              {/* Health Data - Art. 9 GDPR (opzionale) */}
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={consents.healthData}
+                  onChange={(e) => setConsents({ ...consents, healthData: e.target.checked })}
+                  className="mt-1 w-4 h-4 rounded border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500 focus:ring-offset-slate-800"
+                />
+                <div className="flex-1">
+                  <span className="text-sm text-slate-300 group-hover:text-white transition">
+                    <span className="text-amber-400 font-medium">(Opzionale)</span>{' '}
+                    Acconsento al trattamento dei dati relativi alla mia salute (zone dolorose, limitazioni fisiche)
+                    per programmi adattati alle mie condizioni
+                  </span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Richiesto per Pain Detect. Puoi darlo dopo nell'onboarding.
+                  </p>
+                </div>
               </label>
 
               {/* Marketing (opzionale) */}

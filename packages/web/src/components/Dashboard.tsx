@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabaseClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut, Shield, ClipboardList, Timer } from 'lucide-react';
+import { Activity, CheckCircle, AlertCircle, Zap, Target, RotateCcw, Trash2, History, Cloud, CloudOff, LogOut, Shield, ClipboardList, Timer, Footprints } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from '../lib/i18n';
 import { validateAndNormalizePainAreas, generateProgram, generateProgramWithSplit, inferMissingBaselines } from '@trainsmart/shared';
@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import WeeklySplitView from './WeeklySplitView';
 import WorkoutLogger from './WorkoutLogger';
 import LiveWorkoutSession from './LiveWorkoutSession';
+import RunningSessionView, { RunningCompletionData } from './RunningSessionView';
 import { RecoveryScreening, RecoveryData } from '../pages/RecoveryScreening';
 import PainTrackingChart from './PainTrackingChart';
 import StrengthProgressChart from './StrengthProgressChart';
@@ -71,6 +72,8 @@ export default function Dashboard() {
   const [showWorkoutLogger, setShowWorkoutLogger] = useState(false);
   const [currentWorkoutDay, setCurrentWorkoutDay] = useState<any>(null);
   const [showLiveWorkout, setShowLiveWorkout] = useState(false);
+  const [showRunningSession, setShowRunningSession] = useState(false);
+  const [runningDayData, setRunningDayData] = useState<any>(null);
   const [showRecoveryScreening, setShowRecoveryScreening] = useState(false);
   const [recoveryData, setRecoveryData] = useState<RecoveryData | null>(null);
   const [showLocationSwitch, setShowLocationSwitch] = useState(false);
@@ -1408,6 +1411,57 @@ export default function Dashboard() {
     }
   }
 
+  // Handler per running session completion
+  async function handleRunningComplete(data: RunningCompletionData) {
+    console.log('[Dashboard] Running session completed:', data);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user && program && runningDayData) {
+        // Salva nel workout_logs
+        const { error } = await supabase.from('workout_logs').insert({
+          user_id: user.id,
+          program_id: program.id,
+          day_name: runningDayData.dayName || runningDayData.name || 'Running',
+          split_type: 'running',
+          session_rpe: data.rpe,
+          session_duration_minutes: data.actualDuration,
+          completed: data.completed,
+          exercises_completed: 1,
+          total_exercises: 1,
+          notes: [
+            data.notes,
+            data.distance ? `Distanza: ${data.distance} km` : null,
+            data.avgHeartRate ? `FC media: ${data.avgHeartRate} bpm` : null,
+            data.feltEasy ? 'Sessione percepita facile' : null,
+          ].filter(Boolean).join(' | ') || null,
+        });
+
+        if (error) {
+          console.error('[Dashboard] Error saving running:', error);
+          toast.error('Errore nel salvataggio');
+        } else {
+          toast.success('Sessione running salvata!');
+          // Refresh program data
+          await queryClient.invalidateQueries({ queryKey: programKeys.all });
+        }
+      }
+    } catch (error) {
+      console.error('[Dashboard] Error in handleRunningComplete:', error);
+      toast.error('Errore nel salvataggio');
+    }
+
+    // Chiudi e reset
+    setShowRunningSession(false);
+    setRunningDayData(null);
+  }
+
+  function handleRunningCancel() {
+    setShowRunningSession(false);
+    setRunningDayData(null);
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8 relative overflow-hidden">
       {/* Video Mosaic Background */}
@@ -2146,9 +2200,18 @@ export default function Dashboard() {
                     onClick={() => {
                       // Get first day or full program exercises
                       const firstDay = program.weekly_split?.days?.[0];
-                      if (firstDay) {
-                        setCurrentWorkoutDay(firstDay);
+                      if (!firstDay) return;
+
+                      // CHECK: Se è giorno running puro, mostra interfaccia running
+                      if (firstDay.type === 'running' && firstDay.runningSession && (!firstDay.exercises || firstDay.exercises.length === 0)) {
+                        console.log('[Dashboard] Running day detected, showing RunningSessionView');
+                        setRunningDayData(firstDay);
+                        setShowRunningSession(true);
+                        return;
                       }
+
+                      // Giorno normale (strength/mixed)
+                      setCurrentWorkoutDay(firstDay);
                       // Mostra prima il RecoveryScreening per chiedere tempo disponibile
                       setShowRecoveryScreening(true);
                     }}
@@ -2604,6 +2667,16 @@ export default function Dashboard() {
             )}
           </motion.div>
         </motion.div>
+      )}
+
+      {/* Running Session View */}
+      {showRunningSession && runningDayData?.runningSession && (
+        <RunningSessionView
+          session={runningDayData.runningSession}
+          dayName={runningDayData.dayName || runningDayData.name || 'Running'}
+          onComplete={handleRunningComplete}
+          onCancel={handleRunningCancel}
+        />
       )}
 
       {/* Recovery Screening Modal - Pre-workout check */}

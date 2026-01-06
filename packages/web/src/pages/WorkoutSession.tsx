@@ -99,6 +99,28 @@ export default function WorkoutSession() {
   useEffect(() => {
     if (!state || !state.program) {
       navigate('/workout');
+      return;
+    }
+
+    // SAFETY GUARD: Redirect se è giorno running (non dovrebbe mai arrivare qui)
+    const workout = state.program.weekly_schedule?.[state.dayIndex];
+
+    if (workout?.type === 'running' && !workout?.exercises?.length) {
+      console.warn('[WorkoutSession] Running day accessed incorrectly, redirecting to /workout');
+      console.warn('[WorkoutSession] Day data:', {
+        type: workout.type,
+        hasRunningSession: !!workout.runningSession,
+        exercisesCount: workout.exercises?.length || 0
+      });
+      navigate('/workout');
+      return;
+    }
+
+    // SAFETY: Check per exercises vuoti (qualsiasi tipo)
+    if (!workout?.exercises || workout.exercises.length === 0) {
+      console.warn('[WorkoutSession] Day has no exercises:', workout);
+      navigate('/workout');
+      return;
     }
   }, [state, navigate]);
 
