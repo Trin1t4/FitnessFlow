@@ -342,12 +342,12 @@ export function getTierLimits(tier: string): {
     },
     base: {
       videosPerCycle: 0,
-      cyclePrice: '€19.90',
+      cyclePrice: '€12.90',
       features: ['Programma completo 6 settimane', 'Pain management', 'Nessuna video correzione']
     },
     pro: {
       videosPerCycle: 12,
-      cyclePrice: '€29.90',
+      cyclePrice: '€24.90',
       features: [
         'Programma completo 6 settimane',
         '12 video correzioni AI (2/settimana)',
@@ -357,7 +357,7 @@ export function getTierLimits(tier: string): {
     },
     premium: {
       videosPerCycle: 999,
-      cyclePrice: '€44.90',
+      cyclePrice: '€39.90',
       features: [
         'Tutto del Pro',
         'Video correzioni illimitate',

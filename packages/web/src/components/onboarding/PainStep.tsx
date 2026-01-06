@@ -5,6 +5,10 @@ import { useTranslation } from '../../lib/i18n';
 interface PainStepProps {
   data: Partial<OnboardingData>;
   onNext: (data: Partial<OnboardingData>) => void;
+  /** Se false, non permette la raccolta dati sanitari (Art. 9 GDPR) */
+  healthConsentGranted?: boolean;
+  /** Callback per aprire il modal di consenso */
+  onRequestConsent?: () => void;
 }
 
 /**
@@ -31,9 +35,50 @@ function intensityToSeverity(intensity: number): PainSeverity {
   return 'mild';
 }
 
-export default function PainStep({ data, onNext }: PainStepProps) {
+export default function PainStep({ data, onNext, healthConsentGranted = true, onRequestConsent }: PainStepProps) {
   const { t } = useTranslation();
   const PAIN_AREAS = getPainAreas(t);
+
+  // GDPR Art. 9: Se il consenso non è stato dato, mostra blocco
+  if (!healthConsentGranted) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-3xl font-display font-bold text-white mb-2">{t('onboarding.pain.title')}</h2>
+          <p className="text-slate-400 text-base">{t('onboarding.pain.subtitle')}</p>
+        </div>
+
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-6 backdrop-blur-sm">
+          <div className="flex items-start gap-4">
+            <div className="text-3xl">🔒</div>
+            <div>
+              <h3 className="font-semibold text-amber-200 mb-2">
+                {t('gdpr.consent_required_title') || 'Consenso richiesto'}
+              </h3>
+              <p className="text-sm text-amber-200/80 mb-4">
+                {t('gdpr.health_data_explanation') || 'Per raccogliere informazioni sui tuoi dolori e condizioni fisiche, abbiamo bisogno del tuo consenso esplicito secondo l\'Art. 9 del GDPR.'}
+              </p>
+              {onRequestConsent && (
+                <button
+                  onClick={onRequestConsent}
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg transition"
+                >
+                  {t('gdpr.give_consent') || 'Dai il consenso'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onNext({ painAreas: [] })}
+          className="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-4 rounded-lg font-semibold text-lg transition"
+        >
+          {t('onboarding.pain.skip') || 'Salta questo passaggio'}
+        </button>
+      </div>
+    );
+  }
 
   const [hasPain, setHasPain] = useState<boolean | null>(
     data.painAreas ? data.painAreas.length > 0 : null

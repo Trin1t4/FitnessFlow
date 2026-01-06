@@ -34,13 +34,13 @@ export default function PaywallModal({ open, onClose, onSelectPlan, userProgress
   const plans = [
     {
       tier: 'base' as const,
-      name: 'BASE',
-      price: '19.90',
-      monthlyEquivalent: '13.27',
-      badge: null,
+      name: 'Early Bird',
+      price: '12.90',
+      monthlyEquivalent: '8.60',
+      badge: 'EARLY BIRD',
       icon: TrendingUp,
-      color: 'from-gray-600 to-gray-700',
-      borderColor: 'border-gray-600',
+      color: 'from-amber-500 to-orange-500',
+      borderColor: 'border-amber-500',
       features: [
         { text: t('paywall.feature.complete_program'), included: true },
         { text: t('paywall.feature.progressive_overload'), included: true },
@@ -52,9 +52,9 @@ export default function PaywallModal({ open, onClose, onSelectPlan, userProgress
     },
     {
       tier: 'pro' as const,
-      name: 'PRO',
-      price: '29.90',
-      monthlyEquivalent: '19.93',
+      name: 'Pro',
+      price: '24.90',
+      monthlyEquivalent: '16.60',
       badge: t('paywall.most_chosen'),
       icon: Zap,
       color: 'from-blue-600 to-purple-600',
@@ -70,9 +70,9 @@ export default function PaywallModal({ open, onClose, onSelectPlan, userProgress
     },
     {
       tier: 'premium' as const,
-      name: 'PREMIUM',
-      price: '44.90',
-      monthlyEquivalent: '29.93',
+      name: 'Coach',
+      price: '39.90',
+      monthlyEquivalent: '26.60',
       badge: t('paywall.maximum'),
       icon: Crown,
       color: 'from-purple-600 to-pink-600',
@@ -373,7 +373,7 @@ export default function PaywallModal({ open, onClose, onSelectPlan, userProgress
                     <td className="py-3 font-bold">{t('paywall.comparison.price_6_weeks')}</td>
                     <td className="text-center">€0-15</td>
                     <td className="text-center">€40-60</td>
-                    <td className="text-center text-blue-400 font-bold">€29.90</td>
+                    <td className="text-center text-blue-400 font-bold">€24.90</td>
                   </tr>
                 </tbody>
               </table>

@@ -66,13 +66,21 @@ interface PreWorkoutPainCheckProps {
     requiresMedicalAttention: boolean;
   }) => void;
   onSkip: () => void;
+  /** Se false, non permette la raccolta dati sanitari (Art. 9 GDPR) */
+  healthConsentGranted?: boolean;
+  /** Callback per aprire il modal di consenso */
+  onRequestConsent?: () => void;
 }
 
 export default function PreWorkoutPainCheck({
   onComplete,
-  onSkip
+  onSkip,
+  healthConsentGranted = true,
+  onRequestConsent
 }: PreWorkoutPainCheckProps) {
-  const [step, setStep] = useState<'initial' | 'area_selection' | 'nature_selection' | 'severity_selection' | 'result'>('initial');
+  const [step, setStep] = useState<'initial' | 'consent_required' | 'area_selection' | 'nature_selection' | 'severity_selection' | 'result'>(
+    healthConsentGranted ? 'initial' : 'consent_required'
+  );
   const [selectedAreas, setSelectedAreas] = useState<PainArea['area'][]>([]);
   const [selectedNature, setSelectedNature] = useState<PainNature | null>(null);
   const [severity, setSeverity] = useState<number>(5);
@@ -183,6 +191,59 @@ export default function PreWorkoutPainCheck({
 
         <div className="p-6">
           <AnimatePresence mode="wait">
+            {/* Step 0: Consent Required (GDPR Art. 9) */}
+            {step === 'consent_required' && (
+              <motion.div
+                key="consent_required"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="space-y-6"
+              >
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-6 backdrop-blur-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">🔒</div>
+                    <div>
+                      <h3 className="font-semibold text-amber-200 text-lg mb-2">
+                        Consenso dati sanitari richiesto
+                      </h3>
+                      <p className="text-sm text-amber-200/80 mb-4">
+                        Per raccogliere informazioni sui tuoi dolori e condizioni fisiche,
+                        abbiamo bisogno del tuo consenso esplicito secondo l'Art. 9 del GDPR
+                        (trattamento dati relativi alla salute).
+                      </p>
+                      <p className="text-xs text-slate-400 mb-4">
+                        Questi dati vengono utilizzati SOLO per adattare il tuo allenamento
+                        e proteggerti da infortuni. Non vengono condivisi con terze parti.
+                      </p>
+                      {onRequestConsent && (
+                        <button
+                          onClick={onRequestConsent}
+                          className="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-6 rounded-lg transition"
+                        >
+                          Dai il consenso
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <button
+                    onClick={() => onComplete({
+                      hasPain: false,
+                      shouldActivateRecovery: false,
+                      canProceedWithWorkout: true,
+                      requiresMedicalAttention: false
+                    })}
+                    className="text-slate-400 hover:text-white text-sm underline transition"
+                  >
+                    Salta e procedi senza pain check
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
             {/* Step 1: Initial Question */}
             {step === 'initial' && (
               <motion.div

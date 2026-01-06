@@ -39,22 +39,22 @@ export type PlanTier = keyof typeof STRIPE_PRICES;
  */
 export const PLAN_DETAILS = {
   base: {
-    name: 'BASE',
-    price: 19.90,
+    name: 'Early Bird',
+    price: 12.90,
     duration: '6 weeks',
     features: ['Complete program', 'Progressive overload', 'Pain management', 'Workout logger']
   },
   pro: {
-    name: 'PRO',
-    price: 29.90,
+    name: 'Pro',
+    price: 24.90,
     duration: '6 weeks',
-    features: ['All BASE features', '12 video corrections', 'Technique history', 'HD tutorials']
+    features: ['All Early Bird features', '12 video corrections', 'Technique history', 'HD tutorials']
   },
   premium: {
-    name: 'PREMIUM',
-    price: 44.90,
+    name: 'Coach',
+    price: 39.90,
     duration: '6 weeks',
-    features: ['All PRO features', 'Unlimited videos', 'PDF export', 'Priority support']
+    features: ['All Pro features', 'Unlimited videos', 'PDF export', 'Priority support']
   }
 } as const;
 
