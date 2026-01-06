@@ -257,12 +257,29 @@ export const LOWER_PULL_VARIANTS: ExerciseVariant[] = [
 
 /**
  * HORIZONTAL PUSH VARIANTS (Bench Press pattern - Pectorals)
+ * DIFFICOLTÀ ALLINEATE CON SCREENING: 1-10 scala
  */
 export const HORIZONTAL_PUSH_VARIANTS: ExerciseVariant[] = [
   {
+    id: 'pushup_wall',
+    name: 'Push-up al Muro',
+    difficulty: 1,
+    equipment: 'bodyweight',
+    primary: ['pectorals', 'triceps'],
+    secondary: ['front_delts']
+  },
+  {
+    id: 'pushup_incline',
+    name: 'Push-up Inclinato',
+    difficulty: 2,
+    equipment: 'bodyweight',
+    primary: ['pectorals', 'triceps'],
+    secondary: ['front_delts', 'core']
+  },
+  {
     id: 'pushup_knee',
     name: 'Push-up su Ginocchia',
-    difficulty: 2,
+    difficulty: 3,
     equipment: 'bodyweight',
     primary: ['pectorals', 'triceps'],
     secondary: ['front_delts', 'core']
@@ -270,7 +287,7 @@ export const HORIZONTAL_PUSH_VARIANTS: ExerciseVariant[] = [
   {
     id: 'pushup_standard',
     name: 'Piegamenti',
-    difficulty: 4,
+    difficulty: 5,
     equipment: 'bodyweight',
     primary: ['pectorals', 'triceps'],
     secondary: ['front_delts', 'core']
@@ -286,15 +303,23 @@ export const HORIZONTAL_PUSH_VARIANTS: ExerciseVariant[] = [
   {
     id: 'pushup_archer',
     name: 'Archer Push-up',
-    difficulty: 7,
+    difficulty: 8,
     equipment: 'bodyweight',
     primary: ['pectorals', 'triceps'],
     secondary: ['front_delts', 'core', 'obliques']
   },
   {
+    id: 'pushup_pseudo_planche',
+    name: 'Pseudo Planche Push-up',
+    difficulty: 9,
+    equipment: 'bodyweight',
+    primary: ['pectorals', 'front_delts', 'triceps'],
+    secondary: ['core', 'serratus']
+  },
+  {
     id: 'pushup_one_arm',
     name: 'One Arm Push-up',
-    difficulty: 9,
+    difficulty: 10,
     equipment: 'bodyweight',
     primary: ['pectorals', 'triceps'],
     secondary: ['front_delts', 'core', 'obliques', 'stabilizers']

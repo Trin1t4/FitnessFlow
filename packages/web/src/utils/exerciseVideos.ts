@@ -106,6 +106,7 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   'Piegamenti Piedi Elevati': 'decline-push-up.mp4',
   // Incline push-up
   'Incline Push-up': 'incline-push-up.mp4',
+  'Push-up Inclinato': 'incline-push-up.mp4',
   'Piegamenti Inclinati': 'incline-push-up.mp4',
   'Piegamenti su Rialzo': 'incline-push-up.mp4',
   'Push-up Inclinati': 'incline-push-up.mp4',
@@ -121,6 +122,7 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   // Wall push-up
   'Wall Push-up': 'wall-push-up.mp4',
   'Wall Push Up': 'wall-push-up.mp4',
+  'Push-up al Muro': 'wall-push-up.mp4',
   'Piegamenti al Muro': 'wall-push-up.mp4',
   'Flessioni al Muro': 'wall-push-up.mp4',
   // Pike push-up (altre varianti in ADVANCED PUSH-UP)
