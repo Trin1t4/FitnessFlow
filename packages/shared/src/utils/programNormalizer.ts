@@ -199,3 +199,106 @@ export function updateExerciseWeight(
     weekly_schedule: updatedSchedule,
   };
 }
+
+/**
+ * Verifica se un programma è già normalizzato
+ */
+export function isNormalizedProgram(program: any): program is NormalizedProgram {
+  return (
+    program &&
+    Array.isArray(program.weekly_schedule) &&
+    program.weekly_schedule.every((day: any) =>
+      typeof day.dayName === 'string' &&
+      Array.isArray(day.exercises)
+    )
+  );
+}
+
+/**
+ * Rileva il tipo di struttura del programma
+ */
+export type ProgramStructureType = 'weekly_split' | 'weekly_schedule' | 'flat_exercises' | 'unknown';
+
+export function detectProgramStructure(program: any): ProgramStructureType {
+  if (!program) return 'unknown';
+  if (program.weekly_split?.days && Array.isArray(program.weekly_split.days)) {
+    return 'weekly_split';
+  }
+  if (program.weekly_schedule && Array.isArray(program.weekly_schedule)) {
+    return 'weekly_schedule';
+  }
+  if (program.exercises && Array.isArray(program.exercises)) {
+    return 'flat_exercises';
+  }
+  return 'unknown';
+}
+
+/**
+ * Ottieni tutti gli esercizi del programma (appiattiti)
+ */
+export function getAllExercises(program: NormalizedProgram): Exercise[] {
+  if (!program?.weekly_schedule) return [];
+  return program.weekly_schedule.flatMap(day => day.exercises);
+}
+
+/**
+ * Ottieni un esercizio per ID (indice globale)
+ */
+export function getExerciseById(
+  program: NormalizedProgram,
+  globalIndex: number
+): { exercise: Exercise; dayIndex: number; exerciseIndex: number } | null {
+  let currentIndex = 0;
+  for (let dayIndex = 0; dayIndex < (program.weekly_schedule?.length || 0); dayIndex++) {
+    const day = program.weekly_schedule[dayIndex];
+    for (let exerciseIndex = 0; exerciseIndex < day.exercises.length; exerciseIndex++) {
+      if (currentIndex === globalIndex) {
+        return { exercise: day.exercises[exerciseIndex], dayIndex, exerciseIndex };
+      }
+      currentIndex++;
+    }
+  }
+  return null;
+}
+
+/**
+ * Aggiorna un esercizio nel programma
+ */
+export function updateExerciseInProgram(
+  program: NormalizedProgram,
+  dayIndex: number,
+  exerciseIndex: number,
+  updates: Partial<Exercise>
+): NormalizedProgram {
+  const updatedSchedule = program.weekly_schedule.map((day, dIdx) => {
+    if (dIdx !== dayIndex) return day;
+    return {
+      ...day,
+      exercises: day.exercises.map((ex, eIdx) =>
+        eIdx === exerciseIndex ? { ...ex, ...updates } : ex
+      ),
+    };
+  });
+
+  return {
+    ...program,
+    weekly_schedule: updatedSchedule,
+  };
+}
+
+/**
+ * Conta il numero totale di esercizi
+ */
+export function countExercises(program: NormalizedProgram): number {
+  return getAllExercises(program).length;
+}
+
+/**
+ * Filtra esercizi per pattern
+ */
+export function getExercisesByPattern(
+  program: NormalizedProgram,
+  pattern: string
+): Exercise[] {
+  return getAllExercises(program).filter(ex => ex.pattern === pattern);
+}

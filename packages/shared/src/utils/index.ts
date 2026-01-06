@@ -626,3 +626,59 @@ export {
   didUserPushTooHard,
   getEducationalMessage
 } from './rirAdjustmentLogic';
+
+// Program Normalizer - Extended functions
+export type { ProgramStructureType } from './programNormalizer';
+export {
+  isNormalizedProgram,
+  detectProgramStructure,
+  getAllExercises,
+  getExerciseById,
+  updateExerciseInProgram,
+  countExercises,
+  getExercisesByPattern
+} from './programNormalizer';
+
+// Exercise Progression Engine - Separazione Weighted/Bodyweight
+export type {
+  ExerciseFeedback,
+  ProgressionResult,
+  WeightedProgressionResult,
+  BodyweightProgressionResult
+} from './exerciseProgressionEngine';
+export {
+  calculateProgression,
+  calculateWeightedProgression,
+  calculateBodyweightProgression,
+  classifyExercise,
+  isWeightedExercise,
+  getNextVariant,
+  getPreviousVariant,
+  getExerciseDifficulty,
+  getProgressionChain,
+  BODYWEIGHT_PROGRESSIONS
+} from './exerciseProgressionEngine';
+
+// Goal Mapper - Standardizzazione Goals
+export type {
+  CanonicalGoal,
+  DatabaseGoal,
+  GoalConfig
+} from './goalMapper';
+export {
+  toCanonicalGoal,
+  toDatabaseGoal,
+  getGoalConfig,
+  isValidGoal,
+  getAllValidGoals,
+  getCanonicalGoals,
+  getGoalsByCategory,
+  getRepRangeForGoal,
+  getRestTimeForGoal,
+  getSetsForGoal,
+  getRIRForGoal,
+  getIntensityForGoal,
+  getVolumeRecommendation,
+  migrateGoalValue,
+  GOAL_CONFIGS
+} from './goalMapper';

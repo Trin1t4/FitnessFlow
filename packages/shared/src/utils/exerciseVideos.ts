@@ -82,16 +82,32 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   'Deep Squat Hold': 'deep-squat-hold.mp4',
 
   // === LEG CURL varianti ===
-  'Slider Leg Curl': 'standing-leg-curl.mp4',
+  'Slider Leg Curl': 'slider-leg-curl.mp4',
   'Leg Curl': 'leg-curl.mp4',
   'Leg Curl (Machine)': 'leg-curl.mp4',
   'Leg Curl Machine': 'leg-curl.mp4',
   'Standing Leg Curl': 'standing-leg-curl.mp4',
+  'Seated Leg Curl': 'seated-leg-curl.mp4',
+  'Leg Curl Seduto': 'seated-leg-curl.mp4',
+  'Lying Leg Curl': 'lying-leg-curl.mp4',
+  'Leg Curl Sdraiato': 'lying-leg-curl.mp4',
+  'Swiss Ball Leg Curl': 'swiss-ball-leg-curl.mp4',
+  'Leg Curl con Palla': 'swiss-ball-leg-curl.mp4',
 
   // === HIP THRUST / GLUTE ===
   'Hip Thrust': 'hip-thrust.mp4',
   'Hip Thrust (Elevated)': 'hip-thrust.mp4',
-  'Single Leg Glute Bridge': 'glute-bridge.mp4',
+  'Single Leg Glute Bridge': 'single-leg-glute-bridge.mp4',
+  'Single Leg Hip Thrust': 'single-leg-hip-thrust.mp4',
+  'Hip Thrust Monopodalico': 'single-leg-hip-thrust.mp4',
+  'Banded Hip Thrust': 'banded-hip-thrust.mp4',
+  'Hip Thrust con Elastico': 'banded-hip-thrust.mp4',
+  'Frog Pump': 'frog-pump.mp4',
+  'Cable Pull Through': 'cable-pull-through.mp4',
+  'Cable Pull-through': 'cable-pull-through.mp4',
+  'Pull Through ai Cavi': 'cable-pull-through.mp4',
+  'Cable Kickback': 'cable-kickback.mp4',
+  'Kickback ai Cavi': 'cable-kickback.mp4',
 
   // === DEADLIFT varianti ===
   'Romanian Deadlift (RDL)': 'romanian-deadlift.mp4',
@@ -176,6 +192,13 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   // === CALVES ===
   'Standing Calf Raise': 'standing-calf-raise.mp4',
   'Seated Calf Raise': 'seated-calf-raise.mp4',
+  'Single Leg Calf Raise': 'single-leg-calf-raise.mp4',
+  'Calf Raise Monopodalico': 'single-leg-calf-raise.mp4',
+  'Calf Raise Unilaterale': 'single-leg-calf-raise.mp4',
+  'Donkey Calf Raise': 'donkey-calf-raise.mp4',
+  'Calf Raise Donkey': 'donkey-calf-raise.mp4',
+  'Tibialis Raise': 'tibialis-raise.mp4',
+  'Alzate Tibiali': 'tibialis-raise.mp4',
 
   // === MOBILITY / CORRECTIVE ===
   'Cat-Cow': 'cat-cow.mp4',
@@ -239,7 +262,6 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   'Ponte Glutei Monopodalico': 'single-leg-glute-bridge.mp4',
   'Ponte Glutei a Una Gamba': 'single-leg-glute-bridge.mp4',
   'Hip Thrust Elevato': 'elevated-hip-thrust.mp4',
-  'Hip Thrust Monopodalico': 'single-leg-glute-bridge.mp4',
   'Stacco Rumeno Monopodalico': 'single-leg-rdl.mp4',
   'Leg Curl Scorrevole': 'slider-leg-curl.mp4',
   'Leg Curl Scorrevole Singolo': 'slider-leg-curl.mp4',

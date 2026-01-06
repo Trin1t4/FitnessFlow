@@ -316,3 +316,37 @@ export {
   type ExerciseModification,
   type SaveModificationInput,
 } from './exerciseModificationService';
+
+// Screening Data Persistence Service
+export {
+  initScreeningPersistence,
+  saveScreeningToLocal,
+  loadScreeningFromLocal,
+  clearScreeningLocal,
+  saveScreeningWithSync,
+  syncScreeningData,
+  validateScreeningData,
+  normalizeScreeningData,
+  inferMissingBaselines as inferMissingScreeningBaselines,
+  type ScreeningData,
+  type ScreeningSyncResult,
+} from './screeningDataPersistence';
+
+// Unified Wellness Service
+export {
+  initWellnessService,
+  calculateWellnessScore,
+  calculateWorkoutReadiness,
+  processPainEvent,
+  shouldModifyExercise,
+  saveSessionWellness,
+  getPainHistory,
+  analyzePainTrends,
+  type WellnessAssessment,
+  type WorkoutReadiness,
+  type PainEvent,
+  type WorkoutAdaptation,
+  type SessionWellnessData,
+  type PainArea as WellnessPainArea,
+  type PainRestriction,
+} from './unifiedWellnessService';
