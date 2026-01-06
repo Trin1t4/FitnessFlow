@@ -622,7 +622,7 @@ export type {
 export {
   calculateDowngrade,
   calculateUpgrade,
-  isBodyweightExercise,
+  isBodyweightExercise as isBodyweightExerciseRIR,
   didUserPushTooHard,
   getEducationalMessage
 } from './rirAdjustmentLogic';
