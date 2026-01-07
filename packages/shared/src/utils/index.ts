@@ -798,3 +798,87 @@ export {
   BIOMECHANICS_EVIDENCE,
   MORPHOTYPE_NOTES
 } from './biomechanics/exerciseAnalyzers';
+
+// ============================================================
+// PROGRESSIVE OVERLOAD & VOLUME TRACKING SYSTEMS
+// ============================================================
+
+// Body Composition Scoring (Navy Formula - replaces BMI-only)
+export type {
+  BodyMeasurements as BCBodyMeasurements,
+  BodyCompositionResult as BCResult,
+  PhysicalScoreResult
+} from './bodyCompositionScoring';
+export {
+  calculateNavyBodyFat,
+  estimateBodyFatFromBMI,
+  calculateBodyComposition as calculateBCComposition,
+  calculatePhysicalScore,
+  calculatePhysicalScoreFromOnboarding,
+  BodyCompositionScoring
+} from './bodyCompositionScoring';
+
+// RIR Calibration by Level (beginners overestimate RIR)
+export type {
+  UserLevel as RIRUserLevel,
+  RIRCalibrationConfig,
+  CalibratedRIR,
+  AdjustmentDecision
+} from './rirCalibration';
+export {
+  calibrateRIR,
+  shouldApplyWeightAdjustment,
+  getTargetRIR as getRIRTarget,
+  analyzeRIRPattern,
+  RIR_CALIBRATION_CONFIG,
+  TARGET_RIR_MATRIX,
+  RIRCalibration
+} from './rirCalibration';
+
+// Progressive Overload (Linear/Double/Wave Periodization)
+export type {
+  ProgressionStrategy,
+  ProgressionConfig,
+  ProgressionResult as OverloadProgressionResult,
+  WeeklyPlan,
+  ExerciseProgressionHistory
+} from './progressiveOverload';
+export {
+  calculateNextWeight,
+  generateProgressionPlan,
+  analyzeProgressionHistory,
+  calculateE1RM,
+  weightForReps,
+  PROGRESSION_CONFIG as OVERLOAD_PROGRESSION_CONFIG,
+  EXERCISE_TYPE_MODIFIERS,
+  ProgressiveOverload
+} from './progressiveOverload';
+
+// Weekly Volume Tracker (sets per muscle group)
+export type {
+  VolumeStatus,
+  VolumeThresholds,
+  MuscleGroupVolume,
+  VolumeAnalysis,
+  ExerciseVolumeContribution
+} from './weeklyVolumeTracker';
+export {
+  calculateWeeklyVolume,
+  analyzeWeeklyVolume,
+  getExerciseContributions,
+  VOLUME_THRESHOLDS,
+  PATTERN_MUSCLE_MAP,
+  WeeklyVolumeTracker
+} from './weeklyVolumeTracker';
+
+// Corrective Exercises DCSS (replaces McGill Big 3)
+export type {
+  CorrectiveExercise as DCSSCorrectiveExercise,
+  CorrectiveProtocol as DCSSCorrectiveProtocol
+} from './correctiveExercisesDCSS';
+export {
+  LOWER_BACK_CORRECTIVES as DCSS_LOWER_BACK_CORRECTIVES,
+  CORRECTIVE_MAPPING,
+  getCorrectiveExercisesForArea,
+  CorrectiveExercisesDCSS
+} from './correctiveExercisesDCSS';

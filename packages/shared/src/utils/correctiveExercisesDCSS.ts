@@ -1,17 +1,26 @@
 /**
- * CORRECTIVE EXERCISES - DCSS Paradigm
+ * CORRECTIVE EXERCISES - DCSS Paradigm (Replaces McGill-centric approach)
  * 
- * Esercizi correttivi e alternative basate su principi DCSS.
- * NON prescrittivi, ma suggerimenti per chi vuole lavorare su specifici pattern.
+ * ⚠️ QUESTO FILE SOSTITUISCE movementSpecificCorrectiveExercises.ts
  * 
- * PRINCIPI:
- * 1. Niente è "obbligatorio" - sono opzioni
- * 2. L'obiettivo è migliorare la tolleranza, non evitare il movimento
- * 3. Progressione verso il movimento completo, non away from it
- * 4. Contesto individuale sempre considerato
+ * CAMBIAMENTI CHIAVE DA McGILL → DCSS:
  * 
- * NOTA: I "McGill Big 3" sono validi per chi ha intolleranza alla flessione,
- * ma NON sono il default per tutti. Sono UNA opzione tra molte.
+ * 1. ❌ RIMOSSO: "McGill Big 3" come gold standard
+ * 2. ✅ AGGIUNTO: Diversità di opzioni (l'utente sceglie)
+ * 3. ✅ AGGIUNTO: Progressione VERSO il movimento, non LONTANO da esso
+ * 4. ✅ AGGIUNTO: Linguaggio educativo, non prescrittivo
+ * 5. ✅ AGGIUNTO: Jefferson Curl e altri esercizi di tolleranza alla flessione
+ * 
+ * FILOSOFIA DCSS (Evangelista):
+ * - La flessione spinale NON è intrinsecamente pericolosa
+ * - Il corpo si ADATTA ai carichi progressivi
+ * - L'obiettivo è costruire TOLLERANZA, non evitare pattern
+ * - Gli esercizi sono OPZIONI, non prescrizioni
+ * 
+ * REFERENCE:
+ * - Evangelista P - DCSS (Didattica e Correzione degli esercizi)
+ * - Caneiro JP et al. (2019) - Beliefs about the body and pain
+ * - O'Sullivan PB et al. (2018) - Cognitive functional therapy
  */
 
 // ============================================================================
@@ -21,525 +30,561 @@
 export interface CorrectiveExercise {
   name: string;
   nameIt: string;
-  category: 'mobility' | 'activation' | 'stability' | 'load_progression';
-  targetArea: string[];
-  purpose: string;
-  purposeIt: string;
   sets: string;
   reps: string;
   rest: string;
+  purpose: string;
+  purposeIt: string;
   cues: string[];
   cuesIt: string[];
-  videoUrl?: string;
+  alternative?: string;
+  progressionTo?: string;
   whenToUse: string;
   whenToUseIt: string;
-  progression?: string;
-  progressionIt?: string;
+  whenToAvoid?: string;
+  whenToAvoidIt?: string;
+  videoUrl?: string;
 }
 
-export interface MovementCorrectiveSet {
-  movement: string;
-  context: string;
-  contextIt: string;
-  note: string;
-  noteIt: string;
+export interface CorrectiveProtocol {
+  id: string;
+  movementPattern: string;
+  description: string;
+  descriptionIt: string;
+  approach: 'mobility' | 'stability' | 'tolerance' | 'strength';
+  educationalNote: string;
+  educationalNoteIt: string;
   exercises: CorrectiveExercise[];
+  progressionPath: string[];
 }
 
 // ============================================================================
-// CORRECTIVE EXERCISES DATABASE
+// LOWER BACK PROTOCOLS (DCSS - No McGill)
 // ============================================================================
 
-/**
- * Esercizi per migliorare la mobilità dell'anca
- * Utili per: squat depth, deadlift setup, lunge range
- */
-export const HIP_MOBILITY_EXERCISES: CorrectiveExercise[] = [
-  {
-    name: '90/90 Hip Stretch',
-    nameIt: 'Stretch Anca 90/90',
-    category: 'mobility',
-    targetArea: ['hip'],
-    purpose: 'Improve hip internal and external rotation',
-    purposeIt: 'Migliorare la rotazione interna ed esterna dell\'anca',
-    sets: '2-3',
-    reps: '30-60s per side',
-    rest: '30s',
-    cues: [
-      'Front leg at 90°, back leg at 90°',
-      'Keep spine neutral, don\'t round',
-      'Breathe deeply, relax into the stretch'
-    ],
-    cuesIt: [
-      'Gamba anteriore a 90°, gamba posteriore a 90°',
-      'Mantieni la colonna neutra, non arrotondare',
-      'Respira profondamente, rilassati nello stretch'
-    ],
-    whenToUse: 'Before squats/deadlifts if you feel "blocked" at the hips',
-    whenToUseIt: 'Prima di squat/stacchi se ti senti "bloccato" alle anche'
-  },
-  {
-    name: 'Goblet Squat Hold',
-    nameIt: 'Goblet Squat Tenuta',
-    category: 'mobility',
-    targetArea: ['hip', 'ankle'],
-    purpose: 'Improve squat depth with assistance',
-    purposeIt: 'Migliorare la profondità dello squat con assistenza',
-    sets: '2-3',
-    reps: '30-45s hold',
-    rest: '30s',
-    cues: [
-      'Use light weight for counterbalance',
-      'Push knees out with elbows',
-      'Keep chest up, breathe normally'
-    ],
-    cuesIt: [
-      'Usa un peso leggero per il controbilanciamento',
-      'Spingi le ginocchia fuori con i gomiti',
-      'Mantieni il petto alto, respira normalmente'
-    ],
-    whenToUse: 'If you struggle to reach depth in squat',
-    whenToUseIt: 'Se fai fatica a raggiungere la profondità nello squat'
-  },
-  {
-    name: 'Hip Flexor Stretch (Half Kneeling)',
-    nameIt: 'Stretch Flessori Anca (Mezza Ginocchio)',
-    category: 'mobility',
-    targetArea: ['hip'],
-    purpose: 'Release tight hip flexors that limit hip extension',
-    purposeIt: 'Rilasciare i flessori dell\'anca tesi che limitano l\'estensione',
-    sets: '2',
-    reps: '45-60s per side',
-    rest: '30s',
-    cues: [
-      'Tuck pelvis (posterior tilt)',
-      'Squeeze glute of the back leg',
-      'Lean forward only until you feel stretch in front of hip'
-    ],
-    cuesIt: [
-      'Retroversione del bacino',
-      'Stringi il gluteo della gamba posteriore',
-      'Inclinati in avanti solo fino a sentire lo stretch davanti all\'anca'
-    ],
-    whenToUse: 'If you sit a lot or feel tight in front of hips during deadlifts',
-    whenToUseIt: 'Se stai molto seduto o senti tensione davanti alle anche durante gli stacchi'
-  }
-];
-
-/**
- * Esercizi per migliorare la mobilità della caviglia
- * Utili per: squat depth, forward knee travel
- */
-export const ANKLE_MOBILITY_EXERCISES: CorrectiveExercise[] = [
-  {
-    name: 'Wall Ankle Mobilization',
-    nameIt: 'Mobilizzazione Caviglia al Muro',
-    category: 'mobility',
-    targetArea: ['ankle'],
-    purpose: 'Improve ankle dorsiflexion for better squat mechanics',
-    purposeIt: 'Migliorare la dorsiflessione della caviglia per una migliore meccanica dello squat',
-    sets: '2-3',
-    reps: '10-15 per side',
-    rest: '30s',
-    cues: [
-      'Face wall, foot 3-4 inches from wall',
-      'Drive knee forward over toes',
-      'Keep heel down, don\'t let it lift'
-    ],
-    cuesIt: [
-      'Di fronte al muro, piede a 8-10 cm dal muro',
-      'Porta il ginocchio avanti oltre le dita',
-      'Tieni il tallone giù, non farlo alzare'
-    ],
-    whenToUse: 'If your heels rise during squat or you can\'t reach depth',
-    whenToUseIt: 'Se i talloni si alzano durante lo squat o non riesci a raggiungere la profondità'
-  },
-  {
-    name: 'Banded Ankle Distraction',
-    nameIt: 'Distrazione Caviglia con Banda',
-    category: 'mobility',
-    targetArea: ['ankle'],
-    purpose: 'Improve joint mobility of the ankle',
-    purposeIt: 'Migliorare la mobilità articolare della caviglia',
-    sets: '2',
-    reps: '10-15 oscillations per side',
-    rest: '30s',
-    cues: [
-      'Band around front of ankle, anchored behind',
-      'Lunge forward, letting band pull ankle back',
-      'Oscillate gently in and out of range'
-    ],
-    cuesIt: [
-      'Banda intorno alla parte anteriore della caviglia, ancorata dietro',
-      'Affondo in avanti, lasciando che la banda tiri indietro la caviglia',
-      'Oscilla delicatamente dentro e fuori dal range'
-    ],
-    whenToUse: 'Before lower body work if ankle mobility is limited',
-    whenToUseIt: 'Prima del lavoro lower body se la mobilità della caviglia è limitata'
-  }
-];
-
-/**
- * Esercizi per attivazione glutei
- * Utili per: valgismo, debolezza in squat/deadlift
- */
-export const GLUTE_ACTIVATION_EXERCISES: CorrectiveExercise[] = [
-  {
-    name: 'Glute Bridge',
-    nameIt: 'Ponte Glutei',
-    category: 'activation',
-    targetArea: ['hip', 'glutes'],
-    purpose: 'Wake up glutes before compound lifts',
-    purposeIt: 'Attivare i glutei prima degli esercizi composti',
-    sets: '2',
-    reps: '10-15',
-    rest: '30s',
-    cues: [
-      'Feet hip width, heels close to butt',
-      'Squeeze glutes to lift hips',
-      'Pause at top, feel the squeeze'
-    ],
-    cuesIt: [
-      'Piedi larghezza anche, talloni vicino al sedere',
-      'Stringi i glutei per sollevare le anche',
-      'Pausa in alto, senti la contrazione'
-    ],
-    whenToUse: 'Before squats/deadlifts if you feel glutes don\'t engage well',
-    whenToUseIt: 'Prima di squat/stacchi se senti che i glutei non si attivano bene'
-  },
-  {
-    name: 'Clamshell',
-    nameIt: 'Clamshell',
-    category: 'activation',
-    targetArea: ['hip', 'glutes'],
-    purpose: 'Activate gluteus medius to prevent knee valgus',
-    purposeIt: 'Attivare il gluteo medio per prevenire il valgismo del ginocchio',
-    sets: '2',
-    reps: '15-20 per side',
-    rest: '30s',
-    cues: [
-      'Lie on side, knees bent at 90°',
-      'Keep feet together, open knees like a clamshell',
-      'Don\'t rotate pelvis, isolate the hip'
-    ],
-    cuesIt: [
-      'Sdraiato sul fianco, ginocchia piegate a 90°',
-      'Tieni i piedi uniti, apri le ginocchia come una conchiglia',
-      'Non ruotare il bacino, isola l\'anca'
-    ],
-    whenToUse: 'If your knees tend to cave in during squats or lunges',
-    whenToUseIt: 'Se le ginocchia tendono a cedere verso l\'interno durante squat o affondi'
-  },
-  {
-    name: 'Banded Monster Walk',
-    nameIt: 'Monster Walk con Banda',
-    category: 'activation',
-    targetArea: ['hip', 'glutes'],
-    purpose: 'Activate glutes in a more functional pattern',
-    purposeIt: 'Attivare i glutei in un pattern più funzionale',
-    sets: '2',
-    reps: '10 steps each direction',
-    rest: '30s',
-    cues: [
-      'Band around ankles or above knees',
-      'Slight squat position, stay low',
-      'Take wide steps, maintain tension on band'
-    ],
-    cuesIt: [
-      'Banda intorno alle caviglie o sopra le ginocchia',
-      'Posizione di leggero squat, resta basso',
-      'Fai passi ampi, mantieni tensione sulla banda'
-    ],
-    whenToUse: 'Before squats if you want to prime your glutes',
-    whenToUseIt: 'Prima degli squat se vuoi preparare i glutei'
-  }
-];
-
-/**
- * Esercizi per controllo del core
- * NOTA: Questi NON sono "McGill Big 3" come prescrizione universale.
- * Sono opzioni per chi vuole lavorare sulla stabilità del core.
- */
-export const CORE_STABILITY_EXERCISES: CorrectiveExercise[] = [
-  {
-    name: 'Dead Bug',
-    nameIt: 'Dead Bug',
-    category: 'stability',
-    targetArea: ['core', 'lower_back'],
-    purpose: 'Learn to stabilize core while moving limbs',
-    purposeIt: 'Imparare a stabilizzare il core mentre si muovono gli arti',
-    sets: '2-3',
-    reps: '8-10 per side',
-    rest: '30s',
-    cues: [
-      'Back flat on floor, no gap under lower back',
-      'Move opposite arm and leg slowly',
-      'Exhale as you extend, don\'t let back arch'
-    ],
-    cuesIt: [
-      'Schiena piatta sul pavimento, nessuno spazio sotto la bassa schiena',
-      'Muovi braccio e gamba opposti lentamente',
-      'Espira mentre estendi, non lasciare che la schiena si inarchi'
-    ],
-    whenToUse: 'If you want to improve core control during lifts',
-    whenToUseIt: 'Se vuoi migliorare il controllo del core durante i sollevamenti'
-  },
-  {
-    name: 'Bird Dog',
-    nameIt: 'Bird Dog',
-    category: 'stability',
-    targetArea: ['core', 'lower_back'],
-    purpose: 'Develop spine stability during movement',
-    purposeIt: 'Sviluppare la stabilità della colonna durante il movimento',
-    sets: '2-3',
-    reps: '8-10 per side',
-    rest: '30s',
-    cues: [
-      'Hands under shoulders, knees under hips',
-      'Extend opposite arm and leg, keep spine neutral',
-      'Move slowly, don\'t rush'
-    ],
-    cuesIt: [
-      'Mani sotto le spalle, ginocchia sotto le anche',
-      'Estendi braccio e gamba opposti, mantieni la colonna neutra',
-      'Muoviti lentamente, non avere fretta'
-    ],
-    whenToUse: 'Before deadlifts or if you want to work on back stability',
-    whenToUseIt: 'Prima degli stacchi o se vuoi lavorare sulla stabilità della schiena'
-  },
-  {
-    name: 'Pallof Press',
-    nameIt: 'Pallof Press',
-    category: 'stability',
-    targetArea: ['core'],
-    purpose: 'Anti-rotation core training',
-    purposeIt: 'Allenamento del core anti-rotazione',
-    sets: '2-3',
-    reps: '8-10 per side',
-    rest: '30s',
-    cues: [
-      'Stand sideways to cable/band anchor',
-      'Hold at chest, press straight out',
-      'Resist rotation, keep hips square'
-    ],
-    cuesIt: [
-      'In piedi di lato rispetto all\'ancoraggio cavo/banda',
-      'Tieni al petto, spingi dritto in avanti',
-      'Resisti alla rotazione, mantieni i fianchi fermi'
-    ],
-    whenToUse: 'If you want to build core stability for compound lifts',
-    whenToUseIt: 'Se vuoi costruire stabilità del core per esercizi composti'
-  }
-];
-
-/**
- * Progressioni di carico per tornare a movimenti completi
- * L'obiettivo è TORNARE al movimento, non evitarlo
- */
-export const LOAD_PROGRESSION_EXERCISES: CorrectiveExercise[] = [
-  {
-    name: 'Box Squat',
-    nameIt: 'Box Squat',
-    category: 'load_progression',
-    targetArea: ['hip', 'lower_back', 'knee'],
-    purpose: 'Squat with controlled depth and confidence',
-    purposeIt: 'Squat con profondità controllata e sicurezza',
-    sets: '3-4',
-    reps: '8-10',
-    rest: '90s',
-    cues: [
-      'Set box at a height you\'re comfortable with',
-      'Sit back to box, don\'t plop',
-      'Stand up from controlled seated position'
-    ],
-    cuesIt: [
-      'Imposta il box a un\'altezza con cui ti senti a tuo agio',
-      'Siediti indietro sul box, non lasciarti cadere',
-      'Alzati da una posizione seduta controllata'
-    ],
-    whenToUse: 'When returning to squats after discomfort, to control depth',
-    whenToUseIt: 'Quando torni agli squat dopo un fastidio, per controllare la profondità',
-    progression: 'Lower the box as confidence increases',
-    progressionIt: 'Abbassa il box man mano che la sicurezza aumenta'
-  },
-  {
-    name: 'Rack Pull',
-    nameIt: 'Rack Pull',
-    category: 'load_progression',
-    targetArea: ['lower_back', 'hip'],
-    purpose: 'Deadlift from elevated position to reduce range of motion',
-    purposeIt: 'Stacco da posizione rialzata per ridurre il range of motion',
-    sets: '3-4',
-    reps: '6-8',
-    rest: '2min',
-    cues: [
-      'Set pins at knee level or above',
-      'Same technique as full deadlift',
-      'Gradually lower starting height over weeks'
-    ],
-    cuesIt: [
-      'Imposta i fermi all\'altezza delle ginocchia o sopra',
-      'Stessa tecnica dello stacco completo',
-      'Abbassa gradualmente l\'altezza di partenza nelle settimane'
-    ],
-    whenToUse: 'When returning to deadlifts after back discomfort',
-    whenToUseIt: 'Quando torni agli stacchi dopo un fastidio alla schiena',
-    progression: 'Lower the pins each week until reaching floor',
-    progressionIt: 'Abbassa i fermi ogni settimana fino a raggiungere il pavimento'
-  },
-  {
-    name: 'Floor Press',
-    nameIt: 'Floor Press',
-    category: 'load_progression',
-    targetArea: ['shoulder'],
-    purpose: 'Bench press with naturally limited range of motion',
-    purposeIt: 'Panca con range of motion naturalmente limitato',
-    sets: '3-4',
-    reps: '8-10',
-    rest: '90s',
-    cues: [
-      'Lie on floor, elbows touch floor at bottom',
-      'Same technique as bench press',
-      'Pause briefly when elbows touch floor'
-    ],
-    cuesIt: [
-      'Sdraiato sul pavimento, i gomiti toccano il pavimento in basso',
-      'Stessa tecnica della panca piana',
-      'Breve pausa quando i gomiti toccano il pavimento'
-    ],
-    whenToUse: 'When returning to pressing after shoulder discomfort',
-    whenToUseIt: 'Quando torni alle spinte dopo un fastidio alla spalla',
-    progression: 'Progress to low incline, then flat bench',
-    progressionIt: 'Progredisci a panca inclinata bassa, poi panca piana'
-  }
-];
-
-// ============================================================================
-// MOVEMENT-SPECIFIC CORRECTIVE SETS
-// ============================================================================
-
-export const MOVEMENT_CORRECTIVE_SETS: MovementCorrectiveSet[] = [
-  {
-    movement: 'squat',
-    context: 'For improving squat depth and control',
-    contextIt: 'Per migliorare profondità e controllo dello squat',
-    note: 'These are OPTIONAL exercises if you want to work on your squat. They are not mandatory.',
-    noteIt: 'Questi sono esercizi OPZIONALI se vuoi lavorare sul tuo squat. Non sono obbligatori.',
-    exercises: [
-      ...HIP_MOBILITY_EXERCISES.slice(0, 2),
-      ...ANKLE_MOBILITY_EXERCISES.slice(0, 1),
-      ...GLUTE_ACTIVATION_EXERCISES.slice(0, 1)
-    ]
-  },
-  {
-    movement: 'deadlift',
-    context: 'For improving deadlift setup and hip hinge',
-    contextIt: 'Per migliorare il setup dello stacco e l\'hip hinge',
-    note: 'These are OPTIONAL exercises if you want to work on your deadlift pattern.',
-    noteIt: 'Questi sono esercizi OPZIONALI se vuoi lavorare sul tuo pattern di stacco.',
-    exercises: [
-      ...HIP_MOBILITY_EXERCISES.filter(e => e.name.includes('Hip Flexor') || e.name.includes('90/90')),
-      ...GLUTE_ACTIVATION_EXERCISES.slice(0, 1),
-      ...CORE_STABILITY_EXERCISES.slice(0, 1)
-    ]
-  },
-  {
-    movement: 'bench_press',
-    context: 'For improving bench press stability and shoulder health',
-    contextIt: 'Per migliorare la stabilità della panca e la salute della spalla',
-    note: 'These are OPTIONAL exercises if you want to work on your pressing pattern.',
-    noteIt: 'Questi sono esercizi OPZIONALI se vuoi lavorare sul tuo pattern di spinta.',
-    exercises: [
-      // Shoulder mobility and stability exercises would go here
-    ]
-  },
-  {
-    movement: 'knee_discomfort',
-    context: 'For those experiencing knee discomfort who want to continue training',
-    contextIt: 'Per chi ha fastidio al ginocchio e vuole continuare ad allenarsi',
-    note: 'These exercises can help you continue training while managing discomfort. Consult a professional if discomfort persists.',
-    noteIt: 'Questi esercizi possono aiutarti a continuare ad allenarti gestendo il fastidio. Consulta un professionista se il fastidio persiste.',
-    exercises: [
-      ...GLUTE_ACTIVATION_EXERCISES.slice(0, 2),
-      ...LOAD_PROGRESSION_EXERCISES.filter(e => e.name === 'Box Squat')
-    ]
-  },
-  {
-    movement: 'lower_back_discomfort',
-    context: 'For those experiencing lower back discomfort who want to continue training',
-    contextIt: 'Per chi ha fastidio alla bassa schiena e vuole continuare ad allenarsi',
-    note: 'These exercises can help build tolerance while managing discomfort. The goal is to return to full movements, not avoid them.',
-    noteIt: 'Questi esercizi possono aiutare a costruire tolleranza gestendo il fastidio. L\'obiettivo è tornare ai movimenti completi, non evitarli.',
-    exercises: [
-      ...CORE_STABILITY_EXERCISES.slice(0, 2),
-      ...HIP_MOBILITY_EXERCISES.slice(0, 1),
-      ...LOAD_PROGRESSION_EXERCISES.filter(e => e.name === 'Rack Pull')
-    ]
-  }
-];
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Get corrective exercises for a specific movement pattern
- */
-export function getCorrectivesForMovement(movement: string): MovementCorrectiveSet | null {
-  return MOVEMENT_CORRECTIVE_SETS.find(m => m.movement === movement) || null;
-}
-
-/**
- * Get corrective exercises for a specific body area
- */
-export function getCorrectivesForArea(area: string): CorrectiveExercise[] {
-  const allExercises = [
-    ...HIP_MOBILITY_EXERCISES,
-    ...ANKLE_MOBILITY_EXERCISES,
-    ...GLUTE_ACTIVATION_EXERCISES,
-    ...CORE_STABILITY_EXERCISES,
-    ...LOAD_PROGRESSION_EXERCISES
-  ];
+export const LOWER_BACK_CORRECTIVES: Record<string, CorrectiveProtocol> = {
   
-  return allExercises.filter(ex => ex.targetArea.includes(area));
-}
-
-/**
- * Get warm-up suggestions based on planned exercises
- */
-export function getSuggestedWarmup(
-  plannedExercises: string[],
-  discomfortAreas: string[] = []
-): CorrectiveExercise[] {
-  const suggestions: CorrectiveExercise[] = [];
-  
-  // Check for squat variations
-  if (plannedExercises.some(ex => ex.toLowerCase().includes('squat'))) {
-    suggestions.push(...HIP_MOBILITY_EXERCISES.slice(0, 1));
-    suggestions.push(...ANKLE_MOBILITY_EXERCISES.slice(0, 1));
-    suggestions.push(...GLUTE_ACTIVATION_EXERCISES.slice(0, 1));
-  }
-  
-  // Check for deadlift variations
-  if (plannedExercises.some(ex => 
-    ex.toLowerCase().includes('deadlift') || 
-    ex.toLowerCase().includes('rdl') ||
-    ex.toLowerCase().includes('stacco')
-  )) {
-    suggestions.push(...HIP_MOBILITY_EXERCISES.filter(e => e.name.includes('Hip Flexor')));
-    suggestions.push(...GLUTE_ACTIVATION_EXERCISES.slice(0, 1));
-  }
-  
-  // Add area-specific exercises for discomfort
-  for (const area of discomfortAreas) {
-    const areaExercises = getCorrectivesForArea(area);
-    for (const ex of areaExercises) {
-      if (!suggestions.find(s => s.name === ex.name)) {
-        suggestions.push(ex);
+  /**
+   * FLEXION SENSITIVITY
+   * Approccio DCSS: Costruire tolleranza progressiva alla flessione,
+   * NON evitarla permanentemente
+   */
+  spinal_flexion_sensitivity: {
+    id: 'spinal_flexion_sensitivity',
+    movementPattern: 'spinal_flexion',
+    description: 'For those reporting discomfort with forward bending',
+    descriptionIt: 'Per chi segnala fastidio piegandosi in avanti',
+    approach: 'tolerance',
+    educationalNote: 'Spinal flexion is NORMAL and safe when controlled. The spine is strong and adaptable. Our goal is to build your tolerance, not to avoid the movement forever. Many people bend forward daily without issues.',
+    educationalNoteIt: 'La flessione spinale è NORMALE e sicura quando controllata. La colonna è forte e adattabile. Il nostro obiettivo è costruire la tua tolleranza, non evitare il movimento per sempre. Molte persone si piegano in avanti quotidianamente senza problemi.',
+    exercises: [
+      {
+        name: 'Cat-Cow',
+        nameIt: 'Gatto-Mucca',
+        sets: '2-3',
+        reps: '8-10 cicli',
+        rest: '30s',
+        purpose: 'Gentle spinal mobility through full range - normalizes flexion',
+        purposeIt: 'Mobilità spinale dolce attraverso tutto il ROM - normalizza la flessione',
+        cues: [
+          'On all fours, hands under shoulders, knees under hips',
+          'Slowly round your back (cat), then gently arch (cow)',
+          'Move within comfortable range - it should feel good',
+          'Breathe: exhale on cat (flexion), inhale on cow (extension)'
+        ],
+        cuesIt: [
+          'Quadrupedia, mani sotto le spalle, ginocchia sotto i fianchi',
+          'Arrotonda lentamente la schiena (gatto), poi inarca dolcemente (mucca)',
+          'Muoviti nel range confortevole - dovrebbe essere piacevole',
+          'Respira: espira nel gatto (flessione), inspira nella mucca (estensione)'
+        ],
+        alternative: 'Pelvic Tilts (supine)',
+        progressionTo: 'Seated Flexion, then Jefferson Curl',
+        whenToUse: 'Warm-up or any time to reduce stiffness',
+        whenToUseIt: 'Riscaldamento o in qualsiasi momento per ridurre la rigidità'
+      },
+      {
+        name: 'Child\'s Pose (Supported)',
+        nameIt: 'Posizione del Bambino (Supportata)',
+        sets: '2-3',
+        reps: '30-60s hold',
+        rest: '15s',
+        purpose: 'Sustained, relaxed spinal flexion - desensitization',
+        purposeIt: 'Flessione spinale sostenuta e rilassata - desensibilizzazione',
+        cues: [
+          'Kneel and sit back on heels, arms forward or alongside body',
+          'Let gravity gently flex your spine - don\'t force',
+          'Breathe deeply into your lower back',
+          'You can place a pillow under your belly for support'
+        ],
+        cuesIt: [
+          'Inginocchiati e siediti sui talloni, braccia in avanti o lungo il corpo',
+          'Lascia che la gravità fletta dolcemente la colonna - non forzare',
+          'Respira profondamente nella bassa schiena',
+          'Puoi mettere un cuscino sotto la pancia per supporto'
+        ],
+        alternative: 'Supine Knee-to-Chest',
+        progressionTo: 'Full Child\'s Pose without support',
+        whenToUse: 'Cool-down or rest days',
+        whenToUseIt: 'Defaticamento o giorni di riposo'
+      },
+      {
+        name: 'Dead Bug',
+        nameIt: 'Dead Bug',
+        sets: '2-3',
+        reps: '8-10 per lato',
+        rest: '45s',
+        purpose: 'Core control while maintaining spine position - builds stability',
+        purposeIt: 'Controllo del core mantenendo la posizione spinale - costruisce stabilità',
+        cues: [
+          'Supine, arms toward ceiling, knees at 90°',
+          'Press lower back gently into floor (not forced)',
+          'Extend opposite arm and leg slowly',
+          'Maintain back contact throughout - no arching'
+        ],
+        cuesIt: [
+          'Supino, braccia verso il soffitto, ginocchia a 90°',
+          'Premi dolcemente la lombare a terra (non forzato)',
+          'Estendi braccio e gamba opposti lentamente',
+          'Mantieni il contatto della schiena - niente inarcamenti'
+        ],
+        alternative: 'Supine March',
+        progressionTo: 'Bird Dog',
+        whenToUse: 'Core work in any session',
+        whenToUseIt: 'Lavoro core in qualsiasi sessione'
+      },
+      {
+        name: 'Jefferson Curl (Bodyweight)',
+        nameIt: 'Jefferson Curl (Corpo Libero)',
+        sets: '2',
+        reps: '5-8',
+        rest: '60s',
+        purpose: 'PROGRESSIVE LOADING of spinal flexion - BUILDS TOLERANCE',
+        purposeIt: 'CARICO PROGRESSIVO della flessione spinale - COSTRUISCE TOLLERANZA',
+        cues: [
+          'Stand on elevated surface (box/step) or floor',
+          'NO weight initially - just bodyweight',
+          'Roll down ONE VERTEBRA at a time from neck to lower back',
+          'Let arms hang, feel stretch in hamstrings and entire back',
+          'Roll up the same way - controlled, vertebra by vertebra'
+        ],
+        cuesIt: [
+          'In piedi su superficie rialzata (box/step) o pavimento',
+          'NESSUN peso inizialmente - solo corpo libero',
+          'Scendi UNA VERTEBRA alla volta dal collo alla bassa schiena',
+          'Lascia le braccia penzolare, senti lo stretch in femorali e tutta la schiena',
+          'Risali allo stesso modo - controllato, vertebra per vertebra'
+        ],
+        alternative: 'Standing Forward Fold',
+        progressionTo: 'Jefferson Curl with light weight (2-5kg)',
+        whenToUse: 'When ready to build flexion tolerance (not in acute phase)',
+        whenToUseIt: 'Quando sei pronto a costruire tolleranza alla flessione (non in fase acuta)',
+        whenToAvoid: 'Acute disc symptoms, first 1-2 weeks of new discomfort',
+        whenToAvoidIt: 'Sintomi discali acuti, prime 1-2 settimane di nuovo fastidio'
       }
+    ],
+    progressionPath: [
+      'Cat-Cow (mobility)',
+      'Child\'s Pose (passive flexion)',
+      'Dead Bug (core control)',
+      'Jefferson Curl bodyweight (active flexion)',
+      'Jefferson Curl loaded (progressive overload)'
+    ]
+  },
+
+  /**
+   * EXTENSION SENSITIVITY
+   */
+  spinal_extension_sensitivity: {
+    id: 'spinal_extension_sensitivity',
+    movementPattern: 'spinal_extension',
+    description: 'For those reporting discomfort with back arching',
+    descriptionIt: 'Per chi segnala fastidio inarcando la schiena',
+    approach: 'mobility',
+    educationalNote: 'Extension sensitivity is often related to hip flexor tightness or excessive lumbar curve compensation. We\'ll work on hip mobility and core control to reduce the demand on your lower back.',
+    educationalNoteIt: 'La sensibilità all\'estensione è spesso legata a rigidità dei flessori dell\'anca o compensazione con curva lombare eccessiva. Lavoreremo sulla mobilità dell\'anca e controllo del core per ridurre la richiesta sulla bassa schiena.',
+    exercises: [
+      {
+        name: 'Hip Flexor Stretch (Active)',
+        nameIt: 'Stretch Flessori Anca (Attivo)',
+        sets: '2-3',
+        reps: '30-45s per lato',
+        rest: '15s',
+        purpose: 'Reduce hip flexor tension that causes lumbar hyperextension',
+        purposeIt: 'Ridurre tensione flessori anca che causa iperestensione lombare',
+        cues: [
+          'Half-kneeling position, back knee on pad',
+          'TUCK your pelvis under (posterior pelvic tilt)',
+          'Shift weight forward WHILE maintaining pelvic tuck',
+          'You should feel the stretch in front of hip, NOT lower back'
+        ],
+        cuesIt: [
+          'Posizione semi-inginocchiata, ginocchio posteriore su pad',
+          'PORTA il bacino sotto (retroversione pelvica)',
+          'Sposta il peso avanti MANTENENDO la retroversione',
+          'Dovresti sentire lo stretch davanti all\'anca, NON nella bassa schiena'
+        ],
+        alternative: 'Couch Stretch',
+        progressionTo: 'Deep Lunge',
+        whenToUse: 'Daily, especially after sitting',
+        whenToUseIt: 'Quotidianamente, specialmente dopo stare seduti'
+      },
+      {
+        name: 'Glute Bridge (Controlled)',
+        nameIt: 'Ponte Glutei (Controllato)',
+        sets: '3',
+        reps: '12-15',
+        rest: '45s',
+        purpose: 'Hip extension without lumbar hyperextension',
+        purposeIt: 'Estensione anca senza iperestensione lombare',
+        cues: [
+          'Supine, knees bent, feet flat',
+          'Drive through heels, squeeze glutes at top',
+          'DO NOT hyperextend lower back - stop when hips are in line',
+          'Pause 2s at top, lower controlled'
+        ],
+        cuesIt: [
+          'Supino, ginocchia piegate, piedi a terra',
+          'Spingi attraverso i talloni, stringi i glutei in alto',
+          'NON iperestendere la lombare - fermati quando i fianchi sono in linea',
+          'Pausa 2s in alto, scendi controllato'
+        ],
+        alternative: 'Hip Thrust (bench)',
+        progressionTo: 'Single Leg Glute Bridge',
+        whenToUse: 'Lower body sessions, glute activation',
+        whenToUseIt: 'Sessioni lower body, attivazione glutei'
+      },
+      {
+        name: 'Hollow Body Hold',
+        nameIt: 'Hollow Body Hold',
+        sets: '3',
+        reps: '20-30s',
+        rest: '45s',
+        purpose: 'Anti-extension core control',
+        purposeIt: 'Controllo core anti-estensione',
+        cues: [
+          'Supine, arms overhead, legs extended',
+          'Press lower back INTO the floor',
+          'Lift head, shoulders, and feet slightly off ground',
+          'Maintain the "banana" shape - no arching'
+        ],
+        cuesIt: [
+          'Supino, braccia sopra la testa, gambe estese',
+          'Premi la lombare NEL pavimento',
+          'Solleva testa, spalle e piedi leggermente dal suolo',
+          'Mantieni la forma a "banana" - niente inarcamenti'
+        ],
+        alternative: 'Dead Bug',
+        progressionTo: 'Hollow Body Rocks',
+        whenToUse: 'Core work',
+        whenToUseIt: 'Lavoro core'
+      }
+    ],
+    progressionPath: [
+      'Hip Flexor Stretch (reduce compensation)',
+      'Glute Bridge (hip extension pattern)',
+      'Hollow Body (anti-extension control)',
+      'Plank (if tolerated)'
+    ]
+  },
+
+  /**
+   * ROTATION SENSITIVITY
+   */
+  spinal_rotation_sensitivity: {
+    id: 'spinal_rotation_sensitivity',
+    movementPattern: 'spinal_rotation',
+    description: 'For those reporting discomfort with twisting movements',
+    descriptionIt: 'Per chi segnala fastidio con movimenti di torsione',
+    approach: 'stability',
+    educationalNote: 'Rotation sensitivity often means the THORACIC spine is stiff, so the LUMBAR spine has to rotate more. Improving thoracic mobility can help. Rotation is a normal movement - we\'re building your tolerance to it.',
+    educationalNoteIt: 'La sensibilità alla rotazione spesso significa che la colonna TORACICA è rigida, quindi la LOMBARE deve ruotare di più. Migliorare la mobilità toracica può aiutare. La rotazione è un movimento normale - stiamo costruendo la tua tolleranza.',
+    exercises: [
+      {
+        name: 'Thoracic Rotation (Quadruped)',
+        nameIt: 'Rotazione Toracica (Quadrupedia)',
+        sets: '2-3',
+        reps: '8-10 per lato',
+        rest: '30s',
+        purpose: 'Improve thoracic rotation to reduce lumbar demand',
+        purposeIt: 'Migliorare rotazione toracica per ridurre richiesta lombare',
+        cues: [
+          'All fours position, one hand behind head',
+          'Rotate ONLY your upper back - pelvis stays still',
+          'Follow your elbow with your eyes',
+          'Feel the rotation in your mid-back, not lower back'
+        ],
+        cuesIt: [
+          'Posizione quadrupedia, una mano dietro la testa',
+          'Ruota SOLO la parte alta della schiena - il bacino resta fermo',
+          'Segui il gomito con gli occhi',
+          'Senti la rotazione nella schiena media, non bassa'
+        ],
+        alternative: 'Open Book Stretch',
+        progressionTo: 'Thread the Needle',
+        whenToUse: 'Warm-up, mobility work',
+        whenToUseIt: 'Riscaldamento, lavoro mobilità'
+      },
+      {
+        name: 'Pallof Press',
+        nameIt: 'Pallof Press',
+        sets: '3',
+        reps: '10-12 per lato',
+        rest: '45s',
+        purpose: 'Anti-rotation stability - control without avoiding',
+        purposeIt: 'Stabilità anti-rotazione - controllo senza evitare',
+        cues: [
+          'Stand sideways to cable/band at chest height',
+          'Hold handle at chest, step out for tension',
+          'Press arms straight out - RESIST the rotation',
+          'Keep shoulders square, core braced'
+        ],
+        cuesIt: [
+          'In piedi di lato a cavo/elastico all\'altezza del petto',
+          'Tieni la maniglia al petto, fai un passo fuori per tensione',
+          'Estendi le braccia dritte - RESISTI alla rotazione',
+          'Mantieni spalle dritte, core attivato'
+        ],
+        alternative: 'Suitcase Carry',
+        progressionTo: 'Pallof Press with rotation',
+        whenToUse: 'Core work in any session',
+        whenToUseIt: 'Lavoro core in qualsiasi sessione'
+      },
+      {
+        name: 'Side Plank',
+        nameIt: 'Plank Laterale',
+        sets: '2-3',
+        reps: '20-30s per lato',
+        rest: '30s',
+        purpose: 'Lateral stability - anti-lateral flexion',
+        purposeIt: 'Stabilità laterale - anti-flessione laterale',
+        cues: [
+          'Elbow under shoulder, body in straight line',
+          'Top hip lifted - don\'t let it sag',
+          'Stack feet or stagger for balance',
+          'Breathe normally, maintain alignment'
+        ],
+        cuesIt: [
+          'Gomito sotto la spalla, corpo in linea retta',
+          'Anca superiore sollevata - non lasciarla cedere',
+          'Piedi sovrapposti o sfalsati per equilibrio',
+          'Respira normalmente, mantieni allineamento'
+        ],
+        alternative: 'Side Plank on knees',
+        progressionTo: 'Side Plank with hip dips',
+        whenToUse: 'Core work',
+        whenToUseIt: 'Lavoro core'
+      }
+    ],
+    progressionPath: [
+      'Thoracic Rotation (mobility)',
+      'Pallof Press (anti-rotation)',
+      'Side Plank (lateral stability)',
+      'Wood Chop (controlled rotation)'
+    ]
+  },
+
+  /**
+   * GENERAL WEAKNESS / INSTABILITY
+   */
+  general_instability: {
+    id: 'general_instability',
+    movementPattern: 'general_stability',
+    description: 'For those who feel weak or unstable in the lower back',
+    descriptionIt: 'Per chi si sente debole o instabile nella bassa schiena',
+    approach: 'strength',
+    educationalNote: 'Feeling unstable doesn\'t mean your spine is fragile. It often means you need to build strength and confidence in these positions. Your spine is designed to move and handle load - we\'ll build your capacity.',
+    educationalNoteIt: 'Sentirsi instabili non significa che la colonna sia fragile. Spesso significa che devi costruire forza e confidenza in queste posizioni. La tua colonna è progettata per muoversi e gestire carico - costruiremo la tua capacità.',
+    exercises: [
+      {
+        name: 'Bird Dog',
+        nameIt: 'Bird Dog',
+        sets: '3',
+        reps: '8-10 per lato',
+        rest: '45s',
+        purpose: 'Multi-planar stability in neutral - foundational',
+        purposeIt: 'Stabilità multi-planare in posizione neutra - fondamentale',
+        cues: [
+          'All fours, spine neutral (slight natural curves)',
+          'Extend opposite arm and leg SLOWLY (4 seconds)',
+          'Don\'t rotate or shift weight laterally',
+          'Hold 2-3 seconds, return controlled'
+        ],
+        cuesIt: [
+          'Quadrupedia, colonna neutra (curve naturali leggere)',
+          'Estendi braccio e gamba opposti LENTAMENTE (4 secondi)',
+          'Non ruotare o spostare il peso lateralmente',
+          'Tieni 2-3 secondi, ritorna controllato'
+        ],
+        alternative: 'Supine March',
+        progressionTo: 'Bird Dog with hold at end range',
+        whenToUse: 'Warm-up or core work',
+        whenToUseIt: 'Riscaldamento o lavoro core'
+      },
+      {
+        name: 'Plank (or Modified)',
+        nameIt: 'Plank (o Modificato)',
+        sets: '3',
+        reps: '20-45s',
+        rest: '45s',
+        purpose: 'Full-body tension, anti-extension foundation',
+        purposeIt: 'Tensione tutto il corpo, fondamento anti-estensione',
+        cues: [
+          'Forearms and toes (or knees for modified)',
+          'Body in straight line - don\'t sag or pike',
+          'Squeeze glutes, brace core',
+          'Breathe normally - don\'t hold breath'
+        ],
+        cuesIt: [
+          'Avambracci e punte dei piedi (o ginocchia per modificato)',
+          'Corpo in linea retta - non cedere o sollevare',
+          'Stringi glutei, attiva core',
+          'Respira normalmente - non trattenere il fiato'
+        ],
+        alternative: 'Wall Plank (standing)',
+        progressionTo: 'Plank with shoulder taps',
+        whenToUse: 'Core work',
+        whenToUseIt: 'Lavoro core'
+      },
+      {
+        name: 'Farmer Carry',
+        nameIt: 'Farmer Carry',
+        sets: '3',
+        reps: '30-40m',
+        rest: '60s',
+        purpose: 'Functional stability under load - real world transfer',
+        purposeIt: 'Stabilità funzionale sotto carico - trasferimento mondo reale',
+        cues: [
+          'Hold dumbbells/kettlebells at sides',
+          'Stand tall, shoulders back',
+          'Walk with controlled steps - don\'t waddle',
+          'Core braced throughout'
+        ],
+        cuesIt: [
+          'Tieni manubri/kettlebell ai lati',
+          'Stai dritto, spalle indietro',
+          'Cammina con passi controllati - non ondeggiare',
+          'Core attivato per tutto il tempo'
+        ],
+        alternative: 'Suitcase Carry (single side)',
+        progressionTo: 'Heavier Farmer Carry',
+        whenToUse: 'Finisher or functional work',
+        whenToUseIt: 'Finisher o lavoro funzionale'
+      }
+    ],
+    progressionPath: [
+      'Bird Dog (control)',
+      'Plank (isometric strength)',
+      'Dead Bug (dynamic control)',
+      'Farmer Carry (loaded stability)',
+      'Deadlift progression (functional strength)'
+    ]
+  }
+};
+
+// ============================================================================
+// PAIN MANAGEMENT CORRECTIVE MAPPING
+// Mappa per sostituire i riferimenti McGill nel sistema esistente
+// ============================================================================
+
+export const CORRECTIVE_MAPPING: Record<string, string[]> = {
+  // LOWER BACK - sostituisce 'McGill Big 3'
+  lower_back: [
+    'Dead Bug',
+    'Bird Dog', 
+    'Side Plank',
+    'Glute Bridge',
+    'Cat-Cow',
+    'Pallof Press'
+  ],
+  lower_back_flexion: [
+    'Cat-Cow',
+    'Child\'s Pose',
+    'Dead Bug',
+    'Jefferson Curl (bodyweight)'
+  ],
+  lower_back_extension: [
+    'Hip Flexor Stretch',
+    'Glute Bridge',
+    'Hollow Body Hold',
+    'Dead Bug'
+  ],
+  lower_back_rotation: [
+    'Thoracic Rotation',
+    'Pallof Press',
+    'Side Plank',
+    'Bird Dog'
+  ],
+  
+  // HIP
+  hip: [
+    '90/90 Hip Stretch',
+    'Hip Flexor Stretch',
+    'Glute Bridge',
+    'Clamshells'
+  ],
+  hip_flexion: [
+    '90/90 Hip Stretch',
+    'Pigeon Pose (Modified)',
+    'Clamshells'
+  ],
+  
+  // SHOULDER
+  shoulder: [
+    'Face Pull',
+    'External Rotation',
+    'Wall Slides',
+    'Prone Y-T-W'
+  ],
+  
+  // KNEE
+  knee: [
+    'VMO Activation',
+    'Terminal Knee Extension',
+    'Wall Sit (controlled)',
+    'Step Downs'
+  ],
+  
+  // ANKLE
+  ankle: [
+    'Wall Ankle Mobilization',
+    'Calf Stretch',
+    'Single Leg Balance',
+    'Toe Raises'
+  ]
+};
+
+/**
+ * Ottieni esercizi correttivi per una zona di dolore
+ * SOSTITUISCE qualsiasi logica che usava McGill Big 3
+ */
+export function getCorrectiveExercisesForArea(area: string): string[] {
+  const areaLower = area.toLowerCase().replace(/[^a-z_]/g, '_');
+  
+  // Prima cerca match esatto
+  if (CORRECTIVE_MAPPING[areaLower]) {
+    return CORRECTIVE_MAPPING[areaLower];
+  }
+  
+  // Poi cerca partial match
+  for (const [key, exercises] of Object.entries(CORRECTIVE_MAPPING)) {
+    if (areaLower.includes(key) || key.includes(areaLower)) {
+      return exercises;
     }
   }
   
-  // Limit to reasonable number
-  return suggestions.slice(0, 4);
+  // Default: esercizi generici di stabilità
+  return ['Dead Bug', 'Bird Dog', 'Glute Bridge', 'Cat-Cow'];
 }
+
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
+export const CorrectiveExercisesDCSS = {
+  LOWER_BACK_CORRECTIVES,
+  CORRECTIVE_MAPPING,
+  getCorrectiveExercisesForArea
+};
+
+export default CorrectiveExercisesDCSS;
