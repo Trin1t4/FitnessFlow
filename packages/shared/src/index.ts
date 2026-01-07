@@ -21,3 +21,10 @@ export {
   progressionToVariant
 } from './data/calisthenicsProgressions';
 export type { CalisthenicsPattern, CalisthenicsProgression } from './data/calisthenicsProgressions';
+
+// Biomechanics Quiz - DCSS Paradigm
+export {
+  DCSS_QUIZ_QUESTIONS,
+  evaluateQuiz
+} from './data/biomechanicsQuizDCSS';
+export type { QuizQuestion, QuizOption, QuizResult } from './data/biomechanicsQuizDCSS';

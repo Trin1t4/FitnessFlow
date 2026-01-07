@@ -1,450 +1,129 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Brain, AlertTriangle, Shield, BookOpen, CheckCircle, XCircle, ArrowRight, MapPin, Clock, Edit3, Dumbbell } from 'lucide-react';
+import { Brain, Shield, BookOpen, CheckCircle, XCircle, ArrowRight, MapPin, Clock, Edit3, Dumbbell, Info } from 'lucide-react';
+import { DCSS_QUIZ_QUESTIONS, type QuizQuestion, type QuizOption, evaluateQuiz } from '@trainsmart/shared';
 
 // ============================================================================
-// TYPES
+// TYPES - DCSS Paradigm
 // ============================================================================
 
-type Category = 'A' | 'B' | 'C';
-type Flag = 'bro_science_believer' | 'technique_gap' | 'safety_risk' | 'knows_rpe' | 'knows_periodization';
 type Level = 'beginner' | 'intermediate' | 'advanced';
-
-interface QuestionOption {
-  text: string;
-  correct: boolean;
-  flag?: Flag;
-  partial?: boolean; // Per risposte "accettabili ma non ottime"
-}
-
-interface Question {
-  id: string;
-  category: Category;
-  weight: number;
-  text: string;
-  options: QuestionOption[];
-  explanation: string;
-}
 
 interface Answer {
   questionId: string;
-  category: Category;
-  weight: number;
+  selectedOptionId: string;
   correct: boolean;
-  selectedOption: string;
-  flag?: Flag;
+  isTechniqueGap?: boolean;
+  isOverconfident?: boolean;
 }
 
 interface QuizState {
   currentQuestionIndex: number;
   answers: Answer[];
-  flags: Flag[];
-  score: number;
   askedQuestions: string[];
-  categoryACounts: { asked: number; wrong: number };
-  categoryBCounts: { asked: number; wrong: number };
-  categoryCCounts: { asked: number; wrong: number };
 }
 
 // ============================================================================
-// QUESTION POOL - 21 DOMANDE
+// DCSS QUIZ QUESTIONS - Imported from shared package
+// Uses nuanced, evidence-based questions without dogma
 // ============================================================================
 
-const QUESTIONS: Question[] = [
-  // ===================== CATEGORIA A: TRAPPOLE BRO-SCIENCE (peso 3x) =====================
-  {
-    id: 'A1',
-    category: 'A',
-    weight: 3,
-    text: 'Nello squat, le ginocchia non devono MAI superare la punta dei piedi',
-    options: [
-      { text: 'Falso, dipende dalla struttura e dalla profondità', correct: true },
-      { text: 'Vero, è pericoloso per le ginocchia', correct: false, flag: 'bro_science_believer' },
-      { text: 'Solo se fai squat frontale', correct: false },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Le ginocchia che superano le punte sono normali e spesso necessarie per uno squat completo. Il mito nasce da uno studio degli anni \'70 male interpretato.',
-  },
-  {
-    id: 'A2',
-    category: 'A',
-    weight: 3,
-    text: 'Per bruciare più grasso devi fare cardio a stomaco vuoto',
-    options: [
-      { text: 'Vero, bruci direttamente i grassi', correct: false, flag: 'bro_science_believer' },
-      { text: 'Falso, conta il deficit totale giornaliero', correct: true },
-      { text: 'Vero ma solo al mattino', correct: false, flag: 'bro_science_believer' },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Il corpo usa un mix di substrati energetici. Ciò che conta è il deficit calorico nelle 24h, non il timing.',
-  },
-  {
-    id: 'A3',
-    category: 'A',
-    weight: 3,
-    text: 'Se non senti bruciare il muscolo, non stai lavorando bene',
-    options: [
-      { text: 'Falso, il bruciore è solo accumulo di metaboliti', correct: true },
-      { text: 'Vero, il bruciore indica che funziona', correct: false, flag: 'bro_science_believer' },
-      { text: 'Dipende dall\'esercizio', correct: false, partial: true },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Il bruciore (acido lattico) non correla con l\'ipertrofia. La tensione meccanica è il driver principale della crescita muscolare.',
-  },
-  {
-    id: 'A4',
-    category: 'A',
-    weight: 3,
-    text: 'Più sudi, più dimagrisci',
-    options: [
-      { text: 'Vero, il sudore elimina il grasso', correct: false, flag: 'bro_science_believer' },
-      { text: 'Parzialmente vero', correct: false },
-      { text: 'Falso, il sudore è solo termoregolazione', correct: true },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Il sudore è acqua, non grasso. Il peso perso sudando si riprende bevendo. La perdita di grasso avviene solo con deficit calorico.',
-  },
-  {
-    id: 'A5',
-    category: 'A',
-    weight: 3,
-    text: 'Devi mangiare proteine entro 30 minuti dall\'allenamento o perdi i guadagni',
-    options: [
-      { text: 'Vero, la finestra anabolica è fondamentale', correct: false, flag: 'bro_science_believer' },
-      { text: 'Falso, hai ore di tempo, conta il totale giornaliero', correct: true },
-      { text: 'Vero solo per i professionisti', correct: false },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'La "finestra anabolica" di 30 minuti è un mito. La sintesi proteica resta elevata per 24-48 ore dopo l\'allenamento.',
-  },
-  {
-    id: 'A6',
-    category: 'A',
-    weight: 3,
-    text: 'Per definirti devi usare pesi leggeri e tante ripetizioni',
-    options: [
-      { text: 'Vero, i pesi pesanti sono per la massa', correct: false, flag: 'bro_science_believer' },
-      { text: 'Dipende dal tipo di corpo', correct: false },
-      { text: 'Falso, la definizione dipende dalla dieta', correct: true },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Non esiste "allenamento per definizione". La definizione è perdita di grasso = deficit calorico. L\'allenamento serve a mantenere il muscolo.',
-  },
-  {
-    id: 'A7',
-    category: 'A',
-    weight: 3,
-    text: 'Se il giorno dopo non hai DOMS (dolori muscolari), non hai lavorato abbastanza',
-    options: [
-      { text: 'Vero, i DOMS indicano un buon allenamento', correct: false, flag: 'bro_science_believer' },
-      { text: 'Falso, i DOMS non correlano con la crescita', correct: true },
-      { text: 'Solo per i principianti', correct: false, partial: true },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'I DOMS indicano un carico nuovo, non efficace. Un programma ben strutturato riduce i DOMS nel tempo.',
-  },
-
-  // ===================== CATEGORIA B: SICUREZZA TECNICA (peso 2x) =====================
-  {
-    id: 'B1',
-    category: 'B',
-    weight: 2,
-    text: 'Durante la panca piana, le scapole dovrebbero essere:',
-    options: [
-      { text: 'Retratte e depresse (indietro e in basso)', correct: true },
-      { text: 'Rilassate e naturali', correct: false, flag: 'technique_gap' },
-      { text: 'Protratte in avanti', correct: false, flag: 'technique_gap' },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Scapole retratte = stabilità della spalla, minor rischio di impingement e maggiore attivazione del pettorale.',
-  },
-  {
-    id: 'B2',
-    category: 'B',
-    weight: 2,
-    text: 'Durante lo stacco da terra, la schiena deve essere:',
-    options: [
-      { text: 'Completamente dritta (verticale)', correct: false },
-      { text: 'Neutra (curve naturali mantenute)', correct: true },
-      { text: 'Leggermente arrotondata va bene', correct: false, flag: 'technique_gap' },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: '"Schiena dritta" è un cue sbagliato. La schiena ha curve naturali (lordosi lombare) da mantenere sotto carico.',
-  },
-  {
-    id: 'B3',
-    category: 'B',
-    weight: 2,
-    text: 'Quando sollevi un peso pesante, dovresti:',
-    options: [
-      { text: 'Espirare sempre durante lo sforzo', correct: false, partial: true },
-      { text: 'Respirare normalmente', correct: false, flag: 'technique_gap' },
-      { text: 'Trattenere il respiro e creare pressione addominale', correct: true },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'La manovra di Valsalva (trattenere + pressione) stabilizza la colonna. "Espira durante lo sforzo" va bene solo per carichi leggeri.',
-  },
-  {
-    id: 'B4',
-    category: 'B',
-    weight: 2,
-    text: 'Quanto dovresti scendere nello squat?',
-    options: [
-      { text: 'Fin dove mantieni la schiena neutra senza compensi', correct: true },
-      { text: 'Fino a che le cosce sono parallele al pavimento', correct: false, partial: true },
-      { text: 'Più scendi meglio è, sempre', correct: false, flag: 'technique_gap' },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'La profondità dipende dalla mobilità individuale. Forzare oltre causa "butt wink" e stress lombare.',
-  },
-  {
-    id: 'B5',
-    category: 'B',
-    weight: 2,
-    text: 'Nelle trazioni alla sbarra, il movimento parte da:',
-    options: [
-      { text: 'Piegare le braccia', correct: false, flag: 'technique_gap' },
-      { text: 'Usare lo slancio', correct: false, flag: 'technique_gap' },
-      { text: 'Deprimere le scapole, poi piegare', correct: true },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Attivare prima i dorsali (deprimere scapole) protegge le spalle e rende il movimento più efficace.',
-  },
-  {
-    id: 'B6',
-    category: 'B',
-    weight: 2,
-    text: 'Estendere completamente le braccia alla fine di una distensione (lockout) è:',
-    options: [
-      { text: 'Pericoloso per i gomiti', correct: false, flag: 'bro_science_believer' },
-      { text: 'Normale e parte del ROM completo', correct: true },
-      { text: 'Da evitare sempre', correct: false, flag: 'bro_science_believer' },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Il lockout completo è sicuro e allena l\'intero range di movimento. Il mito viene dal bodybuilding.',
-  },
-  {
-    id: 'B7',
-    category: 'B',
-    weight: 2,
-    text: 'Se senti dolore (non fatica) durante un esercizio, dovresti:',
-    options: [
-      { text: 'Continuare, è normale', correct: false, flag: 'safety_risk' },
-      { text: 'Abbassare il peso e continuare', correct: false, partial: true },
-      { text: 'Fermarti e valutare', correct: true },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Dolore ≠ fatica. Il dolore è un segnale da non ignorare mai durante l\'esecuzione.',
-  },
-
-  // ===================== CATEGORIA C: CONCETTI BASE (peso 1x) =====================
-  {
-    id: 'C1',
-    category: 'C',
-    weight: 1,
-    text: 'Cosa significa "progressione" nell\'allenamento?',
-    options: [
-      { text: 'Cambiare esercizi spesso', correct: false },
-      { text: 'Aumentare gradualmente carico/volume/difficoltà', correct: true },
-      { text: 'Allenarsi più spesso', correct: false },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Senza progressione non c\'è adattamento. È il principio base di qualsiasi programma efficace.',
-  },
-  {
-    id: 'C2',
-    category: 'C',
-    weight: 1,
-    text: 'Sai cosa significa RIR o RPE?',
-    options: [
-      { text: 'Ripetizioni in riserva / sforzo percepito', correct: true, flag: 'knows_rpe' },
-      { text: 'Mai sentito', correct: false, partial: true },
-      { text: 'Ha a che fare con la frequenza cardiaca', correct: false },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'RIR (Repetitions In Reserve) e RPE (Rate of Perceived Exertion) sono strumenti per autoregolare l\'intensità.',
-  },
-  {
-    id: 'C3',
-    category: 'C',
-    weight: 1,
-    text: 'Cosa si intende per "volume" di allenamento?',
-    options: [
-      { text: 'Quanto sudi', correct: false },
-      { text: 'Quante ore ti alleni', correct: false },
-      { text: 'Serie × ripetizioni × carico', correct: true },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Il volume è il lavoro totale svolto. È il driver principale dell\'ipertrofia.',
-  },
-  {
-    id: 'C4',
-    category: 'C',
-    weight: 1,
-    text: 'Quando cresce il muscolo?',
-    options: [
-      { text: 'Durante l\'allenamento', correct: false },
-      { text: 'Durante il riposo e recupero', correct: true },
-      { text: 'Subito dopo aver mangiato proteine', correct: false },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'L\'allenamento è lo stimolo che "danneggia" il muscolo. La crescita vera avviene durante il recupero.',
-  },
-  {
-    id: 'C5',
-    category: 'C',
-    weight: 1,
-    text: 'Qual è la differenza principale tra allenare la forza e l\'ipertrofia?',
-    options: [
-      { text: 'Nessuna, sono la stessa cosa', correct: false },
-      { text: 'La forza usa macchine, l\'ipertrofia pesi liberi', correct: false },
-      { text: 'Range di ripetizioni e recupero diversi', correct: true },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Forza = carichi alti, poche reps, recuperi lunghi. Ipertrofia = carichi medi, più reps, recuperi moderati.',
-  },
-  {
-    id: 'C6',
-    category: 'C',
-    weight: 1,
-    text: 'Quante volte a settimana dovresti allenare un muscolo per farlo crescere?',
-    options: [
-      { text: '2-3 volte funziona meglio per la maggior parte', correct: true },
-      { text: '1 volta, poi deve riposare 7 giorni', correct: false },
-      { text: 'Tutti i giorni per massimizzare', correct: false },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'La ricerca moderna mostra che 2x/settimana per gruppo muscolare è spesso meglio di 1x con più volume concentrato.',
-  },
-  {
-    id: 'C7',
-    category: 'C',
-    weight: 1,
-    text: 'Cos\'è un "deload"?',
-    options: [
-      { text: 'Quando smetti di allenarti', correct: false },
-      { text: 'Un tipo di esercizio', correct: false },
-      { text: 'Una settimana a intensità/volume ridotto per recuperare', correct: true, flag: 'knows_periodization' },
-      { text: 'Mai sentito', correct: false, partial: true },
-    ],
-    explanation: 'Il deload permette il recupero accumulato senza perdere gli adattamenti. È parte della periodizzazione.',
-  },
-  {
-    id: 'C8',
-    category: 'C',
-    weight: 1,
-    text: 'Qual è la differenza tra esercizi "compound" e "isolation"?',
-    options: [
-      { text: 'Compound coinvolge più articolazioni, isolation una', correct: true },
-      { text: 'Compound usa macchine, isolation pesi liberi', correct: false },
-      { text: 'Sono la stessa cosa', correct: false },
-      { text: 'Non lo so', correct: false, partial: true },
-    ],
-    explanation: 'Squat = compound (anca + ginocchio). Leg extension = isolation (solo ginocchio).',
-  },
-];
+// Use DCSS questions directly from shared package
+const QUESTIONS = DCSS_QUIZ_QUESTIONS;
+const MAX_QUESTIONS = 7;
 
 // ============================================================================
-// ADAPTIVE ALGORITHM
+// ADAPTIVE SELECTION - DCSS Paradigm
 // ============================================================================
 
-function selectNextQuestion(state: QuizState, pool: Question[]): Question | null {
+function selectNextQuestion(state: QuizState, pool: QuizQuestion[]): QuizQuestion | null {
   const available = pool.filter(q => !state.askedQuestions.includes(q.id));
 
   if (available.length === 0) return null;
-  if (state.answers.length >= 7) return null; // Max 7 domande
+  if (state.answers.length >= MAX_QUESTIONS) return null;
 
-  // Early exit: se già 2 errori in A, livello chiaro
-  if (state.categoryACounts.wrong >= 2 && state.answers.length >= 4) {
+  // Count overconfident and technique gap answers
+  const overconfidentCount = state.answers.filter(a => a.isOverconfident).length;
+  const techniqueGapCount = state.answers.filter(a => a.isTechniqueGap).length;
+
+  // Early exit if pattern is clear
+  if ((overconfidentCount >= 2 || techniqueGapCount >= 2) && state.answers.length >= 4) {
     return null;
   }
 
-  // Logica adattiva
-  const { categoryACounts, categoryBCounts, categoryCCounts } = state;
+  // Adaptive selection based on previous answers
+  const byCategory: Record<string, QuizQuestion[]> = {
+    technique: [],
+    anatomy: [],
+    programming: [],
+    safety: []
+  };
 
-  // 1. Prima domanda o poche domande A: pesca da A
-  if (categoryACounts.asked < 2) {
-    const categoryA = available.filter(q => q.category === 'A');
-    if (categoryA.length > 0) {
-      return categoryA[Math.floor(Math.random() * categoryA.length)];
+  available.forEach(q => {
+    if (byCategory[q.category]) {
+      byCategory[q.category].push(q);
     }
-  }
+  });
 
-  // 2. Se ha sbagliato in A, altra A per confermare
-  if (categoryACounts.wrong > 0 && categoryACounts.asked < 3) {
-    const categoryA = available.filter(q => q.category === 'A');
-    if (categoryA.length > 0) {
-      return categoryA[Math.floor(Math.random() * categoryA.length)];
-    }
-  }
+  // Priority: technique first, then safety, then programming, then anatomy
+  const categoryOrder = ['technique', 'safety', 'programming', 'anatomy'];
 
-  // 3. Passa a B se A è ok
-  if (categoryBCounts.asked < 2) {
-    const categoryB = available.filter(q => q.category === 'B');
-    if (categoryB.length > 0) {
-      return categoryB[Math.floor(Math.random() * categoryB.length)];
-    }
-  }
+  for (const cat of categoryOrder) {
+    const catQuestions = byCategory[cat];
+    if (catQuestions.length > 0) {
+      // Prioritize by difficulty based on current performance
+      const correctCount = state.answers.filter(a => a.correct).length;
+      const accuracy = state.answers.length > 0 ? correctCount / state.answers.length : 0.5;
 
-  // 4. Se ha sbagliato in B, altra B
-  if (categoryBCounts.wrong > 0 && categoryBCounts.asked < 3) {
-    const categoryB = available.filter(q => q.category === 'B');
-    if (categoryB.length > 0) {
-      return categoryB[Math.floor(Math.random() * categoryB.length)];
-    }
-  }
+      // If doing well, try harder questions; if struggling, stick to basics
+      const targetDifficulty = accuracy > 0.7 ? 'intermediate' : 'basic';
+      const matchingDifficulty = catQuestions.filter(q => q.difficulty === targetDifficulty);
 
-  // 5. Passa a C per discriminare intermediate/advanced
-  if (categoryCCounts.asked < 3) {
-    const categoryC = available.filter(q => q.category === 'C');
-    if (categoryC.length > 0) {
-      // Priorità a C2 (RIR/RPE) e C7 (deload) se non ancora chieste
-      const priority = categoryC.filter(q => q.id === 'C2' || q.id === 'C7');
-      if (priority.length > 0) {
-        return priority[Math.floor(Math.random() * priority.length)];
+      if (matchingDifficulty.length > 0) {
+        return matchingDifficulty[Math.floor(Math.random() * matchingDifficulty.length)];
       }
-      return categoryC[Math.floor(Math.random() * categoryC.length)];
+      return catQuestions[Math.floor(Math.random() * catQuestions.length)];
     }
   }
 
-  // 6. Qualsiasi domanda rimanente
   return available[Math.floor(Math.random() * available.length)];
 }
 
 function calculateLevel(state: QuizState): { level: Level; label: string; description: string } {
-  const { score, flags, categoryACounts, categoryBCounts } = state;
+  const correctCount = state.answers.filter(a => a.correct).length;
+  const overconfidentCount = state.answers.filter(a => a.isOverconfident).length;
+  const techniqueGapCount = state.answers.filter(a => a.isTechniqueGap).length;
+  const total = state.answers.length;
+  const accuracy = total > 0 ? correctCount / total : 0;
 
-  // Regola override: 2+ errori bro-science = beginner
-  const broScienceCount = flags.filter(f => f === 'bro_science_believer').length;
-  if (broScienceCount >= 2) {
+  // Rule: too many overconfident answers = needs flexibility training
+  if (overconfidentCount >= 2) {
     return {
-      level: 'beginner',
-      label: 'Fondamenta',
-      description: 'Hai esperienza pratica, ma ci sono alcuni concetti che potrebbero aiutarti ad allenarti in modo più efficace e sicuro. Il tuo programma includerà spiegazioni tecniche e progressione graduale.',
+      level: 'intermediate',
+      label: 'Costruzione',
+      description: 'Hai buone conoscenze, ma alcune credenze potrebbero essere più rigide di quanto la scienza supporti. Il tuo programma includerà indicazioni sfumate e flessibili.',
     };
   }
 
-  // Regola: molti errori tecnici
-  const techniqueGapCount = flags.filter(f => f === 'technique_gap').length;
-  if (techniqueGapCount >= 2 || categoryBCounts.wrong >= 2) {
+  // Rule: too many technique gaps = beginner focus
+  if (techniqueGapCount >= 2) {
     return {
       level: 'beginner',
       label: 'Fondamenta',
-      description: 'Hai esperienza pratica, ma ci sono alcuni concetti che potrebbero aiutarti ad allenarti in modo più efficace e sicuro. Il tuo programma includerà spiegazioni tecniche e progressione graduale.',
+      description: 'Ci sono alcuni concetti tecnici da approfondire. Il tuo programma includerà spiegazioni dettagliate e progressione graduale.',
     };
   }
 
-  // Calcolo basato su score
-  // Score massimo teorico ~15-18 con 7 domande miste
-  if (score < 6) {
+  // Accuracy-based level
+  if (accuracy >= 0.8) {
     return {
-      level: 'beginner',
-      label: 'Fondamenta',
-      description: 'Hai esperienza pratica, ma ci sono alcuni concetti che potrebbero aiutarti ad allenarti in modo più efficace e sicuro. Il tuo programma includerà spiegazioni tecniche e progressione graduale.',
+      level: 'advanced',
+      label: 'Padronanza',
+      description: 'Ottima comprensione dei principi dell\'allenamento. Il programma sarà diretto e senza spiegazioni ridondanti.',
     };
   }
 
-  if (score < 12) {
+  if (accuracy >= 0.5) {
     return {
       level: 'intermediate',
       label: 'Costruzione',
@@ -453,9 +132,9 @@ function calculateLevel(state: QuizState): { level: Level; label: string; descri
   }
 
   return {
-    level: 'advanced',
-    label: 'Padronanza',
-    description: 'Hai una buona comprensione della teoria e della pratica. Il programma sarà diretto e con meno spiegazioni ridondanti.',
+    level: 'beginner',
+    label: 'Fondamenta',
+    description: 'Ci concentreremo sull\'insegnarti i fondamentali con molte spiegazioni e indicazioni.',
   };
 }
 
@@ -469,18 +148,13 @@ export default function BiomechanicsQuizFull() {
   const [state, setState] = useState<QuizState>({
     currentQuestionIndex: 0,
     answers: [],
-    flags: [],
-    score: 0,
     askedQuestions: [],
-    categoryACounts: { asked: 0, wrong: 0 },
-    categoryBCounts: { asked: 0, wrong: 0 },
-    categoryCCounts: { asked: 0, wrong: 0 },
   });
 
-  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(() =>
+  const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(() =>
     selectNextQuestion(state, QUESTIONS)
   );
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [testChoice, setTestChoice] = useState<'gym' | 'know_maxes' | 'later' | null>(null);
@@ -490,48 +164,23 @@ export default function BiomechanicsQuizFull() {
   const handleAnswer = useCallback(() => {
     if (selected === null || !currentQuestion) return;
 
-    const selectedOption = currentQuestion.options[selected];
-    const isCorrect = selectedOption.correct;
+    const selectedOption = currentQuestion.options.find(o => o.id === selected);
+    if (!selectedOption) return;
+
+    const isCorrect = selectedOption.isCorrect;
 
     const newAnswer: Answer = {
       questionId: currentQuestion.id,
-      category: currentQuestion.category,
-      weight: currentQuestion.weight,
+      selectedOptionId: selected,
       correct: isCorrect,
-      selectedOption: selectedOption.text,
-      flag: selectedOption.flag,
+      isTechniqueGap: selectedOption.isTechniqueGap,
+      isOverconfident: selectedOption.isOverconfident,
     };
-
-    // Aggiorna state
-    const newFlags = selectedOption.flag && !isCorrect
-      ? [...state.flags, selectedOption.flag]
-      : selectedOption.flag && isCorrect && (selectedOption.flag === 'knows_rpe' || selectedOption.flag === 'knows_periodization')
-        ? [...state.flags, selectedOption.flag]
-        : state.flags;
-
-    const newScore = isCorrect ? state.score + currentQuestion.weight : state.score;
-
-    const newCategoryACounts = currentQuestion.category === 'A'
-      ? { asked: state.categoryACounts.asked + 1, wrong: state.categoryACounts.wrong + (isCorrect ? 0 : 1) }
-      : state.categoryACounts;
-
-    const newCategoryBCounts = currentQuestion.category === 'B'
-      ? { asked: state.categoryBCounts.asked + 1, wrong: state.categoryBCounts.wrong + (isCorrect ? 0 : 1) }
-      : state.categoryBCounts;
-
-    const newCategoryCCounts = currentQuestion.category === 'C'
-      ? { asked: state.categoryCCounts.asked + 1, wrong: state.categoryCCounts.wrong + (isCorrect ? 0 : 1) }
-      : state.categoryCCounts;
 
     setState({
       ...state,
       answers: [...state.answers, newAnswer],
-      flags: newFlags,
-      score: newScore,
       askedQuestions: [...state.askedQuestions, currentQuestion.id],
-      categoryACounts: newCategoryACounts,
-      categoryBCounts: newCategoryBCounts,
-      categoryCCounts: newCategoryCCounts,
     });
 
     setShowExplanation(true);
@@ -559,21 +208,22 @@ export default function BiomechanicsQuizFull() {
   const handleFinish = useCallback(() => {
     const finalResult = calculateLevel(state);
 
+    // Build DCSS-compatible answer record for evaluation
+    const answerRecord: Record<string, string> = {};
+    state.answers.forEach(a => {
+      answerRecord[a.questionId] = a.selectedOptionId;
+    });
+
     const quizData = {
-      score: state.score,
       level: finalResult.level,
       levelLabel: finalResult.label,
       totalQuestions: state.answers.length,
       correctAnswers: state.answers.filter(a => a.correct).length,
-      flags: state.flags,
+      overconfidentCount: state.answers.filter(a => a.isOverconfident).length,
+      techniqueGapCount: state.answers.filter(a => a.isTechniqueGap).length,
       answers: state.answers,
       completedAt: new Date().toISOString(),
-      // Breakdown per categoria
-      categoryBreakdown: {
-        A: state.categoryACounts,
-        B: state.categoryBCounts,
-        C: state.categoryCCounts,
-      },
+      paradigm: 'DCSS', // Mark as DCSS quiz
     };
 
     localStorage.setItem('quiz_data', JSON.stringify(quizData));
@@ -645,16 +295,23 @@ export default function BiomechanicsQuizFull() {
               {finalResult.description}
             </p>
 
-            {/* Flags informativi (se positivi) */}
-            {(state.flags.includes('knows_rpe') || state.flags.includes('knows_periodization')) && (
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 mb-6">
-                <p className="text-emerald-300 text-sm">
-                  {state.flags.includes('knows_rpe') && state.flags.includes('knows_periodization')
-                    ? 'Conosci RPE/RIR e periodizzazione - ottimo!'
-                    : state.flags.includes('knows_rpe')
-                      ? 'Conosci RPE/RIR - useremo questo per calibrare i carichi.'
-                      : 'Conosci la periodizzazione - il programma includerà deload programmati.'
-                  }
+            {/* DCSS Feedback */}
+            {state.answers.filter(a => a.isOverconfident).length > 0 && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6 flex items-start gap-3">
+                <Info className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-amber-300 text-sm">
+                  Alcune risposte indicano credenze che potrebbero essere più rigide di quanto la scienza supporti.
+                  Il tuo programma includerà indicazioni sfumate basate su evidenze attuali.
+                </p>
+              </div>
+            )}
+
+            {state.answers.filter(a => a.isTechniqueGap).length > 0 && (
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6 flex items-start gap-3">
+                <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                <p className="text-blue-300 text-sm">
+                  Ci sono alcuni concetti tecnici da approfondire. Il tuo programma includerà spiegazioni
+                  dettagliate e indicazioni educative.
                 </p>
               </div>
             )}
@@ -759,7 +416,18 @@ export default function BiomechanicsQuizFull() {
     return null;
   }
 
-  const correctOptionIndex = currentQuestion.options.findIndex(o => o.correct);
+  const selectedOption = selected ? currentQuestion.options.find(o => o.id === selected) : null;
+  const correctOption = currentQuestion.options.find(o => o.isCorrect);
+
+  // Category labels for DCSS
+  const categoryLabels: Record<string, { bg: string; text: string; label: string }> = {
+    technique: { bg: 'bg-blue-500/20', text: 'text-blue-300', label: 'Tecnica' },
+    anatomy: { bg: 'bg-purple-500/20', text: 'text-purple-300', label: 'Anatomia' },
+    programming: { bg: 'bg-green-500/20', text: 'text-green-300', label: 'Programmazione' },
+    safety: { bg: 'bg-amber-500/20', text: 'text-amber-300', label: 'Sicurezza' },
+  };
+
+  const categoryInfo = categoryLabels[currentQuestion.category] || categoryLabels.technique;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
@@ -767,45 +435,39 @@ export default function BiomechanicsQuizFull() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-xl font-bold text-white">Screening Approfondito</h1>
+            <h1 className="text-xl font-bold text-white">Quiz Biomeccanica</h1>
             <div className="flex items-center gap-2">
-              <span className={`text-xs px-2 py-1 rounded ${
-                currentQuestion.category === 'A'
-                  ? 'bg-red-500/20 text-red-300'
-                  : currentQuestion.category === 'B'
-                    ? 'bg-yellow-500/20 text-yellow-300'
-                    : 'bg-blue-500/20 text-blue-300'
-              }`}>
-                {currentQuestion.category === 'A' && 'Miti'}
-                {currentQuestion.category === 'B' && 'Tecnica'}
-                {currentQuestion.category === 'C' && 'Concetti'}
+              <span className={`text-xs px-2 py-1 rounded ${categoryInfo.bg} ${categoryInfo.text}`}>
+                {categoryInfo.label}
               </span>
-              <span className="text-slate-300">{state.answers.length + 1} / max 7</span>
+              <span className="text-slate-300">{state.answers.length + 1} / max {MAX_QUESTIONS}</span>
             </div>
           </div>
           <div className="h-2 bg-slate-700 rounded-full">
             <div
               className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all rounded-full"
-              style={{ width: `${Math.min(((state.answers.length + 1) / 7) * 100, 100)}%` }}
+              style={{ width: `${Math.min(((state.answers.length + 1) / MAX_QUESTIONS) * 100, 100)}%` }}
             />
           </div>
         </div>
 
         {/* Question Card */}
         <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-6 md:p-8 border border-slate-700">
-          <h2 className="text-xl md:text-2xl font-bold text-white mb-6">{currentQuestion.text}</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-white mb-6">
+            {currentQuestion.questionIt || currentQuestion.question}
+          </h2>
 
           <div className="space-y-3 mb-6">
-            {currentQuestion.options.map((opt, i) => {
-              const isSelected = selected === i;
-              const isCorrect = opt.correct;
+            {currentQuestion.options.map((opt) => {
+              const isSelected = selected === opt.id;
+              const isCorrect = opt.isCorrect;
               const isWrong = showExplanation && isSelected && !isCorrect;
               const showAsCorrect = showExplanation && isCorrect;
 
               return (
                 <button
-                  key={i}
-                  onClick={() => !showExplanation && setSelected(i)}
+                  key={opt.id}
+                  onClick={() => !showExplanation && setSelected(opt.id)}
                   disabled={showExplanation}
                   className={`w-full p-4 rounded-lg border-2 text-left transition ${
                     showAsCorrect
@@ -816,7 +478,7 @@ export default function BiomechanicsQuizFull() {
                           ? 'border-emerald-500 bg-emerald-500/20 text-white'
                           : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
                   } ${showExplanation ? 'cursor-not-allowed' : 'cursor-pointer'} ${
-                    opt.text.toLowerCase().includes('non lo so') || opt.text.toLowerCase().includes('mai sentito')
+                    (opt.textIt || opt.text).toLowerCase().includes('non') && (opt.textIt || opt.text).toLowerCase().includes('so')
                       ? 'italic text-slate-400'
                       : ''
                   }`}
@@ -834,28 +496,39 @@ export default function BiomechanicsQuizFull() {
                       {showAsCorrect && <CheckCircle className="w-4 h-4 text-white" />}
                       {isWrong && <XCircle className="w-4 h-4 text-white" />}
                     </div>
-                    <span className="font-medium">{opt.text}</span>
+                    <span className="font-medium">{opt.textIt || opt.text}</span>
                   </div>
                 </button>
               );
             })}
           </div>
 
-          {/* Explanation */}
-          {showExplanation && (
+          {/* Explanation with option-level feedback */}
+          {showExplanation && selectedOption && (
             <div className={`border rounded-lg p-4 mb-6 ${
-              selected !== null && currentQuestion.options[selected].correct
+              selectedOption.isCorrect
                 ? 'bg-emerald-500/10 border-emerald-500'
                 : 'bg-amber-500/10 border-amber-500'
             }`}>
               <p className={`text-sm font-medium mb-2 ${
-                selected !== null && currentQuestion.options[selected].correct
+                selectedOption.isCorrect
                   ? 'text-emerald-300'
                   : 'text-amber-300'
               }`}>
-                {selected !== null && currentQuestion.options[selected].correct ? '✓ Corretto!' : '✗ Non esattamente'}
+                {selectedOption.isCorrect ? '✓ Corretto!' : '✗ Non esattamente'}
               </p>
-              <p className="text-slate-300">{currentQuestion.explanation}</p>
+              {/* Show option-specific feedback if available */}
+              {selectedOption.feedbackIt && (
+                <p className="text-slate-400 text-sm mb-2 italic">{selectedOption.feedbackIt}</p>
+              )}
+              {/* Show general explanation */}
+              <p className="text-slate-300">
+                {currentQuestion.explanationIt || currentQuestion.explanation}
+              </p>
+              {/* Show reference if available */}
+              {currentQuestion.reference && (
+                <p className="text-slate-500 text-xs mt-2">Fonte: {currentQuestion.reference}</p>
+              )}
             </div>
           )}
 
@@ -873,7 +546,7 @@ export default function BiomechanicsQuizFull() {
               onClick={handleNext}
               className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 rounded-lg font-semibold shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition"
             >
-              {state.answers.length >= 6 || !selectNextQuestion({...state, askedQuestions: [...state.askedQuestions, currentQuestion.id]}, QUESTIONS)
+              {state.answers.length >= MAX_QUESTIONS - 1 || !selectNextQuestion({...state, askedQuestions: [...state.askedQuestions, currentQuestion.id]}, QUESTIONS)
                 ? 'Vedi Risultato →'
                 : 'Prossima Domanda →'
               }
@@ -883,7 +556,7 @@ export default function BiomechanicsQuizFull() {
 
         {/* Info box */}
         <div className="mt-4 text-center text-slate-500 text-sm">
-          <p>Il quiz si adatta alle tue risposte per capire il tuo livello reale.</p>
+          <p>Le risposte sono sfumate - spesso "dipende" è la risposta giusta.</p>
         </div>
       </div>
     </div>
