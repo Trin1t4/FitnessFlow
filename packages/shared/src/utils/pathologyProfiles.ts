@@ -1271,7 +1271,7 @@ export const LOWER_BACK_PATHOLOGY_PROFILES: Record<LowerBackPathology, Pathology
     ],
 
     recommendedExercises: [
-      'McGill Big 3 (Bird Dog, Side Plank, McGill Curl-up)',
+      'Bird Dog, Side Plank, Dead Bug (core stability options)',
       'Prone Press-ups (McKenzie)',
       'Cat-Cow (emphasis on cow/extension)',
       'Hip Thrust',
@@ -1651,7 +1651,7 @@ export const LOWER_BACK_PATHOLOGY_PROFILES: Record<LowerBackPathology, Pathology
     descriptionIt: 'Dolore lombare non specifico. Il movimento è medicina.',
     avoidExercises: [],
     avoidPatterns: [],
-    recommendedExercises: ['McGill Big 3', 'Walking', 'Swimming', 'Core stability'],
+    recommendedExercises: ['Bird Dog', 'Dead Bug', 'Side Plank', 'Walking', 'Swimming', 'Core stability'],
     modifications: [],
     screeningQuestions: [],
     progressionCriteria: ['Reduced pain', 'Increased function']

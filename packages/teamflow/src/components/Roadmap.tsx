@@ -60,8 +60,8 @@ const roadmapItems: RoadmapItem[] = [
     status: "coming"
   },
   {
-    title: "AI Form Corrections",
-    description: "Analisi video tecnica esercizi con feedback AI",
+    title: "Biomechanics Video Analysis",
+    description: "Analisi video tecnica esercizi con feedback biomeccanico",
     status: "coming"
   },
   {

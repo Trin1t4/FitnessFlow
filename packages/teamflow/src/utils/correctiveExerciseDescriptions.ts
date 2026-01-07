@@ -85,30 +85,32 @@ export const CORRECTIVE_EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescriptio
       'Mobilità toracica, stabilità lombare'
     ]  },
 
-  'McGill Big 3 - Curl-Up': {
-    description: 'Stabilità anteriore, spine sparing',
+  'Modified Curl-Up': {
+    description: 'Attivazione controllata degli addominali in posizione supina. Una delle molte opzioni per il core.',
     technique: [
       'Supino, una gamba piegata, una estesa',
-      'Mani sotto lombare per supporto',
-      'Solleva SOLO testa/spalle, lombare resta neutra',
-      'Hold 10s in cima'
+      'Mani sotto lombare per feedback (non per supporto)',
+      'Solleva SOLO testa e spalle - la lombare resta a contatto',
+      'Mantieni 3-5 secondi in cima',
+      'Scendi con controllo'
     ]  },
 
-  'McGill Big 3 - Side Plank': {
-    description: 'Stabilità laterale anti-buckling',
+  'Side Plank': {
+    description: 'Stabilità laterale del core. Carica il quadrato dei lombi e gli obliqui.',
     technique: [
-      'Gomito sotto spalla',
-      'Corpo rigido come tavola',
-      'NO cedimento bacino'
+      'Gomito sotto la spalla',
+      'Corpo rigido e allineato',
+      'Non lasciare cedere il bacino',
+      'Respira normalmente durante la tenuta'
     ]  },
 
-  'McGill Big 3 - Bird Dog': {
-    description: 'Stabilità dinamica multiplanare',
+  'Bird Dog': {
+    description: 'Stabilità dinamica in posizione quadrupedica. Lavora anti-estensione e anti-rotazione.',
     technique: [
-      'Quadrupedia neutra',
-      'Estendi lentamente (4 secondi)',
-      'Hold 10s, ritorna lentamente',
-      'Zero movimento lombare'
+      'Quadrupedia con colonna neutra',
+      'Estendi lentamente braccio e gamba opposti (4 secondi)',
+      'Mantieni 2-3 secondi in estensione completa',
+      'Ritorna con controllo, minimizzando il movimento della colonna'
     ]  },
 
   '90/90 Hip Stretch': {

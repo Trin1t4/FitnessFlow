@@ -51,7 +51,7 @@ export const PAIN_EXERCISE_MAP: Record<PainArea, PainExerciseMapping> = {
       // Squat (solo se schiena in compromesso)
       'squat': ['Goblet Squat', 'Box Squat', 'Leg Press se gym']
     },
-    correctives: ['Cat-Cow', 'Bird Dog', 'Dead Bug', 'Pelvic Tilt', 'McGill Big 3']
+    correctives: ['Cat-Cow', 'Bird Dog', 'Dead Bug', 'Pelvic Tilt', 'Side Plank', 'Glute Bridge']
   },
 
   shoulder: {

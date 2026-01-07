@@ -405,7 +405,7 @@ export class VideoCorrectionEngine {
 
       const geminiResult = await response.json();
 
-      this.updateProgress('completed', 100, 'Analisi AI completata!');
+      this.updateProgress('completed', 100, 'Analisi biomeccanica completata!');
 
       return {
         success: true,

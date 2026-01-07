@@ -894,7 +894,7 @@ export default function LiveWorkoutSession({
     const correctiveMap: Record<string, string[]> = {
       shoulder: ['Face Pulls 2x15', 'Band Pull-Aparts 2x20', 'Wall Slides 2x10', 'Scapular Push-ups 2x12'],
       upper_back: ['Cat-Cow 2x10', 'Thoracic Rotations 2x8/side', 'Foam Roll T-Spine 3min'],
-      lower_back: ['Dead Bugs 2x10/side', 'Bird Dogs 2x10/side', 'Cat-Cow 2x10', 'McGill Big 3'],
+      lower_back: ['Dead Bugs 2x10/side', 'Bird Dogs 2x10/side', 'Cat-Cow 2x10', 'Side Plank 2x20s/side'],
       hip: ['Hip 90/90 Stretch 2x30s/side', 'Clamshells 2x15', 'Hip Bridges 2x15'],
       knee: ['Terminal Knee Extensions 2x15', 'Wall Sits 2x30s', 'VMO Activation Drills'],
       ankle: ['Ankle Circles 2x10/direction', 'Calf Raises 2x15', 'Ankle Dorsiflexion Stretch 2x30s'],

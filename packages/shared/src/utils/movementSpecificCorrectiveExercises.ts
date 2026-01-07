@@ -187,41 +187,42 @@ export const LOWER_BACK_CORRECTIVES = {
     directional_preference: 'neutral',
     exercises: [
       {
-        name: 'McGill Big 3 - Curl-Up',
-        sets: '3',
-        reps: '8',
+        name: 'Modified Curl-Up',
+        sets: '2-3',
+        reps: '8-10',
         rest: '45s',
-        purpose: 'Stabilità anteriore, spine sparing',
+        purpose: 'Stabilità anteriore - una opzione tra molte',
         cues: [
           'Supino, una gamba piegata, una estesa',
-          'Mani sotto lombare per supporto',
-          'Solleva SOLO testa/spalle, lombare resta neutra',
-          'Hold 10s in cima'
+          'Mani sotto lombare per feedback',
+          'Solleva SOLO testa/spalle, lombare resta a contatto',
+          'Hold 3-5s in cima'
         ]
       },
       {
-        name: 'McGill Big 3 - Side Plank',
-        sets: '3',
-        reps: '3x10s hold/side',
-        rest: '60s',
-        purpose: 'Stabilità laterale anti-buckling',
+        name: 'Side Plank',
+        sets: '2-3',
+        reps: '20-30s/side',
+        rest: '45s',
+        purpose: 'Stabilità laterale',
         cues: [
           'Gomito sotto spalla',
-          'Corpo rigido come tavola',
-          'NO cedimento bacino'
+          'Corpo rigido e allineato',
+          'Non lasciare cedere il bacino',
+          'Respira normalmente durante la tenuta'
         ]
       },
       {
-        name: 'McGill Big 3 - Bird Dog',
-        sets: '3',
+        name: 'Bird Dog',
+        sets: '2-3',
         reps: '8/side',
         rest: '45s',
         purpose: 'Stabilità dinamica multiplanare',
         cues: [
-          'Quadrupedia neutra',
-          'Estendi lentamente (4 secondi)',
-          'Hold 10s, ritorna lentamente',
-          'Zero movimento lombare'
+          'Quadrupedia con colonna neutra',
+          'Estendi lentamente braccio e gamba opposti (4 secondi)',
+          'Mantieni 2-3 secondi in estensione completa',
+          'Ritorna con controllo, minimizzando il movimento della colonna'
         ]
       }
     ]

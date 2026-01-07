@@ -5,6 +5,7 @@ import { useTranslation } from '../lib/i18n';
 import {
   getExerciseImageWithFallback,
   calculateLevelFromScreening,
+  calculatePhysicalScoreFromOnboarding,
   CALISTHENICS_PATTERNS
 } from '@trainsmart/shared';
 
@@ -458,28 +459,11 @@ export default function ScreeningFlow({ onComplete, userData, userId }) {
     const maxPossibleScore = MOVEMENT_PATTERNS.length * 10 * 20; // 6 pattern × difficulty 10 × 20 reps
     const practicalScore = ((totalScore / maxPossibleScore) * 100).toFixed(1);
 
-    // 3. Parametri fisici (da onboarding - BMI, eta)
-    const onboardingData = localStorage.getItem('onboarding_data');
-    let physicalScore = 65; // Default
-
-    if (onboardingData) {
-      const data = JSON.parse(onboardingData);
-      const bmi = data.personalInfo?.bmi || 25;
-      const age = data.personalInfo?.age || 30;
-
-      // Score basato su BMI (18.5-24.9 = ottimale)
-      let bmiScore = 70;
-      if (bmi >= 18.5 && bmi <= 24.9) bmiScore = 85;
-      else if (bmi < 18.5 || bmi > 30) bmiScore = 50;
-
-      // Score basato su eta
-      let ageScore = 70;
-      if (age < 30) ageScore = 85;
-      else if (age < 40) ageScore = 75;
-      else if (age > 50) ageScore = 60;
-
-      physicalScore = ((bmiScore + ageScore) / 2).toFixed(1);
-    }
+    // 3. Parametri fisici (da onboarding - Navy formula body composition)
+    // Usa calculatePhysicalScoreFromOnboarding per calcolo più accurato
+    const onboardingDataStr = localStorage.getItem('onboarding_data');
+    const onboardingData = onboardingDataStr ? JSON.parse(onboardingDataStr) : null;
+    const physicalScore = calculatePhysicalScoreFromOnboarding(onboardingData).toFixed(1);
 
     // 4. Score finale ponderato
     // Practical conta DI PIU del quiz teorico!

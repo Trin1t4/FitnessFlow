@@ -146,7 +146,7 @@ export const ADAPTATION_ROUTINES: Record<TrackedBodyArea, AdaptationRoutine> = {
       ],
       3: [
         {
-          name: 'McGill Curl-Up',
+          name: 'Modified Curl-Up',
           sets: 3,
           reps: 10,
           rest: 60,

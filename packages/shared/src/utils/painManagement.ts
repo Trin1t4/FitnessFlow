@@ -186,7 +186,7 @@ export const PAIN_EXERCISE_MAP: Record<PainArea, PainExerciseMapping> = {
       'overhead press': ['Seated Press (supportato)', 'Machine Press', 'Landmine Press'],
       'lunge': ['Leg Press', 'Split Squat (supportato)', 'Step Up']
     },
-    correctives: ['McGill Big 3', 'Dead Bug', 'Bird Dog', 'Pallof Press']
+    correctives: ['Dead Bug', 'Bird Dog', 'Pallof Press', 'Cat-Cow', 'Glute Bridge']
   },
 
   // LOWER_BACK_ROTATION: Dolore in torsione
@@ -212,7 +212,7 @@ export const PAIN_EXERCISE_MAP: Record<PainArea, PainExerciseMapping> = {
       'barbell row': ['Chest Supported Row', 'Machine Row', 'Cable Row'],
       'good morning': ['Glute Bridge', 'Bird Dog', 'Hip Thrust']
     },
-    correctives: ['Cat-Cow', 'Bird Dog', 'Dead Bug', 'McGill Big 3', 'Pelvic Tilt']
+    correctives: ['Cat-Cow', 'Bird Dog', 'Dead Bug', 'Pelvic Tilt', 'Glute Bridge', 'Side Plank']
   },
 
   // ═══════════════════════════════════════════════════════════════════════════

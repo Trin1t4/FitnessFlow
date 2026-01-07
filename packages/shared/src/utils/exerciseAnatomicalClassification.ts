@@ -2091,7 +2091,7 @@ const CORE: Record<string, ExerciseAnatomicalProfile> = {
       }
     ],
     contraindicated_if_pain_in: [],
-    safe_alternatives: ['Bird Dog', 'Plank', 'McGill Curl-up'],
+    safe_alternatives: ['Bird Dog', 'Plank', 'Modified Curl-Up'],
     clinical_notes: 'GOLD STANDARD anti-extension. Very safe for back pain. Supine = spinal support. Excellent for rehab.'
   },
 
@@ -2224,7 +2224,7 @@ const CORE: Record<string, ExerciseAnatomicalProfile> = {
     contraindicated_if_pain_in: [
       'spinal_flexion'
     ],
-    safe_alternatives: ['Dead Bug', 'Plank', 'McGill Curl-up'],
+    safe_alternatives: ['Dead Bug', 'Plank', 'Modified Curl-Up'],
     clinical_notes: 'Spinal flexion exercise. CONTRAINDICATED in flexion-intolerant backs (disc pathology). Use anti-extension exercises instead.'
   },
 
@@ -2248,7 +2248,7 @@ const CORE: Record<string, ExerciseAnatomicalProfile> = {
       'spinal_flexion'
     ],
     safe_alternatives: ['Pallof Press', 'Dead Bug', 'Bird Dog'],
-    clinical_notes: 'Combined flexion + rotation. HIGH RISK for disc pathology. Stuart McGill recommends avoiding. Use Pallof Press instead.'
+    clinical_notes: 'Combined flexion + rotation. Higher demand exercise - progress gradually. If uncomfortable, Pallof Press is a good alternative for anti-rotation work.'
   }
 };
 
