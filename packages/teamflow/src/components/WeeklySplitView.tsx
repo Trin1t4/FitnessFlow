@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Target, Zap, Activity, Info, ChevronDown, ImageIcon } from 'lucide-react';
 import { getExerciseDescription } from '../utils/exerciseDescriptions';
 import { getExerciseImageWithFallback, isStaticExercise } from '@trainsmart/shared';
+import { getExerciseVideoUrl } from '../utils/exerciseVideos';
 
 interface WeeklySplitViewProps {
   weeklySplit: WeeklySplit;
@@ -129,13 +130,12 @@ interface ExerciseRowProps {
 
 function ExerciseRow({ exercise, index, isCorrective = false }: ExerciseRowProps) {
   const [showDescription, setShowDescription] = React.useState(true); // ✅ Always show description by default
-  const [imageError, setImageError] = React.useState(false);
+  const [mediaError, setMediaError] = React.useState(false);
   const exerciseInfo = getExerciseDescription(exercise.name);
 
-  // Get exercise image if it's a static exercise
-  const exerciseImage = isStaticExercise(exercise.name)
-    ? getExerciseImageWithFallback(exercise.name)
-    : null;
+  // Video per tutti gli esercizi dinamici, immagine solo per statici come fallback
+  const exerciseVideo = getExerciseVideoUrl(exercise.name);
+  const exerciseImageFallback = getExerciseImageWithFallback(exercise.name);
 
   const patternColors: Record<string, string> = {
     lower_push: 'bg-green-600',
@@ -159,22 +159,35 @@ function ExerciseRow({ exercise, index, isCorrective = false }: ExerciseRowProps
     >
       {/* Main Row */}
       <div className="flex items-center gap-3 p-3">
-        {/* Exercise Image (for static exercises) */}
-        {exerciseImage && !imageError ? (
-          <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-600">
+        {/* Exercise Video/Image Media */}
+        <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-600">
+          {!mediaError && exerciseVideo ? (
+            // VIDEO per tutti gli esercizi
+            <video
+              src={exerciseVideo}
+              className="w-full h-full object-cover"
+              muted
+              loop
+              playsInline
+              autoPlay
+              onError={() => setMediaError(true)}
+            />
+          ) : !mediaError && exerciseImageFallback ? (
+            // IMMAGINE fallback
             <img
-              src={exerciseImage}
+              src={exerciseImageFallback}
               alt={exercise.name}
               className="w-full h-full object-cover"
-              onError={() => setImageError(true)}
+              onError={() => setMediaError(true)}
               loading="lazy"
             />
-          </div>
-        ) : exerciseImage && imageError ? (
-          <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-600 flex items-center justify-center">
-            <ImageIcon className="w-6 h-6 text-gray-400" />
-          </div>
-        ) : null}
+          ) : (
+            // FALLBACK emoji
+            <div className="w-full h-full flex items-center justify-center text-2xl bg-gray-700">
+              🏋️
+            </div>
+          )}
+        </div>
 
         {/* Pattern Badge */}
         <div className={`${patternColor} rounded px-2 py-1 text-xs font-medium text-white uppercase tracking-wider min-w-[100px] text-center`}>
