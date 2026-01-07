@@ -57,6 +57,14 @@ export function calculateLevelFromScore(
  * - Quiz/theoretical: 20% (knowledge of proper form)
  * - Physical parameters: 20% (BMI, age considerations)
  *
+ * DCSS CHANGE: Machines mode NO LONGER forces beginner.
+ * Instead, we return a flag indicating machine preference.
+ * This respects advanced users who choose machines for valid reasons:
+ * - Rehabilitation
+ * - Personal preference
+ * - Specific muscle targeting
+ * - Equipment availability
+ *
  * @param practicalScore - Score from practical movement tests (0-100)
  * @param quizScore - Score from theoretical quiz (0-100)
  * @param physicalScore - Score from physical parameters (0-100)
@@ -67,25 +75,36 @@ export function calculateLevelFromScreening(
   quizScore: number = 50,
   physicalScore: number = 50,
   isMachinesMode: boolean = false
-): { level: Level; finalScore: number } {
-  // Machines mode always returns beginner (safety first)
-  if (isMachinesMode) {
-    return {
-      level: 'beginner',
-      finalScore: 0
-    };
-  }
-
-  // Weighted calculation
+): {
+  level: Level;
+  finalScore: number;
+  machinePreference: boolean;
+  note?: string;
+} {
+  // Weighted calculation - SAME FOR ALL MODES
   const finalScore = (
     quizScore * 0.2 +        // 20% theoretical
     practicalScore * 0.6 +   // 60% practical (PRIMARY)
     physicalScore * 0.2      // 20% physical
   );
 
+  const level = calculateLevelFromScore(finalScore);
+
+  // DCSS CHANGE: Don't force beginner for machines mode
+  // Just flag the preference
+  if (isMachinesMode) {
+    return {
+      level,  // Keep calculated level
+      finalScore: Math.round(finalScore * 10) / 10,
+      machinePreference: true,
+      note: 'Preferenza macchine registrata. Il programma userà principalmente macchine guidate.'
+    };
+  }
+
   return {
-    level: calculateLevelFromScore(finalScore),
-    finalScore: Math.round(finalScore * 10) / 10
+    level,
+    finalScore: Math.round(finalScore * 10) / 10,
+    machinePreference: false
   };
 }
 
@@ -202,26 +221,34 @@ export function detectScreeningDiscrepancy(
 
 export function getLevelInfo(level: Level): {
   name: string;
+  nameIt: string;
   description: string;
+  descriptionIt: string;
   color: string;
   rirRange: [number, number];
 } {
   const levelInfo = {
     beginner: {
-      name: 'Principiante',
-      description: 'Focus su tecnica e fondamentali',
+      name: 'Beginner',
+      nameIt: 'Principiante',
+      description: 'Focus on technique and fundamentals',
+      descriptionIt: 'Focus su tecnica e fondamentali',
       color: '#22c55e', // green
       rirRange: [3, 4] as [number, number]
     },
     intermediate: {
-      name: 'Intermedio',
-      description: 'Progressione sistematica con tecniche avanzate',
+      name: 'Intermediate',
+      nameIt: 'Intermedio',
+      description: 'Systematic progression with advanced techniques',
+      descriptionIt: 'Progressione sistematica con tecniche avanzate',
       color: '#f59e0b', // amber
       rirRange: [2, 3] as [number, number]
     },
     advanced: {
-      name: 'Avanzato',
-      description: 'Allenamento intensivo con periodizzazione',
+      name: 'Advanced',
+      nameIt: 'Avanzato',
+      description: 'Intensive training with periodization',
+      descriptionIt: 'Allenamento intensivo con periodizzazione',
       color: '#ef4444', // red
       rirRange: [1, 2] as [number, number]
     }
