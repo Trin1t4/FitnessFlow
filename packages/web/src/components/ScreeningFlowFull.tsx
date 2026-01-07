@@ -73,15 +73,19 @@ function detectScreeningDiscrepancy(
 const SCREENING_VIDEOS: Record<string, string> = {
   // === PUSH-UPS (italiano) ===
   'Pike Push-up': '/videos/exercises/pike-push-up.mp4',
-  'Pike Push-up Elevato': '/videos/exercises/pike-push-up.mp4',
+  'Pike Push-up su Ginocchia': '/videos/exercises/pike-push-up.mp4',
+  'Pike Push-up Elevato': '/videos/exercises/elevated-pike-push-up.mp4',
   'HSPU al Muro (ROM parziale)': '/videos/exercises/wall-handstand-push-up.mp4',
   'HSPU al Muro (ROM completo)': '/videos/exercises/wall-handstand-push-up.mp4',
+  'HSPU al Muro (Deficit)': '/videos/exercises/wall-handstand-push-up.mp4',
   'HSPU in Verticale Libera': '/videos/exercises/wall-handstand-push-up.mp4',
   'Push-up al Muro': '/videos/exercises/wall-push-up.mp4',
   'Push-up Inclinato (rialzato)': '/videos/exercises/incline-push-up.mp4',
   'Push-up Standard': '/videos/exercises/standard-push-up.mp4',
   'Push-up su Ginocchia': '/videos/exercises/knee-push-up.mp4',
+  'Push-up Larghi': '/videos/exercises/standard-push-up.mp4', // Fallback to standard
   'Push-up Diamante': '/videos/exercises/diamond-push-up.mp4',
+  'Push-up Declinato': '/videos/exercises/decline-push-up.mp4',
   'Push-up Arciere': '/videos/exercises/archer-push-up.mp4',
   'Pseudo Planche Push-up': '/videos/exercises/pseudo-planche-push-up.mp4',
   'Push-up a Un Braccio': '/videos/exercises/one-arm-push-up.mp4',
@@ -90,40 +94,67 @@ const SCREENING_VIDEOS: Record<string, string> = {
   // === SQUAT (italiano) ===
   'Squat Assistito (con supporto)': '/videos/exercises/modified-squat.mp4',
   'Squat a Corpo Libero': '/videos/exercises/deep-squat-hold.mp4',
+  'Squat con Pausa': '/videos/exercises/pause-squat.mp4',
   'Squat con Salto': '/videos/exercises/squat-jump.mp4',
+  'Split Squat': '/videos/exercises/split-squat.mp4',
   'Split Squat Bulgaro': '/videos/exercises/bulgarian-split-squat.mp4',
+  'Skater Squat': '/videos/exercises/skater-squat.mp4',
   'Pistol Squat Assistito': '/videos/exercises/assisted-pistol-squat.mp4',
   'Shrimp Squat (Squat Gambero)': '/videos/exercises/shrimp-squat.mp4',
   'Pistol Squat': '/videos/exercises/pistol-squat.mp4',
 
   // === PULL (italiano) ===
+  'Dead Hang': '/videos/exercises/standard-pull-up.mp4', // Fallback - same starting position
   'Rematore Inverso (barra alta)': '/videos/exercises/inverted-row.mp4',
   'Rematore Inverso (barra media)': '/videos/exercises/inverted-row.mp4',
   'Rematore Inverso (barra bassa)': '/videos/exercises/inverted-row.mp4',
+  'Scapular Pull-up': '/videos/exercises/standard-pull-up.mp4', // Fallback
   'Trazione Negativa (solo eccentrica)': '/videos/exercises/standard-pull-up.mp4',
   'Trazione con Elastico': '/videos/exercises/assisted-pull-up.mp4',
   'Trazione alla Sbarra': '/videos/exercises/standard-pull-up.mp4',
   'Chin-up (presa supina)': '/videos/exercises/chin-up.mp4',
+  'Trazioni Presa Larga': '/videos/exercises/wide-grip-pull-up.mp4',
   'Trazione Arciere': '/videos/exercises/standard-pull-up.mp4',
   'Progressione Trazione a Un Braccio': '/videos/exercises/standard-pull-up.mp4',
 
-  // === HINGE/CORE (italiano) ===
+  // === HORIZONTAL PULL (Row pattern) ===
+  'Floor Pull': '/videos/exercises/inverted-row.mp4', // Fallback
+  'Inverted Row (Facilitato)': '/videos/exercises/inverted-row.mp4',
+  'Inverted Row': '/videos/exercises/inverted-row.mp4',
+  'Inverted Row (Piedi Elevati)': '/videos/exercises/inverted-row.mp4',
+  'Archer Row': '/videos/exercises/inverted-row.mp4', // Fallback
+
+  // === LOWER PULL / HINGE (italiano) ===
   'Ponte Glutei': '/videos/exercises/glute-bridge.mp4',
   'Ponte Glutei a Una Gamba': '/videos/exercises/single-leg-glute-bridge.mp4',
+  'Hip Hinge a Corpo Libero': '/videos/exercises/romanian-deadlift.mp4', // Fallback
   'Hip Thrust': '/videos/exercises/hip-thrust.mp4',
+  'Hip Thrust Rialzato': '/videos/exercises/hip-thrust.mp4',
   'Stacco Rumeno a Una Gamba (corpo libero)': '/videos/exercises/single-leg-rdl.mp4',
-  'Nordic Curl (solo eccentrica)': '/videos/exercises/nordic-hamstring-curl.mp4',
-  'Nordic Curl (completo)': '/videos/exercises/nordic-hamstring-curl.mp4',
   'Leg Curl Scivolato': '/videos/exercises/slider-leg-curl.mp4',
   'Slider Leg Curl': '/videos/exercises/slider-leg-curl.mp4',
+  'Nordic Curl (solo eccentrica)': '/videos/exercises/nordic-hamstring-curl.mp4',
+  'Nordic Curl (Parziale)': '/videos/exercises/nordic-hamstring-curl.mp4',
+  'Nordic Curl (Assistito)': '/videos/exercises/nordic-hamstring-curl.mp4',
+  'Nordic Curl (completo)': '/videos/exercises/nordic-hamstring-curl.mp4',
+
+  // === CORE (italiano) ===
+  'Dead Bug': '/videos/exercises/dead-bug.mp4',
+  'Bird Dog': '/videos/exercises/bird-dog.mp4',
   'Plank': '/videos/exercises/plank.mp4',
   'Plank Laterale': '/videos/exercises/side-plank.mp4',
+  'Plank con Oscillazione': '/videos/exercises/plank.mp4', // Fallback to plank
   'Copenhagen Plank': '/videos/exercises/copenhagen-plank.mp4',
   'Hollow Body Hold': '/videos/exercises/hollow-body-hold.mp4',
+  'Hollow Body Rock': '/videos/exercises/hollow-body-rock.mp4',
   'L-sit Raccolto': '/videos/exercises/l-sit.mp4',
   'L-sit a Una Gamba': '/videos/exercises/l-sit.mp4',
   'L-sit Completo': '/videos/exercises/l-sit.mp4',
   'L-sit': '/videos/exercises/l-sit.mp4',
+  'Hanging Knee Raise': '/videos/exercises/hanging-knee-raise.mp4',
+  'Hanging Leg Raise': '/videos/exercises/hanging-leg-raise.mp4',
+  'Toes to Bar': '/videos/exercises/hanging-leg-raise.mp4', // Fallback
+  'Dragon Flag (Parziale)': '/videos/exercises/dragon-flag.mp4',
   'Dragon Flag': '/videos/exercises/dragon-flag.mp4',
   'Lying Leg Raise': '/videos/exercises/lying-leg-raise.mp4',
   'Alzate Gambe Sdraiato': '/videos/exercises/lying-leg-raise.mp4',
