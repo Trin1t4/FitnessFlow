@@ -3,7 +3,24 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "framework": "vite",
+  "headers": [
+    {
+      "source": "/videos/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/exercises/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/videos/(.*)", "destination": "/videos/$1" },
+    { "source": "/exercises/(.*)", "destination": "/exercises/$1" },
+    { "source": "/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/((?!videos|exercises|assets|splash|icons|manifest|sw|workbox|favicon).*)", "destination": "/index.html" }
   ]
 }
