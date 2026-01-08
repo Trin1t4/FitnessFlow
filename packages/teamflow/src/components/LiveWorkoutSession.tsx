@@ -16,7 +16,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Play, Pause, SkipForward, X, Info, ThumbsDown } from 'lucide-react';
+import { CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Play, Pause, SkipForward, X, Info, ThumbsDown, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   autoRegulationService,
@@ -262,6 +262,9 @@ export default function LiveWorkoutSession({
   // Exercise Dislike Modal state
   const [showDislikeModal, setShowDislikeModal] = useState(false);
   const [adjustedWeights, setAdjustedWeights] = useState<Record<string, number>>({});
+
+  // Exercise Selector Dropdown state
+  const [showExerciseSelector, setShowExerciseSelector] = useState(false);
 
   // Adjustment state
   const [suggestion, setSuggestion] = useState<{
@@ -1233,12 +1236,39 @@ export default function LiveWorkoutSession({
       }
     }
 
-    handleSetComplete();
+    // ================================================================
+    // LOG DEL SET (critico per non perdere dati)
+    // ================================================================
+    const newSetLog: SetLog = {
+      set_number: currentSet,
+      reps_completed: currentReps,
+      weight_used: currentWeight || undefined,
+      rpe: currentRPE,
+      rir_perceived: currentRIR,
+      adjusted: false
+    };
+
+    setSetLogs(prev => ({
+      ...prev,
+      [currentExercise.name]: [...(prev[currentExercise.name] || []), newSetLog]
+    }));
+
+    console.log(`[ProgressiveWorkout] Set logged: ${currentExercise.name} Set ${currentSet}`);
+
+    // Reset input per prossimo set
+    setCurrentReps(0);
+    setCurrentWeight(0);
+    setCurrentRPE(7);
+    setCurrentRIR(2);
+
+    // Procedi con il completamento del set (skipRPEInput=true perché abbiamo già raccolto il feedback)
+    handleSetComplete(true);
   };
 
   // Handle set completion
-  const handleSetComplete = () => {
-    if (currentReps === 0) {
+  // skipRPEInput: true quando il feedback RPE è già stato raccolto (da handleRIRValidationAndComplete)
+  const handleSetComplete = (skipRPEInput = false) => {
+    if (currentReps === 0 && !skipRPEInput) {
       toast.error('Inserisci il numero di reps completate');
       return;
     }
@@ -1250,7 +1280,12 @@ export default function LiveWorkoutSession({
       setSetLogs(prev => ({ ...prev, [currentExercise.name]: [] }));
     }
 
-    setShowRPEInput(true);
+    // Se skipRPEInput è true, il feedback è già stato raccolto → procedi al prossimo set
+    if (skipRPEInput) {
+      proceedToNextSet();
+    } else {
+      setShowRPEInput(true);
+    }
   };
 
   // ========================================================================
@@ -1797,6 +1832,26 @@ export default function LiveWorkoutSession({
   const dismissSuggestion = () => {
     setSuggestion(null);
     proceedToNextSet();
+  };
+
+  // Jump to a specific exercise (manual selection)
+  const jumpToExercise = (exerciseIndex: number) => {
+    if (exerciseIndex < 0 || exerciseIndex >= exercises.length) return;
+
+    // Reset state for new exercise
+    setCurrentExerciseIndex(exerciseIndex);
+    setCurrentSet(1);
+    setCurrentReps(0);
+    setCurrentWeight(0);
+    setCurrentRPE(7);
+    setCurrentRIR(2);
+    setShowRPEInput(false);
+    setShowRIRConfirm(false);
+    setRestTimerActive(false);
+    setRestTimeRemaining(0);
+    setShowExerciseSelector(false);
+
+    toast.info(`⏭️ Passato a: ${exercises[exerciseIndex].name}`, { duration: 2000 });
   };
 
   // Proceed to next set or exercise
@@ -2516,10 +2571,65 @@ export default function LiveWorkoutSession({
           </button>
         </div>
 
-        {/* Progress */}
+        {/* Progress with Exercise Selector */}
         <div className="mb-6">
-          <div className="flex justify-between text-sm text-slate-400 mb-2">
-            <span>Esercizio {currentExerciseIndex + 1}/{totalExercises}</span>
+          <div className="flex justify-between items-center text-sm text-slate-400 mb-2">
+            {/* Exercise Selector Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowExerciseSelector(!showExerciseSelector)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg transition-all"
+              >
+                <span>Esercizio {currentExerciseIndex + 1}/{totalExercises}</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showExerciseSelector ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {showExerciseSelector && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute top-full left-0 mt-1 w-72 max-h-64 overflow-y-auto bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-50"
+                >
+                  {exercises.map((ex, idx) => {
+                    const isSuperset = ex.supersetGroup;
+                    const isCurrent = idx === currentExerciseIndex;
+                    const isCompleted = setLogs[ex.name]?.length >= (adjustedSets[ex.name] || ex.sets);
+
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => jumpToExercise(idx)}
+                        className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-all border-b border-slate-700 last:border-b-0 ${
+                          isCurrent
+                            ? 'bg-emerald-500/20 text-emerald-300'
+                            : isCompleted
+                            ? 'bg-slate-700/50 text-slate-400'
+                            : 'hover:bg-slate-700 text-white'
+                        }`}
+                      >
+                        <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${
+                          isCurrent ? 'bg-emerald-500 text-white' :
+                          isCompleted ? 'bg-green-500/30 text-green-300' :
+                          'bg-slate-600 text-slate-300'
+                        }`}>
+                          {isCompleted ? '✓' : idx + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{ex.name}</p>
+                          <p className="text-xs text-slate-400">
+                            {ex.sets}x{ex.reps} {isSuperset && `• Superset ${ex.supersetGroup}`}
+                          </p>
+                        </div>
+                        {isCurrent && (
+                          <span className="text-xs bg-emerald-500/30 px-2 py-0.5 rounded">Attuale</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </div>
             <span>Set {currentSet}/{currentTargetSets}</span>
           </div>
           <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
@@ -2796,8 +2906,12 @@ export default function LiveWorkoutSession({
               <p className="text-slate-400 text-sm">RPE e RIR per calibrare la progressione</p>
             </div>
 
-            {/* RPE Scale */}
+            {/* RPE Scale - Rating of Perceived Exertion */}
             <div>
+              <div className="text-center mb-3">
+                <p className="text-emerald-400 font-bold text-sm">SCALA RPE (Rating of Perceived Exertion)</p>
+                <p className="text-slate-500 text-xs">Quanto è stato faticoso questo set da 1 a 10?</p>
+              </div>
               <div className="flex justify-between text-sm text-slate-400 mb-2">
                 <span>Molto Facile</span>
                 <span className="text-2xl font-bold text-white">{currentRPE}</span>
@@ -2825,10 +2939,14 @@ export default function LiveWorkoutSession({
 
             {/* RIR (Reps In Reserve) */}
             <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+              <div className="text-center mb-3">
+                <p className="text-purple-400 font-bold text-sm">SCALA RIR (Reps In Reserve)</p>
+                <p className="text-slate-500 text-xs">Quante ripetizioni potevi ancora fare prima di cedere?</p>
+              </div>
               <div className="flex justify-between items-center mb-3">
                 <div>
-                  <p className="text-purple-300 font-bold">RIR - Reps In Reserve</p>
-                  <p className="text-slate-400 text-xs">Quante reps potevi ancora fare?</p>
+                  <p className="text-purple-300 font-bold">RIR selezionato</p>
+                  <p className="text-slate-400 text-xs">0 = cedimento, 5+ = molto facile</p>
                 </div>
                 <span className="text-3xl font-bold text-purple-400">{currentRIR}</span>
               </div>
@@ -2970,9 +3088,10 @@ export default function LiveWorkoutSession({
                 setShowRPEInput(false);
                 handleRIRValidationAndComplete();
               }}
-              className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-4 rounded-xl transition-all duration-300"
+              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
             >
-              Conferma RIR {currentRIR}
+              <CheckCircle className="w-5 h-5" />
+              Continua
             </button>
           </motion.div>
         )}

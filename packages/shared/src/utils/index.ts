@@ -734,36 +734,38 @@ export {
 
 // Discomfort Messages (DCSS educational approach)
 export type {
-  MessageCategory as DiscomfortMessageCategory,
-  SeverityLevel,
-  DiscomfortMessage,
-  MessageContext
+  DiscomfortLevel,
+  DiscomfortCategory,
+  UserChoice,
+  DiscomfortResponse,
+  UserOption,
+  TolerableDiscomfortInfo,
+  PersistentDiscomfortCheck
 } from './discomfortMessages';
 export {
-  getDiscomfortMessage,
-  getToleranceEducation,
-  getRecoveryMessage,
-  getPersistenceWarning,
-  formatMessageWithContext,
-  DISCOMFORT_MESSAGES
+  categorizeDiscomfort,
+  getDiscomfortResponse,
+  getTolerableDiscomfortInfo,
+  getPostSetDiscomfortOptions,
+  checkPersistentDiscomfort,
+  getReturnToNormalMessage,
+  PRE_WORKOUT_MESSAGES,
+  BODY_AREA_LABELS,
+  getInSessionDiscomfortResponse,
+  getPostExerciseDiscomfortResponse
 } from './discomfortMessages';
 
 // Corrective Protocols (DCSS)
 export type {
   CorrectiveProtocol,
-  CorrectiveStep,
-  ProtocolPhase,
-  MobilityExercise,
-  ActivationExercise,
-  StretchExercise
+  CorrectiveExercise
 } from './correctiveProtocols';
 export {
-  CORRECTIVE_PROTOCOLS,
-  getProtocolForArea,
-  getCorrectiveProtocol,
-  getWarmupProtocol,
-  getCooldownProtocol,
-  formatProtocolDuration
+  HIP_MOBILITY_PROTOCOL,
+  ANKLE_MOBILITY_PROTOCOL,
+  FLEXION_INTOLERANCE_PROTOCOL,
+  EXTENSION_INTOLERANCE_PROTOCOL,
+  getCorrectiveProtocol
 } from './correctiveProtocols';
 
 // Return to Normal Service (DCSS progressive recovery)
@@ -783,20 +785,24 @@ export {
 } from './returnToNormalService';
 
 // Exercise Analyzers (DCSS biomechanics - educational feedback)
+export type {
+  AnalysisContext,
+  UserMorphotype,
+  ObservationSeverity,
+  ObservationType,
+  FormObservation,
+  ROMRange,
+  AnalysisResult,
+  ExerciseAnalyzer
+} from './biomechanics/exerciseAnalyzers';
 export {
-  // Main analysis function
-  analyzeExerciseFrame as analyzeExerciseDCSS,
-  // Individual analyzers
-  analyzeSquatDCSS,
-  analyzeDeadliftDCSS,
-  analyzeBenchDCSS,
-  analyzeRowDCSS,
-  // Morphotype helpers
-  classifyMorphotype as classifyMorphotypeDCSS,
-  getMorphotypeContext,
-  // Evidence-based notes
-  BIOMECHANICS_EVIDENCE,
-  MORPHOTYPE_NOTES
+  SQUAT_ANALYZER,
+  DEADLIFT_ANALYZER,
+  BENCH_PRESS_ANALYZER,
+  BARBELL_ROW_ANALYZER,
+  EXERCISE_ANALYZERS,
+  getExerciseAnalyzer,
+  generateSessionSummary
 } from './biomechanics/exerciseAnalyzers';
 
 // ============================================================

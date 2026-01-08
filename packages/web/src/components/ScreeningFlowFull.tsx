@@ -89,7 +89,7 @@ const SCREENING_VIDEOS: Record<string, string> = {
   'Push-up Arciere': '/videos/exercises/archer-push-up.mp4',
   'Pseudo Planche Push-up': '/videos/exercises/pseudo-planche-push-up.mp4',
   'Push-up a Un Braccio': '/videos/exercises/one-arm-push-up.mp4',
-  'Camminata al Muro': '/videos/exercises/wall-walk.mp4',
+  'Camminata al Muro': '/videos/exercises/wall-handstand-push-up.mp4', // Fallback - wall-walk.mp4 non disponibile
 
   // === SQUAT (italiano) ===
   'Squat Assistito (con supporto)': '/videos/exercises/modified-squat.mp4',
@@ -182,8 +182,8 @@ const SCREENING_VIDEOS: Record<string, string> = {
 
   // === PALESTRA - Macchine (italiano) ===
   'Leg Press': '/videos/exercises/leg-press.mp4',
-  'Chest Press': '/videos/exercises/chest-press.mp4',
-  'Shoulder Press Machine': '/videos/exercises/shoulder-press-machine.mp4',
+  'Chest Press': '/videos/exercises/dumbbell-bench-press.mp4', // Fallback - chest-press.mp4 non disponibile
+  'Shoulder Press Machine': '/videos/exercises/dumbbell-shoulder-press.mp4', // Fallback - shoulder-press-machine.mp4 non disponibile
   'Leg Curl': '/videos/exercises/leg-curl.mp4',
 };
 
@@ -322,7 +322,12 @@ const GYM_PATTERNS_MACHINES = [
   }
 ];
 
-export default function ScreeningFlowFull({ onComplete, userData, userId }) {
+export default function ScreeningFlowFull({ onComplete, userData, userId, demoMode = false }: {
+  onComplete: (results: any) => void;
+  userData?: any;
+  userId: string;
+  demoMode?: boolean;
+}) {
   const { t } = useTranslation();
 
   // Determina modalità test in base a location e trainingType

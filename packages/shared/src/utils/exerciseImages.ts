@@ -17,10 +17,11 @@
 // URL base di Supabase Storage per immagini esercizi
 // Costruito dinamicamente dall'URL Supabase configurato
 const getSupabaseStorageUrl = () => {
+  // Try Vite env first, then fallback to hardcoded URL
   const importMeta = typeof import.meta !== 'undefined' ? (import.meta as any) : {};
   const supabaseUrl = importMeta.env?.VITE_SUPABASE_URL
-    ? importMeta.env.VITE_SUPABASE_URL
-    : process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mhcdxqhhlrujbjxtgnmz.supabase.co';
+    || (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SUPABASE_URL)
+    || 'https://mhcdxqhhlrujbjxtgnmz.supabase.co';
   return `${supabaseUrl}/storage/v1/object/public/exercise-images`;
 };
 const SUPABASE_STORAGE_URL = getSupabaseStorageUrl();

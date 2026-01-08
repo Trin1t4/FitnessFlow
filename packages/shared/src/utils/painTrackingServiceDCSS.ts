@@ -88,9 +88,9 @@ export interface RecoveryTracker {
 // CONSTANTS
 // ============================================================================
 
-const TOLERABLE_DISCOMFORT_THRESHOLD = 4;  // Up to 4/10 is generally acceptable
-const PROFESSIONAL_THRESHOLD = 7;           // 7+ requires professional
-const SESSIONS_FOR_RECOVERY = 3;            // 3 pain-free sessions to progress
+export const TOLERABLE_DISCOMFORT_THRESHOLD = 4;  // Up to 4/10 is generally acceptable
+export const PROFESSIONAL_THRESHOLD = 7;           // 7+ requires professional
+export const SESSIONS_FOR_RECOVERY = 3;            // 3 pain-free sessions to progress
 const LOAD_PROGRESSION_STEPS = [60, 75, 85, 95, 100];  // % progression
 
 // ============================================================================

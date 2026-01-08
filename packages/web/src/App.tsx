@@ -41,6 +41,7 @@ const BiomechanicsQuiz = lazy(() => import("./pages/BiomechanicsQuiz"));
 const BiomechanicsQuizFull = lazy(() => import("./pages/BiomechanicsQuizFull"));
 const Screening = lazy(() => import("./pages/Screening"));
 const ScreeningFull = lazy(() => import("./pages/ScreeningFull"));
+const DemoScreening = lazy(() => import("./pages/DemoScreening"));
 const Dashboard = lazy(() => import("./components/Dashboard"));
 const Workout = lazy(() => import('./pages/Workout'));
 const WorkoutSession = lazy(() => import('./pages/WorkoutSession'));
@@ -86,6 +87,10 @@ function App() {
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />
+
+              {/* DEMO - Public (no login required) */}
+              <Route path="/demo" element={<DemoScreening />} />
+              <Route path="/demo/screening" element={<DemoScreening />} />
 
               {/* ONBOARDING - Protected */}
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
