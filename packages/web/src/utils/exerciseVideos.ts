@@ -51,11 +51,13 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   // === PIKE PUSH-UP varianti ===
   'Pike Push-up': 'pike-push-up.mp4',
   'Pike Push Up': 'pike-push-up.mp4',
+  'Pike Push-up su Ginocchia': 'pike-push-up.mp4',
   'Pike Push-up Facile': 'pike-push-up.mp4',
   'Pike Push-up Elevato': 'elevated-pike-push-up.mp4',
   'Plank to Pike': 'pike-push-up.mp4',
   'Piegamenti a V': 'pike-push-up.mp4',
   'Piegamenti a V Facili': 'pike-push-up.mp4',
+  'Piegamenti a V su Ginocchia': 'pike-push-up.mp4',
   'Piegamenti a V Elevati': 'elevated-pike-push-up.mp4',
 
   // === NORDIC CURL varianti ===

@@ -12,29 +12,33 @@ import type { PatternBaselines, PatternBaseline, Level } from '../types';
  * Coefficienti di correlazione tra pattern
  * Basati su rapporti di forza tipici in soggetti allenati
  */
-const PATTERN_CORRELATIONS: Record<string, { source: string; ratio: number }> = {
+const PATTERN_CORRELATIONS: Record<string, { source: string; ratio: number; difficultyAdjust?: number }> = {
   // vertical_pull inferito da horizontal_push (Bench Press → Lat Pulldown/Pull-up)
   // In media il lat pulldown è circa 80% della panca piana
   // Per trazioni bodyweight: consideriamo che chi fa 80kg panca può fare lat 64kg
   // che corrisponde circa al peso corporeo medio → trazioni a corpo libero
-  vertical_pull: { source: 'horizontal_push', ratio: 0.80 },
+  // DIFFICULTY: Le trazioni bodyweight sono MOLTO più difficili dei push-up → -2 difficoltà
+  vertical_pull: { source: 'horizontal_push', ratio: 0.80, difficultyAdjust: -2 },
 
   // horizontal_pull inferito da vertical_pull (Lat Pulldown → Row)
   // Il rematore è circa 85% del lat pulldown per la maggior parte delle persone
-  horizontal_pull: { source: 'vertical_pull', ratio: 0.85 },
+  horizontal_pull: { source: 'vertical_pull', ratio: 0.85, difficultyAdjust: 0 },
 
   // Se vertical_pull non disponibile, horizontal_pull può essere inferito da horizontal_push
   // Row è circa 70% della panca (ratio indiretto: 0.80 × 0.85 ≈ 0.68, arrotondiamo a 0.70)
   // Questo viene usato come fallback
-  horizontal_pull_fallback: { source: 'horizontal_push', ratio: 0.70 },
+  // DIFFICULTY: Il rematore inverso è più difficile di push-up → -1 difficoltà
+  horizontal_pull_fallback: { source: 'horizontal_push', ratio: 0.70, difficultyAdjust: -1 },
 
   // vertical_push inferito da horizontal_push (Bench → Military Press)
   // Il military press è circa 65% della panca in media
-  vertical_push: { source: 'horizontal_push', ratio: 0.65 },
+  // DIFFICULTY: Pike push-up sono MOLTO più difficili dei push-up standard → -2 difficoltà
+  // Es: chi fa 8 wide push-up (diff 5) dovrebbe fare Pike su ginocchia (diff 3), NON Pike Elevato!
+  vertical_push: { source: 'horizontal_push', ratio: 0.65, difficultyAdjust: -2 },
 
   // lower_pull inferito da lower_push (Squat → Deadlift)
   // CAUTO: Solo 110% dello squat per sicurezza, poi si adatta
-  lower_pull: { source: 'lower_push', ratio: 1.10 },
+  lower_pull: { source: 'lower_push', ratio: 1.10, difficultyAdjust: 0 },
 };
 
 /**
@@ -136,12 +140,24 @@ export function inferMissingBaselines(
     // Calcola il peso stimato
     const estimatedWeight = Math.round(sourceBaseline.weight10RM * correlation.ratio);
 
+    // Calcola difficoltà adattata per il pattern target
+    // IMPORTANTE: Le difficoltà tra pattern diversi NON sono comparabili!
+    // Es: diff 5 in horizontal_push (push-up standard) ≠ diff 5 in vertical_push (pike elevato)
+    const sourceDifficulty = sourceBaseline.difficulty || 5;
+    const difficultyAdjust = correlation.difficultyAdjust || 0;
+    const adjustedDifficulty = Math.max(1, Math.min(10, sourceDifficulty + difficultyAdjust));
+
+    // Considera anche le reps: se il source ha poche reps (< 8), riduci ulteriormente
+    const sourceReps = sourceBaseline.reps || 10;
+    const repsBasedAdjust = sourceReps < 6 ? -1 : (sourceReps < 8 ? -0.5 : 0);
+    const finalDifficulty = Math.max(1, Math.min(10, adjustedDifficulty + repsBasedAdjust));
+
     // Crea il baseline stimato
     const estimatedBaseline: PatternBaseline = {
       variantId: actualTargetPattern,
       variantName: DEFAULT_VARIANT_NAMES[targetPattern] || actualTargetPattern,
-      difficulty: sourceBaseline.difficulty || 5,
-      reps: 10, // Default 10RM
+      difficulty: Math.round(finalDifficulty), // Arrotonda a intero
+      reps: 10, // Default 10RM - valore conservativo per pattern stimati
       weight10RM: estimatedWeight,
       testDate: new Date().toISOString(),
       isEstimated: true,
@@ -151,7 +167,7 @@ export function inferMissingBaselines(
     result[targetKey] = estimatedBaseline;
 
     console.log(
-      `[BaselineInference] ${actualTargetPattern}: ${estimatedWeight}kg (${correlation.ratio * 100}% of ${correlation.source} ${sourceBaseline.weight10RM}kg) - STIMATO${isFallback ? ' (FALLBACK)' : ''}`
+      `[BaselineInference] ${actualTargetPattern}: ${estimatedWeight}kg (${correlation.ratio * 100}% of ${correlation.source} ${sourceBaseline.weight10RM}kg), diff ${sourceDifficulty}→${finalDifficulty} (adjust: ${difficultyAdjust}, reps-adj: ${repsBasedAdjust}) - STIMATO${isFallback ? ' (FALLBACK)' : ''}`
     );
   }
 

@@ -280,6 +280,17 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
     ]
   },
 
+  'Pike Push-up su Ginocchia': {
+    description: 'Versione facilitata del Pike Push-up con le ginocchia a terra. Ideale per principianti.',
+    technique: [
+      'Parti in ginocchio con le mani a terra',
+      'Forma una V rovesciata piegando le anche',
+      'Abbassa la testa verso il pavimento',
+      'Spingi indietro mantenendo le ginocchia a terra',
+      'Ottimo per costruire forza di spinta verticale'
+    ]
+  },
+
   'Pike Push-up Facile': {
     description: 'Versione facilitata del Pike Push-up con angolo meno accentuato.',
     technique: [
@@ -297,6 +308,28 @@ export const EXERCISE_DESCRIPTIONS: Record<string, ExerciseDescription> = {
       'Piedi su rialzo (sedia/step)',
       'Corpo più verticale possibile',
       'Testa verso il pavimento tra le mani'
+    ]
+  },
+
+  'Camminata al Muro': {
+    description: 'Esercizio propedeutico al handstand. Cammina con le mani verso il muro fino ad arrivare in verticale.',
+    technique: [
+      'Parti in posizione di plank con i piedi contro il muro',
+      'Cammina con le mani indietro verso il muro',
+      'Contemporaneamente cammina con i piedi verso l\'alto sul muro',
+      'Arriva più vicino possibile alla verticale',
+      'Torna indietro con movimenti controllati'
+    ]
+  },
+
+  'Wall Walk': {
+    description: 'Esercizio propedeutico al handstand. Cammina con le mani verso il muro fino ad arrivare in verticale.',
+    technique: [
+      'Parti in posizione di plank con i piedi contro il muro',
+      'Cammina con le mani indietro verso il muro',
+      'Contemporaneamente cammina con i piedi verso l\'alto sul muro',
+      'Arriva più vicino possibile alla verticale',
+      'Torna indietro con movimenti controllati'
     ]
   },
 
