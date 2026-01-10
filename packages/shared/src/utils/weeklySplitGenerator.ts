@@ -376,7 +376,27 @@ const EXERCISE_NAMES_IT: Record<string, string> = {
 
   // Altri esercizi body weight
   'Prone Y-raise': 'Y-raise Prono',
-  'Alzate Gambe a Terra': 'Alzate Gambe a Terra'
+  'Alzate Gambe a Terra': 'Alzate Gambe a Terra',
+
+  // Esercizi aggiuntivi da baselineInferenceService e locationAdapter
+  'Prone Y-T-W Raises': 'Y-T-W Raises Prono',
+  'Prone Y Raise': 'Y Raise Prono',
+  'Superman Pull': 'Superman Pull',
+  'Superman Row': 'Superman Row',
+  'Hip Thrust Bodyweight': 'Hip Thrust a Corpo Libero',
+  'Nordic Curl (Parziale)': 'Nordic Curl (Parziale)',
+  'Nordic Curl (Assistito)': 'Nordic Curl (Assistito)',
+  'Nordic Curl (Completo)': 'Nordic Curl (Completo)',
+  'Archer Row': 'Archer Row',
+  'Pike Push-up Inclinato': 'Pike Push-up Inclinato',
+  'Pike Push-up su Ginocchia': 'Pike Push-up su Ginocchia',
+  'HSPU al Muro (ROM parziale)': 'HSPU al Muro (ROM Parziale)',
+  'HSPU al Muro (Solo Eccentrica)': 'HSPU al Muro (Solo Eccentrica)',
+  'Trazioni Assistite': 'Trazioni Assistite',
+  'Inverted Row Piedi Elevati': 'Rematore Inverso Piedi Elevati',
+  'Inverted Row Facilitato': 'Rematore Inverso Facilitato',
+  'Slider Leg Curl': 'Leg Curl Scorrevole',
+  'Ponte Glutei Monopodalico': 'Ponte Glutei Monopodalico'
 };
 
 /**

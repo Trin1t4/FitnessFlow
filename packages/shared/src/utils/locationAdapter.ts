@@ -881,3 +881,85 @@ export function getAvailableVariants(
     }
   });
 }
+
+/**
+ * Mappa difficoltà → esercizio per un pattern
+ * Usato per tradurre la difficoltà selezionata durante il test
+ * in un esercizio specifico per il programma
+ */
+export function mapDifficultyToExercise(
+  pattern: string,
+  difficulty: number,
+  equipment?: { pullupBar?: boolean; sturdyTable?: boolean; loopBands?: boolean; noEquipment?: boolean }
+): string {
+  // Database di varianti per difficoltà
+  const PATTERN_DIFFICULTY_MAP: Record<string, { maxDiff: number; exercise: string }[]> = {
+    vertical_push: [
+      { maxDiff: 1, exercise: 'Wall Shoulder Tap' },
+      { maxDiff: 2, exercise: 'Pike Push-up Inclinato' },
+      { maxDiff: 3, exercise: 'Pike Push-up su Ginocchia' },
+      { maxDiff: 5, exercise: 'Pike Push-up' },
+      { maxDiff: 6, exercise: 'Pike Push-up Elevato' },
+      { maxDiff: 7, exercise: 'HSPU al Muro (Solo Eccentrica)' },
+      { maxDiff: 8, exercise: 'HSPU al Muro (ROM parziale)' },
+      { maxDiff: 9, exercise: 'HSPU al Muro' },
+      { maxDiff: 10, exercise: 'Handstand Push-up' }
+    ],
+    vertical_pull: [
+      { maxDiff: 1, exercise: 'Prone Y Raise' },
+      { maxDiff: 2, exercise: 'Floor Pull Facilitato' },
+      { maxDiff: 3, exercise: 'Floor Pull (asciugamano)' },
+      { maxDiff: 4, exercise: 'Inverted Row Facilitato' },
+      { maxDiff: 5, exercise: 'Inverted Row' },
+      { maxDiff: 6, exercise: 'Trazioni Negative' },
+      { maxDiff: 7, exercise: 'Trazioni Assistite' },
+      { maxDiff: 8, exercise: 'Trazioni' },
+      { maxDiff: 9, exercise: 'Trazioni Presa Larga' },
+      { maxDiff: 10, exercise: 'Trazioni Arciere' }
+    ],
+    horizontal_pull: [
+      { maxDiff: 1, exercise: 'Prone Y Raise' },
+      { maxDiff: 2, exercise: 'Superman Row' },
+      { maxDiff: 3, exercise: 'Floor Pull Facilitato' },
+      { maxDiff: 4, exercise: 'Floor Pull (asciugamano)' },
+      { maxDiff: 5, exercise: 'Inverted Row Facilitato' },
+      { maxDiff: 6, exercise: 'Inverted Row' },
+      { maxDiff: 7, exercise: 'Inverted Row Piedi Elevati' },
+      { maxDiff: 8, exercise: 'Archer Row' },
+      { maxDiff: 10, exercise: 'Inverted Row Singolo Braccio' }
+    ],
+    lower_pull: [
+      { maxDiff: 2, exercise: 'Ponte Glutei' },
+      { maxDiff: 3, exercise: 'Ponte Glutei Monopodalico' },
+      { maxDiff: 4, exercise: 'Hip Thrust Bodyweight' },
+      { maxDiff: 5, exercise: 'Slider Leg Curl' },
+      { maxDiff: 6, exercise: 'Nordic Curl (Solo Eccentrica)' },
+      { maxDiff: 7, exercise: 'Nordic Curl (Parziale)' },
+      { maxDiff: 8, exercise: 'Nordic Curl (Assistito)' },
+      { maxDiff: 9, exercise: 'Nordic Curl' },
+      { maxDiff: 10, exercise: 'Nordic Curl (Completo)' }
+    ]
+  };
+
+  const mapping = PATTERN_DIFFICULTY_MAP[pattern];
+  if (!mapping) return '';
+
+  // Trova l'esercizio appropriato per questa difficoltà
+  for (const entry of mapping) {
+    if (difficulty <= entry.maxDiff) {
+      // Verifica compatibilità con equipment
+      if (equipment) {
+        const ex = entry.exercise.toLowerCase();
+        const needsBar = ex.includes('trazioni') || ex.includes('pull-up');
+        const needsTable = ex.includes('inverted') || ex.includes('rematore inverso');
+
+        if (needsBar && !equipment.pullupBar) continue;
+        if (needsTable && !equipment.sturdyTable) continue;
+      }
+      return entry.exercise;
+    }
+  }
+
+  // Fallback all'ultimo elemento (più difficile)
+  return mapping[mapping.length - 1].exercise;
+}

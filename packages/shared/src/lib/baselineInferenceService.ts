@@ -4,77 +4,198 @@
  * Stima i pattern mancanti dai test di screening usando correlazioni biomeccaniche.
  * I pesi stimati vengono marcati come "estimated" e verranno adattati dopo 2-3 sedute
  * basandosi sul feedback RPE/RIR dell'utente.
+ *
+ * FIX 2025-01: Corretto calcolo difficulty per bodyweight exercises.
  */
 
 import type { PatternBaselines, PatternBaseline, Level } from '../types';
 
-/**
- * Coefficienti di correlazione tra pattern
- * Basati su rapporti di forza tipici in soggetti allenati
- */
+// ============================================================================
+// COEFFICIENTI DI CORRELAZIONE
+// ============================================================================
+
 const PATTERN_CORRELATIONS: Record<string, { source: string; ratio: number; difficultyAdjust?: number }> = {
-  // vertical_pull inferito da horizontal_push (Bench Press → Lat Pulldown/Pull-up)
-  // In media il lat pulldown è circa 80% della panca piana
-  // Per trazioni bodyweight: consideriamo che chi fa 80kg panca può fare lat 64kg
-  // che corrisponde circa al peso corporeo medio → trazioni a corpo libero
-  // DIFFICULTY: Le trazioni bodyweight sono MOLTO più difficili dei push-up → -2 difficoltà
+  // vertical_pull inferito da horizontal_push
+  // DIFFICULTY: Le trazioni sono MOLTO più difficili dei push-up → -2 difficoltà
   vertical_pull: { source: 'horizontal_push', ratio: 0.80, difficultyAdjust: -2 },
 
-  // horizontal_pull inferito da vertical_pull (Lat Pulldown → Row)
-  // Il rematore è circa 85% del lat pulldown per la maggior parte delle persone
+  // horizontal_pull inferito da vertical_pull
   horizontal_pull: { source: 'vertical_pull', ratio: 0.85, difficultyAdjust: 0 },
 
-  // Se vertical_pull non disponibile, horizontal_pull può essere inferito da horizontal_push
-  // Row è circa 70% della panca (ratio indiretto: 0.80 × 0.85 ≈ 0.68, arrotondiamo a 0.70)
-  // Questo viene usato come fallback
-  // DIFFICULTY: Il rematore inverso è più difficile di push-up → -1 difficoltà
+  // Fallback: horizontal_pull da horizontal_push
   horizontal_pull_fallback: { source: 'horizontal_push', ratio: 0.70, difficultyAdjust: -1 },
 
-  // vertical_push inferito da horizontal_push (Bench → Military Press)
-  // Il military press è circa 65% della panca in media
+  // vertical_push inferito da horizontal_push
   // DIFFICULTY: Pike push-up sono MOLTO più difficili dei push-up standard → -2 difficoltà
-  // Es: chi fa 8 wide push-up (diff 5) dovrebbe fare Pike su ginocchia (diff 3), NON Pike Elevato!
   vertical_push: { source: 'horizontal_push', ratio: 0.65, difficultyAdjust: -2 },
 
-  // lower_pull inferito da lower_push (Squat → Deadlift)
-  // CAUTO: Solo 110% dello squat per sicurezza, poi si adatta
+  // lower_pull inferito da lower_push
   lower_pull: { source: 'lower_push', ratio: 1.10, difficultyAdjust: 0 },
 };
 
-/**
- * Nomi degli esercizi di default per i pattern stimati
- */
-const DEFAULT_VARIANT_NAMES: Record<string, string> = {
-  vertical_pull: 'Lat Pulldown',    // Stimato da panca piana
-  horizontal_pull: 'Barbell Row',
-  horizontal_pull_fallback: 'Barbell Row', // Fallback da panca
-  vertical_push: 'Military Press',
-  lower_pull: 'Romanian Deadlift', // RDL più sicuro per iniziare
+// ============================================================================
+// DATABASE VARIANTI per ogni pattern con difficulty
+// ============================================================================
+
+const PATTERN_VARIANTS_DB: Record<string, Array<{ id: string; name: string; difficulty: number }>> = {
+  vertical_push: [
+    { id: 'wall_shoulder_tap', name: 'Wall Shoulder Tap', difficulty: 1 },
+    { id: 'incline_pike', name: 'Pike Push-up Inclinato', difficulty: 2 },
+    { id: 'pike_knee', name: 'Pike Push-up su Ginocchia', difficulty: 3 },
+    { id: 'pike_pushup', name: 'Pike Push-up', difficulty: 5 },
+    { id: 'pike_elevated', name: 'Pike Push-up Elevato', difficulty: 6 },
+    { id: 'pike_elevated_high', name: 'Pike Push-up Alto', difficulty: 7 },
+    { id: 'wall_hspu_eccentric', name: 'HSPU al Muro (Solo Eccentrica)', difficulty: 8 },
+    { id: 'wall_hspu', name: 'HSPU al Muro', difficulty: 9 },
+    { id: 'hspu', name: 'Handstand Push-up', difficulty: 10 },
+  ],
+
+  vertical_pull: [
+    { id: 'prone_y_raise', name: 'Prone Y Raise', difficulty: 1 },
+    { id: 'superman_pull', name: 'Superman Pull', difficulty: 2 },
+    { id: 'floor_pull_easy', name: 'Floor Pull Facilitato', difficulty: 3 },
+    { id: 'inverted_row_high', name: 'Inverted Row (alto)', difficulty: 4 },
+    { id: 'inverted_row_table', name: 'Inverted Row (tavolo)', difficulty: 5 },
+    { id: 'negative_pullup', name: 'Trazioni Negative', difficulty: 6 },
+    { id: 'assisted_pullup', name: 'Trazioni Assistite', difficulty: 6 },
+    { id: 'pullup', name: 'Pull-up', difficulty: 7 },
+    { id: 'pullup_wide', name: 'Pull-up Larghe', difficulty: 8 },
+    { id: 'weighted_pullup', name: 'Pull-up Zavorrate', difficulty: 9 },
+  ],
+
+  horizontal_pull: [
+    { id: 'prone_ytw', name: 'Prone Y-T-W Raises', difficulty: 2 },
+    { id: 'superman_row', name: 'Superman Row', difficulty: 3 },
+    { id: 'inverted_row_high', name: 'Inverted Row (alto)', difficulty: 4 },
+    { id: 'inverted_row', name: 'Inverted Row', difficulty: 5 },
+    { id: 'inverted_row_feet', name: 'Inverted Row Piedi Elevati', difficulty: 6 },
+    { id: 'archer_row', name: 'Archer Row', difficulty: 7 },
+    { id: 'one_arm_row', name: 'One Arm Inverted Row', difficulty: 8 },
+  ],
+
+  lower_pull: [
+    { id: 'glute_bridge', name: 'Glute Bridge', difficulty: 2 },
+    { id: 'hip_thrust_bw', name: 'Hip Thrust Bodyweight', difficulty: 3 },
+    { id: 'single_leg_bridge', name: 'Single Leg Glute Bridge', difficulty: 4 },
+    { id: 'slider_leg_curl', name: 'Slider Leg Curl', difficulty: 5 },
+    { id: 'nordic_eccentric', name: 'Nordic Curl (Solo Eccentrica)', difficulty: 6 },
+    { id: 'nordic_assisted', name: 'Nordic Curl Assistito', difficulty: 7 },
+    { id: 'nordic_partial', name: 'Nordic Curl Parziale', difficulty: 8 },
+    { id: 'nordic_curl', name: 'Nordic Curl', difficulty: 9 },
+  ],
 };
 
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
 /**
- * Coefficienti per stima iniziale basata su peso corporeo
- * Usati quando non ci sono test di forza (onboarding rapido)
+ * Calcola adjustment basato su reps
+ * Meno di 10 reps = persona più debole del previsto → scala giù la difficulty
  */
-const BODYWEIGHT_BASED_ESTIMATES: Record<string, { ratio: number; variantName: string }> = {
-  // Rapporto peso corporeo → peso stimato per 10RM
-  lower_push: { ratio: 0.8, variantName: 'Back Squat' },      // 80% BW per principianti
-  lower_pull: { ratio: 0.9, variantName: 'Romanian Deadlift' }, // 90% BW (cauto)
-  horizontal_push: { ratio: 0.5, variantName: 'Bench Press' },  // 50% BW
-  horizontal_pull: { ratio: 0.4, variantName: 'Barbell Row' },  // 40% BW
-  vertical_push: { ratio: 0.35, variantName: 'Military Press' }, // 35% BW
-  vertical_pull: { ratio: 0.5, variantName: 'Lat Pulldown' },   // 50% BW
-  core: { ratio: 0.3, variantName: 'Cable Crunch' },           // 30% BW
+function calculateRepsAdjustment(reps: number): number {
+  if (reps >= 15) return 0.5;   // Molto forte → può fare di più
+  if (reps >= 12) return 0.25;
+  if (reps >= 10) return 0;     // Standard
+  if (reps >= 8) return -0.5;   // Sotto media → scala giù
+  if (reps >= 6) return -1;     // Debole → scala giù di più
+  return -1.5;                   // Molto debole
+}
+
+/**
+ * Calcola reps appropriate per l'esercizio inferito
+ * NON deve mai dare numeri assurdi tipo 20+ per esercizi difficili
+ */
+function calculateInferredReps(sourceReps: number, targetDifficulty: number): number {
+  // Esercizi molto difficili (diff >= 7): max 8 reps
+  if (targetDifficulty >= 7) {
+    return Math.min(sourceReps, 8);
+  }
+
+  // Esercizi difficili (diff >= 5): max 12 reps
+  if (targetDifficulty >= 5) {
+    return Math.min(sourceReps, 12);
+  }
+
+  // Esercizi intermedi (diff >= 3): può fare qualche rep in più
+  if (targetDifficulty >= 3) {
+    return Math.min(sourceReps + 2, 15);
+  }
+
+  // Esercizi facili: può fare di più ma non esagerare
+  return Math.min(sourceReps + 4, 20);
+}
+
+/**
+ * Stima difficulty da peso (per gym mode)
+ */
+function estimateDifficultyFromWeight(weight: number, bodyweight: number): number {
+  const ratio = weight / bodyweight;
+
+  if (ratio >= 1.5) return 9;
+  if (ratio >= 1.2) return 8;
+  if (ratio >= 1.0) return 7;
+  if (ratio >= 0.8) return 6;
+  if (ratio >= 0.6) return 5;
+  if (ratio >= 0.4) return 4;
+  if (ratio >= 0.2) return 3;
+  return 2;
+}
+
+/**
+ * Trova la variante bodyweight appropriata per una difficulty target
+ * LOGICA: Trova l'esercizio con difficulty <= target (mai troppo difficile)
+ */
+function findVariantForDifficulty(pattern: string, targetDifficulty: number): { id: string; name: string } {
+  const variants = PATTERN_VARIANTS_DB[pattern];
+
+  if (!variants || variants.length === 0) {
+    console.warn(`[findVariantForDifficulty] Pattern non trovato: ${pattern}`);
+    return { id: 'default', name: 'Esercizio Base' };
+  }
+
+  // Trova la variante con difficulty più alta che sia <= target
+  let best = variants[0]; // Fallback al più facile
+
+  for (const v of variants) {
+    if (v.difficulty <= targetDifficulty) {
+      if (v.difficulty > best.difficulty) {
+        best = v;
+      }
+    }
+  }
+
+  console.log(`[findVariantForDifficulty] ${pattern} diff=${targetDifficulty} → ${best.name} (diff=${best.difficulty})`);
+
+  return { id: best.id, name: best.name };
+}
+
+// ============================================================================
+// Coefficienti per stima iniziale basata su peso corporeo
+// ============================================================================
+
+const BODYWEIGHT_BASED_ESTIMATES: Record<string, { ratio: number; variantName: string; difficulty: number }> = {
+  lower_push: { ratio: 0.8, variantName: 'Back Squat', difficulty: 5 },
+  lower_pull: { ratio: 0.9, variantName: 'Romanian Deadlift', difficulty: 5 },
+  horizontal_push: { ratio: 0.5, variantName: 'Bench Press', difficulty: 5 },
+  horizontal_pull: { ratio: 0.4, variantName: 'Barbell Row', difficulty: 5 },
+  vertical_push: { ratio: 0.35, variantName: 'Military Press', difficulty: 5 },
+  vertical_pull: { ratio: 0.5, variantName: 'Lat Pulldown', difficulty: 5 },
+  core: { ratio: 0.3, variantName: 'Cable Crunch', difficulty: 3 },
 };
+
+// ============================================================================
+// FUNZIONE PRINCIPALE
+// ============================================================================
 
 /**
  * Inferisce i pattern mancanti dai baselines esistenti.
- * Se non ci sono baselines (onboarding rapido), stima tutti basandosi sul peso corporeo.
  *
- * @param baselines - PatternBaselines con i dati dal test di screening
- * @param userBodyweight - Peso corporeo utente in kg (opzionale, default 75)
- * @param fitnessLevel - Livello fitness per regolare le stime (beginner/intermediate/advanced)
- * @returns PatternBaselines con i pattern mancanti stimati
+ * FIX 2025-01: Corretto calcolo difficulty per bodyweight exercises.
+ * La difficulty effettiva ora considera:
+ * - difficultyAdjust dal pattern correlato
+ * - Reps effettive del test (meno reps = meno forza disponibile)
+ * - Limite reps ragionevole per esercizi difficili
  */
 export function inferMissingBaselines(
   baselines: PatternBaselines,
@@ -87,8 +208,10 @@ export function inferMissingBaselines(
   const levelMultiplier = fitnessLevel === 'advanced' ? 1.3 :
                           fitnessLevel === 'intermediate' ? 1.15 : 1.0;
 
-  // Controlla se abbiamo QUALCHE baseline testato
-  const hasAnyBaseline = Object.values(baselines).some(b => b && b.weight10RM);
+  // Controlla se abbiamo QUALCHE baseline con dati validi
+  const hasAnyBaseline = Object.values(baselines).some(b =>
+    b && (b.weight10RM || (b.reps && b.difficulty))
+  );
 
   // Se nessun baseline testato (onboarding rapido), stima TUTTI basandosi sul peso corporeo
   if (!hasAnyBaseline) {
@@ -101,7 +224,7 @@ export function inferMissingBaselines(
       result[patternKey] = {
         variantId: pattern,
         variantName: estimate.variantName,
-        difficulty: 5,
+        difficulty: estimate.difficulty,
         reps: 10,
         weight10RM: estimatedWeight,
         testDate: new Date().toISOString(),
@@ -109,87 +232,106 @@ export function inferMissingBaselines(
         estimatedFrom: 'bodyweight',
       };
 
-      console.log(`[BaselineInference] ${pattern}: ${estimatedWeight}kg (${(estimate.ratio * 100).toFixed(0)}% BW × ${levelMultiplier}) - STIMATO DA PESO CORPOREO`);
+      console.log(`[BaselineInference] ${pattern}: ${estimatedWeight}kg - STIMATO DA PESO CORPOREO`);
     }
 
     return result;
   }
 
-  // Per ogni pattern mancante, prova a stimarlo dal pattern correlato
-  for (const [targetPattern, correlation] of Object.entries(PATTERN_CORRELATIONS)) {
-    // Gestione pattern fallback (es. horizontal_pull_fallback → horizontal_pull)
-    const actualTargetPattern = targetPattern.replace('_fallback', '');
-    const targetKey = actualTargetPattern as keyof PatternBaselines;
-    const sourceKey = correlation.source as keyof PatternBaselines;
-    const isFallback = targetPattern.includes('_fallback');
+  // Lista pattern da inferire
+  const patternsToInfer: (keyof PatternBaselines)[] = [
+    'vertical_pull', 'horizontal_pull', 'vertical_push', 'lower_pull'
+  ];
 
-    // Salta se il pattern target esiste già (testato o già stimato)
-    // CHECK: sia weight10RM (gym) che reps+difficulty (bodyweight)
-    const existingTarget = result[targetKey];
-    if (existingTarget && (existingTarget.weight10RM || (existingTarget.reps && existingTarget.difficulty))) {
+  for (const targetPattern of patternsToInfer) {
+    // Skip se già presente con dati validi
+    const existingTarget = result[targetPattern];
+    if (existingTarget?.variantId && !existingTarget?.isEstimated) {
       continue;
     }
 
-    // Salta se il pattern sorgente non ha dati utilizzabili
-    // SUPPORTA SIA GYM (weight10RM) CHE BODYWEIGHT (reps + difficulty)
-    const sourceBaseline = result[sourceKey];
-    const hasGymData = sourceBaseline?.weight10RM && sourceBaseline.weight10RM > 0;
-    const hasBodyweightData = sourceBaseline?.reps && sourceBaseline?.difficulty;
+    // Trova correlazione
+    let correlation = PATTERN_CORRELATIONS[targetPattern as string];
+    if (!correlation) continue;
 
-    if (!sourceBaseline || (!hasGymData && !hasBodyweightData)) {
-      if (!isFallback) {
-        console.log(`[BaselineInference] Cannot infer ${actualTargetPattern}: missing ${correlation.source}`);
-      }
-      continue;
+    let sourceBaseline = baselines[correlation.source as keyof PatternBaselines];
+
+    // Prova fallback per horizontal_pull se vertical_pull non disponibile
+    if (!sourceBaseline && targetPattern === 'horizontal_pull') {
+      correlation = PATTERN_CORRELATIONS['horizontal_pull_fallback'];
+      sourceBaseline = baselines[correlation.source as keyof PatternBaselines];
     }
 
-    // Determina se stiamo usando dati gym o bodyweight
-    const isBodyweightSource = !hasGymData && hasBodyweightData;
+    if (!sourceBaseline) continue;
 
-    // Calcola il peso stimato (solo per gym, 0 per bodyweight)
-    const estimatedWeight = hasGymData
-      ? Math.round(sourceBaseline.weight10RM! * correlation.ratio)
-      : 0;
+    // --- CALCOLO DIFFICULTY CORRETTO ---
+    let inferredDifficulty: number;
+    let inferredReps: number;
 
-    // Calcola difficoltà adattata per il pattern target
-    // IMPORTANTE: Le difficoltà tra pattern diversi NON sono comparabili!
-    // Es: diff 5 in horizontal_push (push-up standard) ≠ diff 5 in vertical_push (pike elevato)
-    const sourceDifficulty = sourceBaseline.difficulty || 5;
-    const difficultyAdjust = correlation.difficultyAdjust || 0;
-    const adjustedDifficulty = Math.max(1, Math.min(10, sourceDifficulty + difficultyAdjust));
+    const hasGymData = sourceBaseline.weight10RM && sourceBaseline.weight10RM > 0;
+    const hasBodyweightData = sourceBaseline.reps && sourceBaseline.difficulty;
 
-    // Considera anche le reps: se il source ha poche reps (< 8), riduci ulteriormente
-    const sourceReps = sourceBaseline.reps || 10;
-    const repsBasedAdjust = sourceReps < 6 ? -1 : (sourceReps < 8 ? -0.5 : 0);
-    const finalDifficulty = Math.max(1, Math.min(10, adjustedDifficulty + repsBasedAdjust));
+    if (hasBodyweightData && !hasGymData) {
+      // === BODYWEIGHT MODE ===
+      const baseDifficulty = sourceBaseline.difficulty!;
+      const adjustment = correlation.difficultyAdjust || 0;
+      const sourceReps = sourceBaseline.reps || 10;
 
-    // Crea il baseline stimato
-    const estimatedBaseline: PatternBaseline = {
-      variantId: actualTargetPattern,
-      variantName: DEFAULT_VARIANT_NAMES[targetPattern] || actualTargetPattern,
-      difficulty: Math.round(finalDifficulty), // Arrotonda a intero
-      reps: isBodyweightSource ? Math.min(sourceReps, 10) : 10, // Usa reps source per bodyweight
-      weight10RM: estimatedWeight,
+      // FIX: Considera anche le reps - meno reps = meno margine
+      const repsAdjustment = calculateRepsAdjustment(sourceReps);
+
+      // Calcola difficulty effettiva
+      // Es: push-up larghi (diff 5) + adjustment(-2) + repsAdj(-0.5 per 8 reps) = 2.5 → arrotonda a 3
+      inferredDifficulty = Math.round(
+        Math.max(1, Math.min(10, baseDifficulty + adjustment + repsAdjustment))
+      );
+
+      // Calcola reps appropriate
+      inferredReps = calculateInferredReps(sourceReps, inferredDifficulty);
+
+      console.log(`[Inference] ${targetPattern}: ` +
+        `source=${correlation.source} baseDiff=${baseDifficulty} adj=${adjustment} ` +
+        `reps=${sourceReps} repsAdj=${repsAdjustment.toFixed(1)} ` +
+        `→ inferredDiff=${inferredDifficulty} reps=${inferredReps}`);
+
+    } else if (hasGymData) {
+      // === GYM MODE ===
+      const inferredWeight = Math.round(sourceBaseline.weight10RM! * correlation.ratio);
+      inferredDifficulty = estimateDifficultyFromWeight(inferredWeight, userBodyweight);
+      inferredReps = 10; // Standard per gym
+
+      console.log(`[Inference GYM] ${targetPattern}: ` +
+        `weight=${sourceBaseline.weight10RM}kg × ${correlation.ratio} = ${inferredWeight}kg ` +
+        `→ diff=${inferredDifficulty}`);
+
+    } else {
+      // Fallback conservativo
+      inferredDifficulty = 3;
+      inferredReps = 10;
+    }
+
+    // Trova variante appropriata per la difficulty calcolata
+    const variantInfo = findVariantForDifficulty(targetPattern as string, inferredDifficulty);
+
+    // Salva baseline inferito
+    result[targetPattern] = {
+      variantId: variantInfo.id,
+      variantName: variantInfo.name,
+      difficulty: inferredDifficulty,
+      reps: inferredReps,
+      weight10RM: hasGymData ? Math.round(sourceBaseline.weight10RM! * correlation.ratio) : 0,
       testDate: new Date().toISOString(),
       isEstimated: true,
-      estimatedFrom: correlation.source + (isFallback ? ' (fallback)' : '') + (isBodyweightSource ? ' (bodyweight)' : ''),
-    };
-
-    result[targetKey] = estimatedBaseline;
-
-    if (isBodyweightSource) {
-      console.log(
-        `[BaselineInference] ${actualTargetPattern}: BODYWEIGHT - diff ${sourceDifficulty}→${finalDifficulty} (adjust: ${difficultyAdjust}, reps: ${sourceReps}→reps-adj: ${repsBasedAdjust}) - STIMATO DA ${correlation.source}`
-      );
-    } else {
-      console.log(
-        `[BaselineInference] ${actualTargetPattern}: ${estimatedWeight}kg (${correlation.ratio * 100}% of ${correlation.source} ${sourceBaseline.weight10RM}kg), diff ${sourceDifficulty}→${finalDifficulty} - STIMATO${isFallback ? ' (FALLBACK)' : ''}`
-      );
-    }
+      estimatedFrom: correlation.source + (hasBodyweightData && !hasGymData ? ' (bodyweight)' : ''),
+    } as PatternBaseline;
   }
 
   return result;
 }
+
+// ============================================================================
+// FUNZIONI UTILITÀ ESPORTATE
+// ============================================================================
 
 /**
  * Verifica se un pattern ha un peso stimato che deve essere adattato
@@ -200,22 +342,16 @@ export function isPatternEstimated(baseline: PatternBaseline | undefined): boole
 
 /**
  * Conta quante sedute sono state completate per un pattern stimato
- * Usato per determinare quando il peso è stato "validato" (dopo 2-3 sedute)
  */
 export interface PatternSessionCount {
   pattern: string;
   sessionCount: number;
   lastSessionDate: string;
-  isValidated: boolean; // true se >= 2 sedute completate
+  isValidated: boolean;
 }
 
 /**
  * Calcola l'adattamento del peso basato sul feedback RPE medio
- *
- * @param currentWeight - Peso attuale in kg
- * @param avgRPE - RPE medio delle ultime sedute (1-10)
- * @param targetRPE - RPE target (default 7-8)
- * @returns Nuovo peso suggerito
  */
 export function calculateWeightAdjustment(
   currentWeight: number,
@@ -228,19 +364,15 @@ export function calculateWeightAdjustment(
   let reason = '';
 
   if (rpeDiff >= 2) {
-    // RPE troppo alto (es. 9-10) → riduci peso
     adjustmentPercent = -5;
     reason = 'RPE troppo alto, riduco peso del 5%';
   } else if (rpeDiff >= 1) {
-    // RPE leggermente alto → piccola riduzione
     adjustmentPercent = -2.5;
     reason = 'RPE leggermente alto, riduco peso del 2.5%';
   } else if (rpeDiff <= -2) {
-    // RPE troppo basso (es. 5-6) → aumenta peso
     adjustmentPercent = 5;
     reason = 'RPE troppo basso, aumento peso del 5%';
   } else if (rpeDiff <= -1) {
-    // RPE leggermente basso → piccolo aumento
     adjustmentPercent = 2.5;
     reason = 'RPE leggermente basso, aumento peso del 2.5%';
   } else {
@@ -249,26 +381,16 @@ export function calculateWeightAdjustment(
 
   const newWeight = Math.round(currentWeight * (1 + adjustmentPercent / 100));
 
-  return {
-    newWeight,
-    adjustmentPercent,
-    reason
-  };
+  return { newWeight, adjustmentPercent, reason };
 }
 
 /**
- * Determina se un peso stimato dovrebbe essere "validato" (confermato)
- * dopo un certo numero di sedute con RPE ottimale
- *
- * @param sessionCount - Numero di sedute completate
- * @param avgRPE - RPE medio delle sedute
- * @returns true se il peso può essere considerato validato
+ * Determina se un peso stimato dovrebbe essere "validato"
  */
 export function shouldValidateEstimatedWeight(
   sessionCount: number,
   avgRPE: number
 ): boolean {
-  // Dopo 2-3 sedute con RPE tra 6 e 9, considera il peso validato
   return sessionCount >= 2 && avgRPE >= 6 && avgRPE <= 9;
 }
 
