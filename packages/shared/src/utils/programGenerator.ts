@@ -3700,6 +3700,8 @@ export function generateProgramWithSplit(
     muscularFocus: correctedOptions.muscularFocus as string | undefined,
     sessionDuration: correctedOptions.sessionDuration,
     userBodyweight: correctedOptions.userBodyweight,
+    // CRITICO: passa equipment per filtro tirate senza attrezzi!
+    equipment: correctedOptions.equipment,
     // Pass screening granular data for safety checks
     quizScore: correctedOptions.quizScore,
     practicalScore: correctedOptions.practicalScore,
