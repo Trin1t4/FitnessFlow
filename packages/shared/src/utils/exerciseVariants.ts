@@ -666,27 +666,29 @@ export function getVariantForPattern(
 
   if (validVariants.length === 0) return baselineVariantId;
 
-  // BILANCIAMENTO BODYWEIGHT: filtra per difficoltà simile al test
-  // Se l'utente ha fatto Shrimp Squat (diff 7), non proporgli Squat semplice (diff 3)
+  // BILANCIAMENTO BODYWEIGHT: filtra per difficoltà appropriata
+  // Range espanso per permettere varietà nei 3 giorni:
+  // - Varianti più facili (-2) per giorni VOLUME (più reps)
+  // - Varianti più difficili (+1) per giorni HEAVY
   if (equipment === 'bodyweight' && baselineDifficulty !== undefined && baselineDifficulty > 0) {
-    // Tolleranza: ±1 per varietà, ma mai più di 2 livelli sotto
-    const minDifficulty = Math.max(baselineDifficulty - 1, baselineDifficulty - 2);
-    const maxDifficulty = baselineDifficulty + 1;
+    // FIX 2025-01: Range espanso da ±0.5 a -2/+1 per garantire 3+ varianti
+    const minDifficulty = Math.max(1, baselineDifficulty - 2);  // Mai sotto 1
+    const maxDifficulty = Math.min(10, baselineDifficulty + 1); // Mai sopra 10
 
     const difficultyFilteredVariants = validVariants.filter(
       v => v.difficulty >= minDifficulty && v.difficulty <= maxDifficulty
     );
 
-    // Se abbiamo varianti nella fascia giusta, usale
+    // Se abbiamo varianti nella fascia, usale
     if (difficultyFilteredVariants.length > 0) {
-      console.log(`🎯 Bodyweight balance: diff ${baselineDifficulty} → filtrando ${difficultyFilteredVariants.length} varianti (range ${minDifficulty}-${maxDifficulty})`);
+      console.log(`🎯 Bodyweight balance: diff ${baselineDifficulty} → ${difficultyFilteredVariants.length} varianti (range ${minDifficulty}-${maxDifficulty})`);
       validVariants = difficultyFilteredVariants;
     } else {
-      // Fallback: prendi le varianti più vicine alla difficoltà target
+      // Fallback: prendi le 5 varianti più vicine alla difficoltà target
       validVariants = validVariants
         .sort((a, b) => Math.abs(a.difficulty - baselineDifficulty) - Math.abs(b.difficulty - baselineDifficulty))
-        .slice(0, 3); // Prendi le 3 più vicine
-      console.log(`⚠️ Bodyweight balance: nessuna variante in range, usando le ${validVariants.length} più vicine`);
+        .slice(0, 5);
+      console.log(`⚠️ Bodyweight balance: nessuna variante in range ${minDifficulty}-${maxDifficulty}, usando le ${validVariants.length} più vicine`);
     }
   }
 
@@ -763,14 +765,48 @@ export function getProgressedBodyweightVariant(
 
   if (bodyweightVariants.length === 0) return '';
 
-  // Trova varianti nella fascia di difficoltà effettiva (±0.5)
+  // FIX 2025-01: Range espanso per garantire almeno 3 varianti diverse
+  // -2 per volume days (varianti più facili = più reps)
+  // +1 per heavy days (varianti più difficili = challenge)
+  const minDiff = Math.max(1, effectiveDifficulty - 2);
+  const maxDiff = Math.min(10, effectiveDifficulty + 1);
+
   const appropriateVariants = bodyweightVariants.filter(
-    v => v.difficulty >= effectiveDifficulty - 0.5 && v.difficulty <= effectiveDifficulty + 0.5
+    v => v.difficulty >= minDiff && v.difficulty <= maxDiff
   );
 
+  console.log(`  📊 [${patternId}] Range: ${minDiff.toFixed(1)}-${maxDiff.toFixed(1)} → ${appropriateVariants.length} varianti trovate`);
+
   if (appropriateVariants.length > 0) {
-    const selected = appropriateVariants[variantIndex % appropriateVariants.length];
-    console.log(`  ✅ Selezionato: ${selected.name} (diff ${selected.difficulty})`);
+    // Ordina per difficoltà per selezione consistente
+    const sortedVariants = [...appropriateVariants].sort((a, b) => a.difficulty - b.difficulty);
+
+    // Selezione basata su variantIndex per garantire rotazione tra i giorni
+    // Strategia: distribuisce le varianti in modo che ogni giorno sia diverso
+    let selectedIndex: number;
+
+    if (sortedVariants.length >= 3) {
+      // 3+ varianti disponibili: rotazione ottimale
+      // Day 0: variante media (baseline)
+      // Day 1: variante più facile (volume day - più reps)
+      // Day 2: variante più difficile (heavy day - challenge)
+      const middleIndex = Math.floor(sortedVariants.length / 2);
+      const rotation = [
+        middleIndex,                    // Day 0: medio (moderate)
+        0,                              // Day 1: più facile (volume)
+        sortedVariants.length - 1       // Day 2: più difficile (heavy)
+      ];
+      selectedIndex = rotation[variantIndex % 3];
+    } else if (sortedVariants.length === 2) {
+      // 2 varianti: alterna
+      selectedIndex = variantIndex % 2;
+    } else {
+      // 1 variante: usa quella
+      selectedIndex = 0;
+    }
+
+    const selected = sortedVariants[selectedIndex];
+    console.log(`  ✅ [Day ${variantIndex}] Selezionato: ${selected.name} (diff ${selected.difficulty}) - pool: ${sortedVariants.map(v => v.name).join(', ')}`);
     return selected.name;
   }
 
