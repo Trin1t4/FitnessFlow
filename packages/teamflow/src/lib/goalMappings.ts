@@ -1,16 +1,36 @@
 /**
- * Mapping tra valori frontend (italiano) e backend (inglese)
+ * ============================================================================
+ * DEPRECATED - USE @trainsmart/shared goalMapper INSTEAD
+ * ============================================================================
+ *
+ * This file is kept for backward compatibility only.
+ * All exports redirect to the unified goalMapper in @trainsmart/shared.
+ *
+ * Migration guide:
+ * - GOAL_MAPPING -> use toProgramGoal() from @trainsmart/shared
+ * - mapGoal() -> use toProgramGoal() from @trainsmart/shared
+ *
+ * @deprecated Use @trainsmart/shared goalMapper instead
  */
 
+import {
+  toProgramGoal,
+  toCanonicalGoal,
+  GOAL_CONFIGS
+} from '@trainsmart/shared';
+
+/**
+ * @deprecated Use toProgramGoal from @trainsmart/shared
+ */
 export const GOAL_MAPPING: Record<string, string> = {
   'forza': 'strength',
   'ipertrofia': 'muscle_gain',
-  'tonificazione': 'muscle_gain',  // Tonificazione → muscle_gain
+  'tonificazione': 'muscle_gain',
   'dimagrimento': 'fat_loss',
   'prestazioni_sportive': 'performance',
-  'benessere': 'muscle_gain',  // Benessere → muscle_gain (default)
-  'resistenza': 'fat_loss',     // Resistenza → fat_loss (cardio focus)
-  'motor_recovery': 'motor_recovery',  // Già corretto
+  'benessere': 'muscle_gain',
+  'resistenza': 'endurance',
+  'motor_recovery': 'motor_recovery',
   'gravidanza': 'pregnancy',
   'disabilita': 'disability'
 };
@@ -30,24 +50,23 @@ export const SPORT_MAPPING: Record<string, string> = {
 };
 
 /**
- * Converte sportRole dal formato frontend al formato backend
- * Frontend: { sport: 'calcio', sportRole: 'Attaccante' }
- * Backend: { sport: 'calcio', role: 'attaccante' }
+ * @deprecated Use toProgramGoal from @trainsmart/shared
  */
 export function mapSportRole(sport?: string, role?: string) {
   if (!sport || !role) return undefined;
-  
+
   return {
     sport: SPORT_MAPPING[sport] || sport,
-    role: role.toLowerCase()  // "Attaccante" → "attaccante"
+    role: role.toLowerCase()
   };
 }
 
 /**
- * Converte goal dal formato frontend al formato backend
+ * @deprecated Use toProgramGoal from @trainsmart/shared
  */
 export function mapGoal(goal: string): string {
-  return GOAL_MAPPING[goal] || 'muscle_gain';  // Default fallback
+  console.warn('[DEPRECATED] mapGoal() from goalMappings.ts is deprecated. Use toProgramGoal() from @trainsmart/shared instead.');
+  return toProgramGoal(goal);
 }
 
-console.log('✅ Goal mappings loaded');
+console.warn('[DEPRECATED] goalMappings.ts is deprecated. Use @trainsmart/shared goalMapper instead.');

@@ -579,7 +579,7 @@ const VIDEO_OVERRIDES: Record<string, string> = {
   'Floor Pull (asciugamano)': 'band-rows.mp4',
   'Floor Pull con Asciugamano': 'band-rows.mp4',
   'Prone Row': 'band-rows.mp4',
-  'Superman Row': 'band-rows.mp4',
+  // 'Superman Row' - NO VIDEO AVAILABLE (removed to prevent loading non-existent video)
   'Remata a Terra': 'band-rows.mp4',
 
   // === ADDITIONAL EXERCISES ===
@@ -880,6 +880,246 @@ const VIDEO_OVERRIDES: Record<string, string> = {
 
   // Wall varianti
   'Wall Sit': 'wall-sit-breathing.mp4',
+
+  // ============================================================================
+  // ITALIAN EXERCISE NAMES - Mapping nomi italiani ai video inglesi
+  // ============================================================================
+
+  // === SQUAT / LOWER PUSH (Italiano) ===
+  'Squat a Corpo Libero': 'goblet-squat.mp4',
+  'Squat con Bilanciere': 'back-squat.mp4',
+  'Squat Frontale': 'front-squat.mp4',
+  'Squat Bulgaro': 'bulgarian-split-squat.mp4',
+  'Pressa': 'leg-press.mp4',
+  'Affondi Camminati': 'lunges.mp4',
+
+  // === DEADLIFT / HIP HINGE (Italiano) ===
+  'Stacco da Terra': 'conventional-deadlift.mp4',
+  'Stacco Rumeno': 'romanian-deadlift.mp4',
+  'Stacco Sumo': 'sumo-deadlift.mp4',
+  'Stacco con Trap Bar': 'conventional-deadlift.mp4',
+  'Stacco Trap Bar': 'conventional-deadlift.mp4',
+  'Stacco Rumeno Unilaterale': 'single-leg-rdl.mp4',
+  'Hip Hinge a Corpo Libero': 'bodyweight-hip-hinge.mp4',
+  'Good Morning Bodyweight': 'good-morning.mp4',
+
+  // === HIP THRUST / GLUTE (Italiano) ===
+  'Hip Thrust': 'hip-thrust.mp4',
+  'Hip Thrust Bodyweight': 'glute-bridge.mp4',
+  'Hip Thrust Unilaterale': 'single-leg-hip-thrust.mp4',
+
+  // === NORDIC CURL varianti (Italiano) ===
+  'Nordic Curl': 'nordic-hamstring-curl.mp4',
+  'Nordic Curl (Solo Eccentrica)': 'nordic-hamstring-curl.mp4',
+  'Nordic Curl Assistito': 'nordic-hamstring-curl.mp4',
+  'Nordic Curl Parziale': 'nordic-hamstring-curl.mp4',
+  'Nordic Curl Inverso': 'reverse-nordic-curl.mp4',
+
+  // === LEG CURL (Italiano) ===
+  'Leg Curl alla Macchina': 'leg-curl.mp4',
+  'Leg Curl Sdraiato': 'lying-leg-curl.mp4',
+  'Leg Curl Seduto': 'seated-leg-curl.mp4',
+
+  // === PUSH-UP / PIEGAMENTI (Italiano) ===
+  'Piegamenti': 'standard-push-up.mp4',
+  'Push-up': 'standard-push-up.mp4',
+  'Push-up su Ginocchia': 'knee-push-up.mp4',
+  'Piegamenti Diamante': 'diamond-push-up.mp4',
+  'Piegamenti Arciere': 'archer-push-up.mp4',
+  'Piegamenti in Verticale al Muro': 'wall-handstand-push-up.mp4',
+
+  // === BENCH PRESS / PANCA (Italiano) ===
+  'Panca Piana': 'flat-barbell-bench-press.mp4',
+  'Panca Piana con Bilanciere': 'flat-barbell-bench-press.mp4',
+  'Panca Inclinata': 'incline-barbell-bench-press.mp4',
+  'Panca Inclinata con Bilanciere': 'incline-barbell-bench-press.mp4',
+  'Panca Inclinata con Manubri': 'incline-dumbbell-bench-press.mp4',
+  'Panca Declinata': 'decline-bench-press.mp4',
+  'Panca con Manubri': 'dumbbell-bench-press.mp4',
+  'Panca Presa Stretta': 'close-grip-bench-press.mp4',
+  'Chest Press': 'flat-barbell-bench-press.mp4',
+
+  // === DIPS (Italiano) ===
+  'Dip per Petto': 'chest-dips.mp4',
+  'Dip per Tricipiti': 'tricep-dips.mp4',
+
+  // === PIKE PUSH-UP varianti (Italiano) ===
+  'Pike Push-up': 'pike-push-up.mp4',
+  'Pike Push-up (Knee)': 'pike-push-up.mp4',
+  'Pike Push-up su Ginocchia': 'pike-push-up.mp4',
+  'Pike Push-up Facile': 'pike-push-up.mp4',
+  'Pike Push-up Alto': 'elevated-pike-push-up.mp4',
+  'Pike Push-up Elevato': 'elevated-pike-push-up.mp4',
+  'Pike Push-up Inclinato': 'pike-push-up.mp4',
+  'Incline Pike Push-up': 'elevated-pike-push-up.mp4',
+  'Handstand Push-up': 'wall-handstand-push-up.mp4',
+  'HSPU al Muro (Solo Eccentrica)': 'wall-handstand-push-up.mp4',
+  'Wall Handstand Push-up (Eccentric)': 'wall-handstand-push-up.mp4',
+  'Camminata al Muro': 'wall-handstand-push-up.mp4',
+  'Wall Walk': 'wall-handstand-push-up.mp4',
+  'Wall Shoulder Tap': 'wall-handstand-push-up.mp4',
+
+  // === SHOULDER PRESS (Italiano) ===
+  'Lento Avanti': 'military-press.mp4',
+  'Military Press': 'military-press.mp4',
+  'Spinte con Manubri': 'dumbbell-shoulder-press.mp4',
+  'Shoulder Press con Manubri': 'dumbbell-shoulder-press.mp4',
+  'Shoulder Press Macchina': 'dumbbell-shoulder-press.mp4',
+  'Push Press': 'military-press.mp4',
+
+  // === RAISES (Italiano) ===
+  'Alzate Laterali': 'lateral-raise.mp4',
+  'Alzate Frontali': 'front-raise.mp4',
+  'Alzate Posteriori': 'rear-delt-fly-dumbbell.mp4',
+  'Alzate Tibiali': 'tibialis-raise.mp4',
+  // 'Alzate Y-T-W' - NO VIDEO
+  // 'Prone Y Raise' - NO VIDEO
+  // 'Prone Y-raise' - NO VIDEO
+  // 'Prone Y-T-W Raises' - NO VIDEO
+
+  // === PULL-UP / TRAZIONI (Italiano) ===
+  'Trazioni alla Sbarra': 'standard-pull-up.mp4',
+  'Trazioni Presa Larga': 'wide-grip-pull-up.mp4',
+  'Trazioni Presa Stretta': 'chin-up.mp4',
+  'Trazioni Presa Neutra': 'neutral-grip-pull-up.mp4',
+  'Trazioni Presa Prona': 'standard-pull-up.mp4',
+  'Trazioni Presa Supina': 'chin-up.mp4',
+  'Trazioni Supine': 'chin-up.mp4',
+  'Trazioni Assistite': 'assisted-pull-up.mp4',
+  'Trazioni Negative': 'standard-pull-up.mp4',
+  'Negative Pull-up': 'standard-pull-up.mp4',
+  'Pull-up Larghe': 'wide-grip-pull-up.mp4',
+
+  // === ROW / REMATORE (Italiano) ===
+  'Rematore Invertito': 'inverted-row.mp4',
+  'Trazioni Orizzontali': 'inverted-row.mp4',
+  'Trazioni Orizzontali Veloci': 'inverted-row.mp4',
+  'Inverted Row (alto)': 'inverted-row.mp4',
+  'Inverted Row (tavolo)': 'inverted-row.mp4',
+  'Inverted Row Piedi Elevati': 'inverted-row.mp4',
+  'Rematore con Bilanciere': 'barbell-row.mp4',
+  'Rematore con Manubrio': 'dumbbell-row.mp4',
+  'Rematore con Supporto Petto': 'chest-supported-row.mp4',
+  'Rematore Meadows': 'meadows-row.mp4',
+  'Rematore Pendlay': 'pendlay-row.mp4',
+  'Rematore T-Bar': 't-bar-row.mp4',
+  'Archer Row': 'inverted-row.mp4',
+
+  // === LAT MACHINE / PULLDOWN (Italiano) ===
+  'Lat Machine': 'lat-pulldown.mp4',
+  'Lat Machine Presa Larga': 'lat-pulldown.mp4',
+  'Lat Machine Presa Stretta': 'lat-pulldown.mp4',
+  'Pulley Basso': 'seated-cable-row.mp4',
+  'Pulldown Braccia Tese': 'straight-arm-pulldown.mp4',
+
+  // === CURL / BICIPITI (Italiano) ===
+  'Curl con Bilanciere': 'barbell-curl.mp4',
+  // 'Curl con Manubri' - NO VIDEO (no dumbbell curl video)
+  'Curl a Martello': 'hammer-curl.mp4',
+  'Curl Concentrato': 'concentration-curl.mp4',
+  'Curl alla Panca Scott': 'preacher-curl.mp4',
+  'Curl su Panca Inclinata': 'incline-dumbbell-curl.mp4',
+
+  // === TRICIPITI (Italiano) ===
+  'French Press': 'skull-crushers.mp4',
+  'French Press Sopra la Testa': 'overhead-tricep-extension.mp4',
+  'Pushdown ai Cavi': 'tricep-pushdown.mp4',
+  'Kickback ai Cavi': 'cable-kickback.mp4',
+  'Kickback Tricipiti': 'tricep-kickback.mp4',
+
+  // === CORE / ADDOMINALI (Italiano) ===
+  'Plank Laterale': 'side-plank.mp4',
+  'Side Plank': 'side-plank.mp4',
+  'Crunch ai Cavi': 'cable-crunch.mp4',
+  // 'Crunch Bicicletta' - NO VIDEO
+  // 'Russian Twist' - NO VIDEO
+  'Rollout con Ruota': 'ab-wheel-rollout.mp4',
+  'Ab Wheel': 'ab-wheel-rollout.mp4',
+  'Alzate Gambe alla Sbarra': 'hanging-leg-raise.mp4',
+  'Alzate Ginocchia alla Sbarra': 'hanging-knee-raise.mp4',
+  'Leg Raise alla Sbarra': 'hanging-leg-raise.mp4',
+
+  // === FLY / CROCI (Italiano) ===
+  'Croci ai Cavi': 'cable-fly-mid.mp4',
+  'Croci con Manubri': 'dumbbell-fly.mp4',
+  'Pec Deck': 'pec-deck-machine-fly.mp4',
+
+  // === BACK EXTENSION / IPERESTENSIONI (Italiano) ===
+  'Iperestensioni 45°': 'back-extension-roman-chair.mp4',
+  'Iperestensioni alla Sedia Romana': 'back-extension-roman-chair.mp4',
+  'Iperestensione Inversa': 'reverse-hyperextension.mp4',
+  // 'Glute Ham Raise' - NO VIDEO (diverso da Nordic Curl)
+
+  // === CALF / POLPACCI (Italiano) ===
+  'Calf Raise': 'standing-calf-raise.mp4',
+  'Calf Raise in Piedi': 'standing-calf-raise.mp4',
+  'Calf Raise da Seduto': 'seated-calf-raise.mp4',
+  'Calf Raise Seduto': 'seated-calf-raise.mp4',
+  'Calf Raise Donkey': 'donkey-calf-raise.mp4',
+  'Calf Raise Unilaterale': 'single-leg-calf-raise.mp4',
+
+  // === PLYOMETRICS / SALTI (Italiano) ===
+  'Salto con Contromovimento': 'counter-movement-jump.mp4',
+  'Salto sul Box': 'box-jump.mp4',
+  'Salto in Lungo da Fermo': 'broad-jump.mp4',
+
+  // === MEDICINE BALL / PALLA MEDICA (Italiano) ===
+  'Lancio Palla Medica dal Petto': 'med-ball-chest-pass.mp4',
+  'Lancio Palla Medica Sopra la Testa': 'med-ball-overhead-throw.mp4',
+
+  // === KETTLEBELL (Italiano) ===
+  'Swing con Kettlebell': 'kettlebell-swing.mp4',
+  'Clean con Kettlebell': 'kettlebell-clean.mp4',
+  'Snatch con Kettlebell': 'kettlebell-snatch.mp4',
+  'Alzata Turca': 'turkish-get-up.mp4',
+
+  // === SLED / SLITTA (Italiano) ===
+  'Spinta Slitta': 'sled-push.mp4',
+  'Traino Slitta': 'sled-pull.mp4',
+
+  // === CARRY (Italiano) ===
+  'Farmer Walk': 'farmers-walk.mp4',
+
+  // === CABLE / CAVI (Italiano) ===
+  'Pull Through ai Cavi': 'cable-pull-through.mp4',
+  'Rotazione Esterna ai Cavi': 'external-rotation-cable.mp4',
+
+  // === PULLOVER (Italiano) ===
+  'Pullover con Manubrio': 'pullover-dumbbell.mp4',
+
+  // === NECK / COLLO (Italiano) ===
+  'Flessione Collo': 'neck-flexion.mp4',
+  'Estensione Collo': 'neck-extension.mp4',
+  'Flessione Laterale Collo': 'neck-lateral-flexion.mp4',
+  'Rotazione Collo': 'neck-rotation.mp4',
+  // 'Tenuta Isometrica Collo' - NO VIDEO
+  'Esercizio con Neck Harness': 'neck-harness-exercise.mp4',
+
+  // === FMS TESTS (Italiano) ===
+  'FMS Squat Profondo': 'fms-deep-squat.mp4',
+  'FMS Passo Ostacolo': 'fms-hurdle-step.mp4',
+  'FMS Affondo in Linea': 'fms-inline-lunge.mp4',
+  'FMS Alzata Gamba Tesa': 'fms-active-straight-leg-raise.mp4',
+  'FMS Push-up Stabilità': 'fms-trunk-stability-push-up.mp4',
+  'FMS Stabilità Rotatoria': 'fms-rotary-stability.mp4',
+  // 'FMS Mobilità Spalle' - NO VIDEO
+
+  // === FLOOR PULL varianti (Italiano) ===
+  'Floor Pull': 'floor-pull.mp4',
+  'Floor Pull (asciugamano)': 'floor-pull.mp4',
+  'Floor Pull Facilitato': 'floor-pull.mp4',
+
+  // === MOBILITY / STRETCHING (Italiano) - NO VIDEO ===
+  // I seguenti esercizi non hanno video disponibili:
+  // 'Bretzel Stretch', 'Couch Stretch', 'Stretch 90/90', 'Stretch del Piccione',
+  // 'World Greatest Stretch', 'Band Pull Apart'
+
+  // === TEST MOBILITÀ (Italiano) - NO VIDEO ===
+  // 'Test Dorsiflessione Caviglia', 'Test Rotazione Interna Anca',
+  // 'Test Sit and Reach', 'Test di Thomas'
+
+  // === ESERCIZI SENZA VIDEO ===
+  // 'Superman', 'Superman Pull', 'Superman Row' - rimossi, no video disponibile
 };
 
 /**

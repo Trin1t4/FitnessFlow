@@ -23,6 +23,15 @@ import {
 import { adaptExercisesForLocation } from './locationAdapter';
 import { getUpgradedExercise } from './exerciseProgression';
 import { isBodyweightExercise } from './exerciseProgressionEngine';
+// Unified safety and goal modules
+import { toCanonicalGoal, getGoalConfig } from './goalMapper';
+import {
+  calculateSafetyLimits,
+  applySafetyCapSimple,
+  getTargetRIR as getTargetRIRCentral,
+  type SafetyContext,
+  type DayType
+} from './safetyCaps';
 
 /**
  * Lista esercizi isometrici (a tempo, non reps)
@@ -1172,10 +1181,7 @@ interface SplitGeneratorOptions {
 /**
  * SAFETY CHECK: Determina se è sicuro assegnare giorni heavy
  *
- * Principio scientifico:
- * - RPE/RIR richiede comprensione teorica (Zourdos et al., 2016)
- * - Carichi submassimali (>85% 1RM) richiedono competenza tecnica consolidata
- * - "Intuitive movers" (alta pratica, bassa teoria) possono farsi male con carichi pesanti
+ * Ora delegato al modulo centralizzato safetyCaps.ts per consistenza.
  *
  * @returns 'heavy' | 'moderate' | 'volume' - il dayType massimo consentito
  */
@@ -1185,53 +1191,34 @@ function getMaxAllowedIntensity(
   quizScore?: number,
   discrepancyType?: string | null
 ): 'heavy' | 'moderate' | 'volume' {
+  // Delega al modulo centralizzato per consistenza
+  const canonicalGoal = toCanonicalGoal(goal);
 
-  // Se non abbiamo dati granulari, usa logica legacy
-  if (quizScore === undefined) {
-    return 'heavy'; // Backward compatible
-  }
+  // Mappa discrepancy type al formato SafetyContext
+  let normalizedDiscrepancy: 'none' | 'minor' | 'major' = 'none';
+  if (discrepancyType === 'intuitive_mover') normalizedDiscrepancy = 'minor';
+  if (discrepancyType === 'theory_practice_gap') normalizedDiscrepancy = 'major';
 
-  const isStrengthGoal = goal === 'forza' || goal === 'strength';
+  const context: SafetyContext = {
+    level,
+    goal: canonicalGoal,
+    quizScore,
+    discrepancyType: normalizedDiscrepancy
+  };
 
-  // SAFETY: Intuitive mover + goal forza = PERICOLOSO
-  // Non capisce RPE/RIR ma vuole carichi pesanti
-  if (discrepancyType === 'intuitive_mover' && isStrengthGoal) {
-    console.warn('[SAFETY] Intuitive mover con goal forza → limitato a MODERATE');
-    return 'moderate';
-  }
-
-  // SAFETY: Quiz score molto basso + goal forza
-  if (quizScore < 40 && isStrengthGoal) {
-    console.warn('[SAFETY] Quiz score basso con goal forza → limitato a MODERATE');
-    return 'moderate';
-  }
-
-  // SAFETY: Beginner + goal forza (indipendentemente dal quiz)
-  // Già gestito da fix-03, ma doppio controllo non fa male
-  if (level === 'beginner' && isStrengthGoal) {
-    console.warn('[SAFETY] Beginner con goal forza → limitato a MODERATE');
-    return 'moderate';
-  }
-
-  // Tutto ok, può fare heavy
-  return 'heavy';
+  const limits = calculateSafetyLimits(context);
+  return limits.maxAllowedIntensity;
 }
 
 /**
  * Applica safety cap al dayType richiesto
+ * Ora delegato al modulo centralizzato safetyCaps.ts
  */
 function applySafetyCap(
   requestedDayType: 'heavy' | 'moderate' | 'volume',
   maxAllowed: 'heavy' | 'moderate' | 'volume'
 ): 'heavy' | 'moderate' | 'volume' {
-  const intensityOrder = { 'volume': 0, 'moderate': 1, 'heavy': 2 };
-
-  if (intensityOrder[requestedDayType] > intensityOrder[maxAllowed]) {
-    console.log(`   → DayType capped: ${requestedDayType} → ${maxAllowed}`);
-    return maxAllowed;
-  }
-
-  return requestedDayType;
+  return applySafetyCapSimple(requestedDayType, maxAllowed);
 }
 
 // ============================================================
@@ -1499,13 +1486,8 @@ export function calculateWeightFromRIR(
 /**
  * Determina RIR target basato su level, goal e dayType
  *
- * BEGINNER: RIR 3 fisso (sicurezza, tecnica)
- *   - Eccezione: forza/prestazioni -> RIR 2
- *
- * INTERMEDIATE/ADVANCED: Varia per dayType
- *   - Heavy: RIR 1-2
- *   - Moderate: RIR 2-3
- *   - Volume: RIR 3-4
+ * Ora delegato al modulo centralizzato safetyCaps.ts per consistenza
+ * con tutti gli altri generatori.
  *
  * Il sistema calibra nel tempo basandosi sui feedback RPE
  */
@@ -1514,44 +1496,8 @@ export function getTargetRIR(
   goal: string,
   level: string = 'intermediate'
 ): number {
-  // Goal che richiedono intensità più alta
-  const isHighIntensityGoal =
-    goal === 'forza' ||
-    goal === 'strength' ||
-    goal === 'prestazioni_sportive' ||
-    goal === 'sport_performance';
-
-  // ========================================
-  // BEGINNER: RIR conservativo per sicurezza
-  // ========================================
-  if (level === 'beginner') {
-    // Forza/prestazioni: RIR 2 (un po' più vicino al cedimento)
-    if (isHighIntensityGoal) {
-      return 2;
-    }
-    // Tutti gli altri: RIR 3 (più buffer per sicurezza e tecnica)
-    return 3;
-  }
-
-  // ========================================
-  // INTERMEDIATE/ADVANCED: Sistema DUP completo
-  // ========================================
-  switch (dayType) {
-    case 'heavy':
-      // Heavy day: vicino al cedimento
-      return isHighIntensityGoal ? 1 : 2;
-
-    case 'moderate':
-      // Moderate day: buffer moderato
-      return isHighIntensityGoal ? 2 : 3;
-
-    case 'volume':
-      // Volume day: più buffer per sostenere il volume
-      return isHighIntensityGoal ? 3 : 4;
-
-    default:
-      return level === 'advanced' ? 2 : 3;
-  }
+  // Delega al modulo centralizzato per consistenza
+  return getTargetRIRCentral(dayType as DayType, goal, level as Level);
 }
 
 /**

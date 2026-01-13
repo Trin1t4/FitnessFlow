@@ -266,7 +266,7 @@ const TEST_DESCRIPTIONS: Record<string, { title: string; protocol: string; equip
     notes: 'Asimmetria >10% tra i lati indica rischio infortuni'
   },
   mcgill_tests: {
-    title: 'McGill Big 3 - Core Endurance Battery',
+    title: 'Core Endurance Battery Tests',
     protocol: `TEST 1 - Trunk Flexion (Curl-up):
 - Ginocchia piegate, una gamba tesa
 - Mani sotto la lordosi lombare
@@ -892,7 +892,7 @@ export default function AssessmentPage({ teamMember }: AssessmentPageProps) {
                   />
                 </div>
 
-                <h3 className="text-sm font-medium text-slate-400 mt-4">McGill Big 3 (Gold Standard)</h3>
+                <h3 className="text-sm font-medium text-slate-400 mt-4">Core Endurance Tests</h3>
                 <div className="grid md:grid-cols-2 gap-4">
                   <TestInputWithInfo
                     label="McGill Flexion"

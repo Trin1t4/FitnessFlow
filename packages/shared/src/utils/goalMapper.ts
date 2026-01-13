@@ -1,22 +1,27 @@
 /**
- * Goal Mapper - Standardizzazione degli obiettivi
+ * ============================================================================
+ * UNIFIED GOAL MAPPER - SINGLE SOURCE OF TRUTH
+ * ============================================================================
  *
- * Gestisce:
- * - Conversione tra goal canonici (inglese) e database (italiano)
- * - Configurazione parametri per ogni goal (reps, rest, intensity)
- * - Validazione e migrazione valori legacy
+ * Questo file è l'UNICA fonte per il mapping dei goal in tutto il progetto.
+ *
+ * IMPORTANTE:
+ * - NON creare altri file di mapping goal
+ * - Tutti gli import devono puntare qui
+ * - I file deprecati sono stati rimossi o reindirizzati
  *
  * @module goalMapper
+ * @version 3.0.0 (Unified)
  */
 
 import type { Goal } from '../types';
 
-// ============================================
+// ============================================================================
 // TYPES
-// ============================================
+// ============================================================================
 
 /**
- * Goal canonici usati internamente (in inglese per codice)
+ * Goal canonici usati internamente (inglese per codice)
  */
 export type CanonicalGoal =
   | 'strength'
@@ -32,7 +37,7 @@ export type CanonicalGoal =
   | 'disability';
 
 /**
- * Goal per il database (in italiano per UI e persistenza)
+ * Goal per il database (italiano per UI e persistenza)
  */
 export type DatabaseGoal =
   | 'forza'
@@ -47,31 +52,56 @@ export type DatabaseGoal =
   | 'post_partum'
   | 'disabilita';
 
+/**
+ * Goal per il programGenerator (backend API)
+ */
+export type ProgramGoal =
+  | 'strength'
+  | 'muscle_gain'
+  | 'fat_loss'
+  | 'endurance'
+  | 'performance'
+  | 'motor_recovery'
+  | 'pregnancy'
+  | 'disability';
+
 export interface GoalConfig {
   canonical: CanonicalGoal;
   database: DatabaseGoal;
-  displayKey: string; // i18n key per traduzione UI
+  program: ProgramGoal;
+  displayKey: string;
   icon: string;
   color: string;
   category: 'fitness' | 'health' | 'sport' | 'special';
   // Training parameters
-  primaryRep: number;    // Rep range principale
+  primaryRep: number;
   repRange: [number, number];
   restSeconds: [number, number];
   sets: number;
   targetRIR: number;
-  intensity: number;     // % 1RM medio
-  volumeMultiplier: number; // Moltiplicatore volume rispetto a ipertrofia base
+  intensity: number;
+  volumeMultiplier: number;
+  // DUP parameters
+  dupBias: {
+    heavy: number;
+    moderate: number;
+    volume: number;
+  };
+  // Safety parameters
+  allowHeavyDays: boolean;
+  maxIntensityBeginner: 'moderate' | 'volume';
+  requiresMedicalClearance: boolean;
 }
 
-// ============================================
-// GOAL CONFIGURATIONS
-// ============================================
+// ============================================================================
+// GOAL CONFIGURATIONS - SINGLE SOURCE OF TRUTH
+// ============================================================================
 
 export const GOAL_CONFIGS: Record<CanonicalGoal, GoalConfig> = {
   strength: {
     canonical: 'strength',
     database: 'forza',
+    program: 'strength',
     displayKey: 'goals.strength',
     icon: '💪',
     color: '#FF6B6B',
@@ -82,86 +112,122 @@ export const GOAL_CONFIGS: Record<CanonicalGoal, GoalConfig> = {
     sets: 5,
     targetRIR: 2,
     intensity: 85,
-    volumeMultiplier: 0.8
+    volumeMultiplier: 0.8,
+    dupBias: { heavy: 0.4, moderate: 0.35, volume: 0.25 },
+    allowHeavyDays: true,
+    maxIntensityBeginner: 'moderate',
+    requiresMedicalClearance: false
   },
+
   hypertrophy: {
     canonical: 'hypertrophy',
     database: 'ipertrofia',
+    program: 'muscle_gain',
     displayKey: 'goals.hypertrophy',
     icon: '🏋️',
     color: '#4ECDC4',
     category: 'fitness',
     primaryRep: 10,
     repRange: [8, 12],
-    restSeconds: [60, 90],
+    restSeconds: [90, 120],
     sets: 4,
     targetRIR: 2,
-    intensity: 70,
-    volumeMultiplier: 1.0
+    intensity: 75,
+    volumeMultiplier: 1.0,
+    dupBias: { heavy: 0.3, moderate: 0.4, volume: 0.3 },
+    allowHeavyDays: true,
+    maxIntensityBeginner: 'moderate',
+    requiresMedicalClearance: false
   },
+
   toning: {
     canonical: 'toning',
     database: 'tonificazione',
+    program: 'muscle_gain',  // IMPORTANTE: toning usa muscle_gain nel backend
     displayKey: 'goals.toning',
     icon: '✨',
     color: '#9B59B6',
     category: 'fitness',
     primaryRep: 12,
-    repRange: [12, 15],
-    restSeconds: [45, 60],
+    repRange: [10, 15],
+    restSeconds: [60, 90],
     sets: 3,
     targetRIR: 3,
-    intensity: 60,
-    volumeMultiplier: 0.9
+    intensity: 65,
+    volumeMultiplier: 0.9,
+    dupBias: { heavy: 0.25, moderate: 0.35, volume: 0.4 },
+    allowHeavyDays: false,  // NO heavy days per toning
+    maxIntensityBeginner: 'moderate',
+    requiresMedicalClearance: false
   },
+
   fat_loss: {
     canonical: 'fat_loss',
     database: 'dimagrimento',
+    program: 'fat_loss',
     displayKey: 'goals.fat_loss',
     icon: '🔥',
-    color: '#F39C12',
+    color: '#E74C3C',
     category: 'fitness',
-    primaryRep: 15,
-    repRange: [12, 20],
-    restSeconds: [30, 45],
+    primaryRep: 12,
+    repRange: [10, 15],
+    restSeconds: [45, 75],
     sets: 3,
-    targetRIR: 2,
-    intensity: 55,
-    volumeMultiplier: 1.1
+    targetRIR: 3,
+    intensity: 65,
+    volumeMultiplier: 1.1,
+    dupBias: { heavy: 0.25, moderate: 0.35, volume: 0.4 },
+    allowHeavyDays: false,
+    maxIntensityBeginner: 'volume',
+    requiresMedicalClearance: false
   },
+
   endurance: {
     canonical: 'endurance',
     database: 'resistenza',
+    program: 'endurance',
     displayKey: 'goals.endurance',
     icon: '🏃',
     color: '#3498DB',
     category: 'fitness',
-    primaryRep: 20,
-    repRange: [15, 25],
-    restSeconds: [30, 45],
+    primaryRep: 15,
+    repRange: [12, 20],
+    restSeconds: [30, 60],
     sets: 3,
     targetRIR: 3,
-    intensity: 50,
-    volumeMultiplier: 1.2
+    intensity: 60,
+    volumeMultiplier: 1.2,
+    dupBias: { heavy: 0.2, moderate: 0.3, volume: 0.5 },
+    allowHeavyDays: false,
+    maxIntensityBeginner: 'volume',
+    requiresMedicalClearance: false
   },
+
   sport_performance: {
     canonical: 'sport_performance',
     database: 'prestazioni_sportive',
+    program: 'performance',
     displayKey: 'goals.sport_performance',
     icon: '🏆',
-    color: '#E74C3C',
+    color: '#F39C12',
     category: 'sport',
-    primaryRep: 8,
-    repRange: [5, 10],
-    restSeconds: [90, 180],
+    primaryRep: 6,
+    repRange: [4, 8],
+    restSeconds: [120, 180],
     sets: 4,
     targetRIR: 2,
-    intensity: 75,
-    volumeMultiplier: 0.9
+    intensity: 80,
+    volumeMultiplier: 0.9,
+    dupBias: { heavy: 0.35, moderate: 0.4, volume: 0.25 },
+    allowHeavyDays: true,
+    maxIntensityBeginner: 'moderate',
+    requiresMedicalClearance: false
   },
+
   wellness: {
     canonical: 'wellness',
     database: 'benessere',
+    program: 'muscle_gain',  // Wellness usa muscle_gain con parametri soft
     displayKey: 'goals.wellness',
     icon: '🧘',
     color: '#2ECC71',
@@ -172,11 +238,17 @@ export const GOAL_CONFIGS: Record<CanonicalGoal, GoalConfig> = {
     sets: 3,
     targetRIR: 4,
     intensity: 55,
-    volumeMultiplier: 0.7
+    volumeMultiplier: 0.7,
+    dupBias: { heavy: 0.15, moderate: 0.35, volume: 0.5 },
+    allowHeavyDays: false,
+    maxIntensityBeginner: 'volume',
+    requiresMedicalClearance: false
   },
+
   motor_recovery: {
     canonical: 'motor_recovery',
     database: 'motor_recovery',
+    program: 'motor_recovery',
     displayKey: 'goals.motor_recovery',
     icon: '🔄',
     color: '#1ABC9C',
@@ -187,11 +259,17 @@ export const GOAL_CONFIGS: Record<CanonicalGoal, GoalConfig> = {
     sets: 2,
     targetRIR: 4,
     intensity: 40,
-    volumeMultiplier: 0.5
+    volumeMultiplier: 0.5,
+    dupBias: { heavy: 0.0, moderate: 0.3, volume: 0.7 },  // NO heavy mai
+    allowHeavyDays: false,
+    maxIntensityBeginner: 'volume',
+    requiresMedicalClearance: true  // Richiede ok medico
   },
+
   prenatal: {
     canonical: 'prenatal',
     database: 'pre_partum',
+    program: 'pregnancy',
     displayKey: 'goals.prenatal',
     icon: '🤰',
     color: '#FFC0CB',
@@ -202,11 +280,17 @@ export const GOAL_CONFIGS: Record<CanonicalGoal, GoalConfig> = {
     sets: 2,
     targetRIR: 4,
     intensity: 50,
-    volumeMultiplier: 0.6
+    volumeMultiplier: 0.6,
+    dupBias: { heavy: 0.0, moderate: 0.2, volume: 0.8 },  // NO heavy mai
+    allowHeavyDays: false,
+    maxIntensityBeginner: 'volume',
+    requiresMedicalClearance: true
   },
+
   postnatal: {
     canonical: 'postnatal',
     database: 'post_partum',
+    program: 'pregnancy',  // Usa stesso backend di pregnancy
     displayKey: 'goals.postnatal',
     icon: '👶',
     color: '#87CEEB',
@@ -217,11 +301,17 @@ export const GOAL_CONFIGS: Record<CanonicalGoal, GoalConfig> = {
     sets: 3,
     targetRIR: 3,
     intensity: 55,
-    volumeMultiplier: 0.7
+    volumeMultiplier: 0.7,
+    dupBias: { heavy: 0.0, moderate: 0.3, volume: 0.7 },
+    allowHeavyDays: false,
+    maxIntensityBeginner: 'volume',
+    requiresMedicalClearance: true
   },
+
   disability: {
     canonical: 'disability',
     database: 'disabilita',
+    program: 'disability',
     displayKey: 'goals.disability',
     icon: '♿',
     color: '#5DADE2',
@@ -232,36 +322,45 @@ export const GOAL_CONFIGS: Record<CanonicalGoal, GoalConfig> = {
     sets: 2,
     targetRIR: 4,
     intensity: 45,
-    volumeMultiplier: 0.5
+    volumeMultiplier: 0.5,
+    dupBias: { heavy: 0.0, moderate: 0.3, volume: 0.7 },
+    allowHeavyDays: false,
+    maxIntensityBeginner: 'volume',
+    requiresMedicalClearance: true
   }
 };
 
-// ============================================
-// MAPPING TABLES
-// ============================================
+// ============================================================================
+// UNIFIED ALIAS MAPPING - Tutti i possibili input mappati al canonico
+// ============================================================================
 
-/**
- * Mappa valori legacy/varianti al goal canonico
- */
 const GOAL_ALIASES: Record<string, CanonicalGoal> = {
-  // Italiano -> Canonical
+  // === ITALIANO ===
   'forza': 'strength',
   'ipertrofia': 'hypertrophy',
   'massa': 'hypertrophy',
   'massa muscolare': 'hypertrophy',
   'tonificazione': 'toning',
   'dimagrimento': 'fat_loss',
+  'perdita peso': 'fat_loss',
   'resistenza': 'endurance',
   'prestazioni_sportive': 'sport_performance',
+  'prestazioni sportive': 'sport_performance',
   'benessere': 'wellness',
   'motor_recovery': 'motor_recovery',
+  'recupero_motorio': 'motor_recovery',
+  'recupero motorio': 'motor_recovery',
   'pre_partum': 'prenatal',
+  'gravidanza': 'prenatal',
   'post_partum': 'postnatal',
+  'postpartum': 'postnatal',
   'disabilita': 'disability',
+  'disabilità': 'disability',
 
-  // English variants
+  // === ENGLISH ===
   'strength': 'strength',
   'hypertrophy': 'hypertrophy',
+  'muscle_gain': 'hypertrophy',
   'muscle_mass': 'hypertrophy',
   'toning': 'toning',
   'fat_loss': 'fat_loss',
@@ -269,30 +368,61 @@ const GOAL_ALIASES: Record<string, CanonicalGoal> = {
   'endurance': 'endurance',
   'general_fitness': 'endurance',
   'sport_performance': 'sport_performance',
+  'performance': 'sport_performance',
   'wellness': 'wellness',
   'prenatal': 'prenatal',
+  'pregnancy': 'prenatal',
   'postnatal': 'postnatal',
-  'disability': 'disability'
+  'disability': 'disability',
+
+  // === LEGACY/VECCHI MAPPING ===
+  'massa_muscolare': 'hypertrophy',
+  'definizione': 'fat_loss',
+  'conditioning': 'fat_loss',
+  'generale': 'wellness',
+  'general': 'wellness',
 };
 
-// ============================================
+// ============================================================================
 // CONVERSION FUNCTIONS
-// ============================================
+// ============================================================================
 
 /**
- * Converte qualsiasi valore goal al formato canonico (interno)
+ * Converte qualsiasi valore goal al formato CANONICO (interno)
+ * SEMPRE usare questo per normalizzare l'input
  */
-export function toCanonicalGoal(goal: string | Goal): CanonicalGoal {
-  const normalized = goal.toLowerCase().trim();
-  return GOAL_ALIASES[normalized] || 'hypertrophy'; // Default
+export function toCanonicalGoal(goal: string | Goal | null | undefined): CanonicalGoal {
+  if (!goal) {
+    console.warn('[GoalMapper] Empty goal, defaulting to hypertrophy');
+    return 'hypertrophy';
+  }
+
+  const normalized = String(goal).toLowerCase().trim();
+  const canonical = GOAL_ALIASES[normalized];
+
+  if (!canonical) {
+    console.warn(`[GoalMapper] Unknown goal "${goal}", defaulting to hypertrophy`);
+    return 'hypertrophy';
+  }
+
+  return canonical;
 }
 
 /**
- * Converte al formato database (italiano)
+ * Converte al formato DATABASE (italiano per Supabase/UI)
  */
 export function toDatabaseGoal(goal: string | Goal): DatabaseGoal {
   const canonical = toCanonicalGoal(goal);
   return GOAL_CONFIGS[canonical].database;
+}
+
+/**
+ * Converte al formato PROGRAM (per programGenerator backend)
+ * QUESTO È IL MAPPING CRITICO CHE ERA INCONSISTENTE
+ */
+export function toProgramGoal(goal: string | Goal): ProgramGoal {
+  const canonical = toCanonicalGoal(goal);
+  return GOAL_CONFIGS[canonical].program;
 }
 
 /**
@@ -303,12 +433,44 @@ export function getGoalConfig(goal: string | Goal): GoalConfig {
   return GOAL_CONFIGS[canonical];
 }
 
-// ============================================
-// VALIDATION
-// ============================================
+/**
+ * Ottieni i parametri DUP per un goal
+ */
+export function getDupBias(goal: string | Goal): GoalConfig['dupBias'] {
+  const config = getGoalConfig(goal);
+  return config.dupBias;
+}
 
 /**
- * Verifica se un valore e un goal valido
+ * Verifica se un goal permette heavy days
+ */
+export function allowsHeavyDays(goal: string | Goal): boolean {
+  const config = getGoalConfig(goal);
+  return config.allowHeavyDays;
+}
+
+/**
+ * Ottieni l'intensità massima permessa per un beginner
+ */
+export function getMaxIntensityForBeginner(goal: string | Goal): 'moderate' | 'volume' {
+  const config = getGoalConfig(goal);
+  return config.maxIntensityBeginner;
+}
+
+/**
+ * Verifica se richiede clearance medica
+ */
+export function requiresMedicalClearance(goal: string | Goal): boolean {
+  const config = getGoalConfig(goal);
+  return config.requiresMedicalClearance;
+}
+
+// ============================================================================
+// VALIDATION
+// ============================================================================
+
+/**
+ * Verifica se un valore è un goal valido
  */
 export function isValidGoal(goal: string): boolean {
   const normalized = goal.toLowerCase().trim();
@@ -316,7 +478,14 @@ export function isValidGoal(goal: string): boolean {
 }
 
 /**
- * Ottieni tutti i valori goal validi
+ * Ottieni tutti i goal disponibili (canonici)
+ */
+export function getAllGoals(): CanonicalGoal[] {
+  return Object.keys(GOAL_CONFIGS) as CanonicalGoal[];
+}
+
+/**
+ * Ottieni tutti i valori goal validi (tutti gli alias)
  */
 export function getAllValidGoals(): string[] {
   return Object.keys(GOAL_ALIASES);
@@ -332,13 +501,15 @@ export function getCanonicalGoals(): CanonicalGoal[] {
 /**
  * Ottieni goal per categoria
  */
-export function getGoalsByCategory(category: GoalConfig['category']): GoalConfig[] {
-  return Object.values(GOAL_CONFIGS).filter(g => g.category === category);
+export function getGoalsByCategory(category: GoalConfig['category']): CanonicalGoal[] {
+  return Object.entries(GOAL_CONFIGS)
+    .filter(([_, config]) => config.category === category)
+    .map(([key]) => key as CanonicalGoal);
 }
 
-// ============================================
+// ============================================================================
 // TRAINING PARAMETER HELPERS
-// ============================================
+// ============================================================================
 
 /**
  * Ottieni rep range per un goal
@@ -397,9 +568,9 @@ export function getVolumeRecommendation(goal: string | Goal, level: string): {
   };
 }
 
-// ============================================
+// ============================================================================
 // MIGRATION
-// ============================================
+// ============================================================================
 
 /**
  * Migra un valore goal legacy al formato corretto
@@ -407,16 +578,65 @@ export function getVolumeRecommendation(goal: string | Goal, level: string): {
 export function migrateGoalValue(oldValue: string): {
   canonical: CanonicalGoal;
   database: DatabaseGoal;
+  program: ProgramGoal;
   wasLegacy: boolean;
 } {
-  const normalized = oldValue.toLowerCase().trim();
   const canonical = toCanonicalGoal(oldValue);
   const database = toDatabaseGoal(oldValue);
+  const program = toProgramGoal(oldValue);
 
   // Check if it was a legacy value
+  const normalized = oldValue.toLowerCase().trim();
   const wasLegacy = !Object.values(GOAL_CONFIGS).some(
     c => c.canonical === normalized || c.database === normalized
   );
 
-  return { canonical, database, wasLegacy };
+  return { canonical, database, program, wasLegacy };
 }
+
+// ============================================================================
+// BACKWARD COMPATIBILITY - Deprecati ma mantenuti per transizione
+// ============================================================================
+
+/**
+ * @deprecated Usa toProgramGoal() invece
+ */
+export function mapGoal(goal: string): string {
+  console.warn('[GoalMapper] mapGoal() is deprecated, use toProgramGoal()');
+  return toProgramGoal(goal);
+}
+
+/**
+ * @deprecated Usa toCanonicalGoal() invece
+ */
+export const GOAL_MAP = new Proxy({} as Record<string, string>, {
+  get(_, prop: string) {
+    console.warn('[GoalMapper] GOAL_MAP is deprecated, use toCanonicalGoal()');
+    return toProgramGoal(prop);
+  }
+});
+
+/**
+ * @deprecated Usa GOAL_ALIASES invece
+ */
+export const GOAL_MAPPING = GOAL_ALIASES;
+
+// ============================================================================
+// EXPORT DEFAULT
+// ============================================================================
+
+export default {
+  toCanonicalGoal,
+  toDatabaseGoal,
+  toProgramGoal,
+  getGoalConfig,
+  getDupBias,
+  allowsHeavyDays,
+  getMaxIntensityForBeginner,
+  requiresMedicalClearance,
+  isValidGoal,
+  getAllGoals,
+  getGoalsByCategory,
+  GOAL_CONFIGS,
+  GOAL_ALIASES
+};

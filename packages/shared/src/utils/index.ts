@@ -659,17 +659,24 @@ export {
   BODYWEIGHT_PROGRESSIONS
 } from './exerciseProgressionEngine';
 
-// Goal Mapper - Standardizzazione Goals
+// Goal Mapper - Standardizzazione Goals (UNIFIED - Single Source of Truth)
 export type {
   CanonicalGoal,
   DatabaseGoal,
+  ProgramGoal,
   GoalConfig
 } from './goalMapper';
 export {
   toCanonicalGoal,
   toDatabaseGoal,
+  toProgramGoal,
   getGoalConfig,
+  getDupBias,
+  allowsHeavyDays,
+  getMaxIntensityForBeginner,
+  requiresMedicalClearance,
   isValidGoal,
+  getAllGoals,
   getAllValidGoals,
   getCanonicalGoals,
   getGoalsByCategory,
@@ -680,8 +687,47 @@ export {
   getIntensityForGoal,
   getVolumeRecommendation,
   migrateGoalValue,
-  GOAL_CONFIGS
+  mapGoal, // deprecated - use toProgramGoal
+  GOAL_CONFIGS,
+  GOAL_MAP, // deprecated - use toCanonicalGoal
+  GOAL_MAPPING // deprecated - use GOAL_ALIASES
 } from './goalMapper';
+
+// Safety Caps - Centralized Safety Checks
+export type {
+  DayType as SafetyDayType,
+  DiscrepancyType,
+  SafetyContext,
+  SafetyResult,
+  RIRConfig
+} from './safetyCaps';
+export {
+  calculateSafetyLimits,
+  applySafetyCap,
+  applySafetyCapSimple,
+  getTargetRIR as getTargetRIRSafe,
+  getRIRConfig,
+  getMaxSets,
+  canAccessIntensity,
+  determineDayType,
+  formatSafetyReport,
+  createSafetyContext,
+  getMaxAllowedIntensity,
+  MIN_RIR_BY_LEVEL as SAFETY_MIN_RIR,
+  RIR_MATRIX as SAFETY_RIR_MATRIX,
+  MAX_SETS_BY_LEVEL as SAFETY_MAX_SETS
+} from './safetyCaps';
+
+// Unified Program Generator - Single Entry Point
+export type {
+  UnifiedProgramOptions,
+  UnifiedProgramResult
+} from './unifiedProgramGenerator';
+export {
+  generateProgramUnified,
+  generateProgramAPI, // deprecated - use generateProgramUnified
+  generateProgramWithSplitLegacy // deprecated - use generateProgramUnified
+} from './unifiedProgramGenerator';
 
 // Program Structure Normalizer (V2) - Unificazione avanzata strutture programma
 // Note: Uses different naming to avoid conflicts with legacy programNormalizer
