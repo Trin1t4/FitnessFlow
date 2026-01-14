@@ -37,7 +37,7 @@ import {
   rejectAdjustment,
   postponeAdjustment,
   acceptAndApplyAdjustment,
-  isAdmin,
+  isAdmin as checkIsAdminStatus,
   getAdminDashboardData
 } from '@trainsmart/shared';
 import { toast } from 'sonner';
@@ -415,7 +415,7 @@ export default function Dashboard() {
 
   async function checkAdminStatus() {
     try {
-      const { data: isUserAdmin, error } = await isAdmin();
+      const { data: isUserAdmin, error } = await checkIsAdminStatus();
       console.log('🔍 Admin check result:', { isUserAdmin, error });
       if (error) {
         console.error('❌ Admin check error:', error);
