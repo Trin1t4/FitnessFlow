@@ -28,6 +28,8 @@ import VideoUploadModal from './VideoUploadModal';
 import { isExerciseSupportedInternally } from '../lib/videoCorrectionEngine';
 import ExerciseDislikeModal from './ExerciseDislikeModal';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
+import WorkoutGridView from './WorkoutGridView';
+import WorkoutModeSelector from './WorkoutModeSelector';
 import { getVariantsForExercise } from '../utils/exerciseVariants';
 import {
   adaptExercisesForLocation,
@@ -450,6 +452,12 @@ export default function LiveWorkoutSession({
 
   // Exercise Selector Dropdown state
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
+
+  // Grid View state
+  const [useGridView, setUseGridView] = useState(false);
+
+  // Mode Selector state - shown after pre-workout to let user choose guided vs free mode
+  const [showModeSelector, setShowModeSelector] = useState(false);
 
   // Skip Tracking state
   const [showSkipReasonModal, setShowSkipReasonModal] = useState(false);
@@ -1242,6 +1250,14 @@ export default function LiveWorkoutSession({
 
     setExercises(adaptedExercises);
     setShowPreWorkout(false);
+    // Show mode selector instead of starting immediately
+    setShowModeSelector(true);
+  };
+
+  // Actually start the workout after mode selection
+  const handleModeSelected = async (gridMode: boolean) => {
+    setShowModeSelector(false);
+    setUseGridView(gridMode);
     setWorkoutStartTime(new Date());
 
     // STEP 3: Create workout_log for progressive saving
@@ -1250,7 +1266,7 @@ export default function LiveWorkoutSession({
         userId,
         programId,
         dayName,
-        totalExercises: adaptedExercises.length,
+        totalExercises: exercises.length, // exercises state was already updated
         mood,
         sleepQuality,
         notes: painAreas.length > 0 ? `Pain areas: ${painAreas.map(p => `${p.area}(${p.intensity})`).join(', ')}` : undefined,
@@ -1367,7 +1383,9 @@ export default function LiveWorkoutSession({
    *
    * TUT = AGGRAVANTE (aumenta difficoltà)
    */
-  const handleRIRValidationAndComplete = async () => {
+  // overrideRIR: when user confirms "Yes" on RIR check, we pass the target RIR directly
+  // because React setState is async and currentRIR wouldn't be updated yet
+  const handleRIRValidationAndComplete = async (overrideRIR?: number) => {
     if (!currentExercise) return;
 
     const targetReps = typeof currentExercise.reps === 'number'
@@ -1378,7 +1396,9 @@ export default function LiveWorkoutSession({
 
     const isBW = isBodyweightExercise(currentExercise.name);
     const exerciseType = isBW ? 'bodyweight' : 'weighted';
-    const rirDelta = currentRIR - targetRIR;
+    // Use overrideRIR if provided (from "Yes" button), otherwise use currentRIR from state
+    const actualRIR = overrideRIR ?? currentRIR;
+    const rirDelta = actualRIR - targetRIR;
 
     // Trova modifica attiva per questo esercizio
     const activeMod = Object.values(loadedModifications).find(
@@ -1396,7 +1416,7 @@ export default function LiveWorkoutSession({
         targetReps,
         actualReps: currentReps,
         targetRIR,
-        actualRIR: currentRIR,
+        actualRIR: actualRIR,
         currentWeight: currentWeightNum,
         location: currentLocation as 'gym' | 'home' | 'home_gym'
       });
@@ -1447,7 +1467,7 @@ export default function LiveWorkoutSession({
           reason: 'rir_exceeded_downgrade',
           severity: downgradeResult.severity,
           rir_target: targetRIR,
-          rir_actual: currentRIR
+          rir_actual: actualRIR
         });
 
         // Salva alert sicurezza
@@ -1456,7 +1476,7 @@ export default function LiveWorkoutSession({
           exercise_pattern: currentExercise.pattern,
           set_number: currentSet,
           target_rir: targetRIR,
-          actual_rir: currentRIR,
+          actual_rir: actualRIR,
           target_reps: targetReps,
           actual_reps: currentReps,
           weight_used: currentWeightNum || undefined,
@@ -1483,7 +1503,7 @@ export default function LiveWorkoutSession({
         exercisePattern: currentExercise.pattern,
         exerciseType,
         targetRIR,
-        actualRIR: currentRIR,
+        actualRIR: actualRIR,
         targetReps,
         actualReps: currentReps,
         currentWeight: currentWeightNum,
@@ -1530,7 +1550,7 @@ export default function LiveWorkoutSession({
             reason: 'rir_high_add_tut',
             severity: 'warning',
             rir_target: targetRIR,
-            rir_actual: currentRIR
+            rir_actual: actualRIR
           });
 
           console.log(`[Upgrade] Added TUT:`, upgradeResult.newTempo);
@@ -1576,7 +1596,7 @@ export default function LiveWorkoutSession({
       toast.warning(
         `⚠️ Sei andato leggermente oltre il limite`,
         {
-          description: `Hai fatto RIR ${currentRIR} invece di RIR ${targetRIR}. La prossima volta fermati 1 rep prima.`,
+          description: `Hai fatto RIR ${actualRIR} invece di RIR ${targetRIR}. La prossima volta fermati 1 rep prima.`,
           duration: 6000
         }
       );
@@ -1586,7 +1606,7 @@ export default function LiveWorkoutSession({
         exercise_pattern: currentExercise.pattern,
         set_number: currentSet,
         target_rir: targetRIR,
-        actual_rir: currentRIR,
+        actual_rir: actualRIR,
         target_reps: targetReps,
         actual_reps: currentReps,
         weight_used: currentWeightNum || undefined,
@@ -1599,7 +1619,7 @@ export default function LiveWorkoutSession({
     // CASO 4: RIR nel range (±1) → OK
     // ================================================================
     else {
-      console.log(`[RIR] OK: ${currentRIR} vs target ${targetRIR}`);
+      console.log(`[RIR] OK: ${actualRIR} vs target ${targetRIR}`);
     }
 
     // ================================================================
@@ -1610,7 +1630,7 @@ export default function LiveWorkoutSession({
       reps_completed: currentReps,
       weight_used: currentWeight || undefined,
       rpe: currentRPE,
-      rir_perceived: currentRIR,
+      rir_perceived: actualRIR,
       adjusted: false
     };
 
@@ -1629,7 +1649,7 @@ export default function LiveWorkoutSession({
         reps_completed: currentReps,
         weight_used: currentWeight || undefined,
         rpe: currentRPE,
-        rir: currentRIR,
+        rir: actualRIR,
         was_adjusted: false,
       }).then(saved => {
         if (saved) {
@@ -2892,6 +2912,109 @@ export default function LiveWorkoutSession({
     });
   };
 
+  // Convert setLogs to format required by WorkoutGridView
+  const getGridViewExerciseLogs = () => {
+    return exercises.map((ex, index) => {
+      const logs = setLogs[ex.name] || [];
+      const totalSets = adjustedSets[ex.name] || ex.sets;
+
+      // Create sets array with proper completed status
+      const setsArray = Array.from({ length: totalSets }, (_, setIdx) => {
+        const existingLog = logs[setIdx];
+        if (existingLog) {
+          return {
+            set_number: setIdx + 1,
+            reps_completed: existingLog.reps_completed,
+            weight_used: existingLog.weight_used,
+            rpe: existingLog.rpe,
+            completed: true,
+          };
+        }
+        return {
+          set_number: setIdx + 1,
+          reps_completed: 0,
+          weight_used: 0,
+          rpe: 7,
+          completed: false,
+        };
+      });
+
+      return {
+        exerciseName: ex.name,
+        sets: setsArray,
+      };
+    });
+  };
+
+  // Handle set completion from grid view
+  const handleGridCompleteSet = async (exerciseIndex: number, setIndex: number, reps: number, weight: number, rpe: number) => {
+    const exercise = exercises[exerciseIndex];
+    if (!exercise) return;
+
+    // Update local setLogs
+    const newLog: SetLog = {
+      set_number: setIndex + 1,
+      reps_completed: reps,
+      weight_used: weight || undefined,
+      rpe: rpe,
+      rpe_adjusted: rpe,
+      adjusted: false,
+    };
+
+    setSetLogs(prev => {
+      const exerciseLogs = prev[exercise.name] || [];
+      const updated = [...exerciseLogs];
+      updated[setIndex] = newLog;
+      return { ...prev, [exercise.name]: updated };
+    });
+
+    // Save to database if workout started
+    if (workoutLogId) {
+      try {
+        await saveProgressiveSet({
+          workout_log_id: workoutLogId,
+          exercise_name: exercise.name,
+          exercise_index: exerciseIndex,
+          set_number: setIndex + 1,
+          reps_completed: reps,
+          weight_used: weight || undefined,
+          rpe: rpe,
+        });
+      } catch (err) {
+        console.error('[GridView] Error saving set:', err);
+      }
+    }
+
+    // Start rest timer
+    const restSeconds = parseRestTimeToSeconds(exercise.rest || '90s');
+    const exerciseLogsForEx = setLogs[exercise.name] || [];
+    const totalSets = adjustedSets[exercise.name] || exercise.sets;
+    const completedAfter = exerciseLogsForEx.length + 1;
+
+    if (completedAfter < totalSets) {
+      setRestTimeRemaining(restSeconds);
+      setRestTimerActive(true);
+    }
+  };
+
+  // Handle finish workout from grid view
+  const handleGridFinishWorkout = () => {
+    handleWorkoutComplete();
+  };
+
+  // Handle skip rest from grid view
+  const handleGridSkipRest = () => {
+    setRestTimerActive(false);
+    setRestTimeRemaining(0);
+  };
+
+  // Handle end workout early from grid view
+  const handleGridEndEarly = () => {
+    if (confirm('Vuoi terminare il workout anticipatamente?')) {
+      handleWorkoutComplete();
+    }
+  };
+
   // Get current weight for exercise (adjusted or original)
   const getCurrentExerciseWeight = () => {
     if (!currentExercise) return undefined;
@@ -3423,6 +3546,58 @@ export default function LiveWorkoutSession({
     );
   }
 
+  // MODE SELECTOR - Let user choose between guided and free mode
+  if (showModeSelector) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      >
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          className="bg-slate-900 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-700 shadow-2xl"
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-white">🎯 Scegli Modalità</h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <WorkoutModeSelector
+            workout={{
+              dayName: dayName,
+              exercises: exercises.map(ex => ({
+                id: ex.name,
+                name: ex.name,
+                sets: ex.sets,
+                reps: ex.reps,
+                rest: parseInt(ex.rest?.replace(/\D/g, '') || '90'),
+                weight: typeof ex.weight === 'number' ? String(ex.weight) : ex.weight || null,
+                notes: ex.notes,
+                pattern: ex.pattern,
+              })),
+            }}
+            onStartGuided={() => handleModeSelected(false)}
+            onStartExercise={(exercise, index) => {
+              // Start in grid mode at specific exercise
+              handleModeSelected(true);
+              // Jump to selected exercise after a short delay
+              setTimeout(() => {
+                setCurrentExerciseIndex(index);
+              }, 100);
+            }}
+            completedExercises={new Set(Object.keys(setLogs).filter(name =>
+              setLogs[name]?.length >= (adjustedSets[name] || exercises.find(e => e.name === name)?.sets || 0)
+            ))}
+          />
+        </motion.div>
+      </motion.div>
+    );
+  }
+
   // MAIN WORKOUT UI (after pre-check)
   if (!currentExercise) return null;
 
@@ -3444,14 +3619,44 @@ export default function LiveWorkoutSession({
             <h2 className="text-3xl font-bold text-white">💪 Live Workout</h2>
             <p className="text-slate-400 text-sm">{dayName}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Grid View Toggle */}
+            <button
+              onClick={() => setUseGridView(!useGridView)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                useGridView
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+              title={useGridView ? 'Vista Lineare' : 'Vista Griglia'}
+            >
+              {useGridView ? '📋 Lineare' : '📊 Griglia'}
+            </button>
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
+        {/* Grid View Mode */}
+        {useGridView ? (
+          <WorkoutGridView
+            exercises={exercises}
+            exerciseLogs={getGridViewExerciseLogs()}
+            dayName={dayName}
+            isResting={restTimerActive}
+            restTimeLeft={restTimeRemaining}
+            onCompleteSet={handleGridCompleteSet}
+            onSkipRest={handleGridSkipRest}
+            onFinishWorkout={handleGridFinishWorkout}
+            onEndWorkoutEarly={handleGridEndEarly}
+            onClose={onClose}
+          />
+        ) : (
+        <>
         {/* Progress with Exercise Selector */}
         <div className="mb-6">
           <div className="flex justify-between items-center text-sm text-slate-400 mb-2">
@@ -3773,10 +3978,9 @@ export default function LiveWorkoutSession({
                   setCurrentRIR(targetRIR);
                   setCurrentRPE(10 - targetRIR);
                   setShowRIRConfirm(false);
-                  // FIX: Use handleRIRValidationAndComplete instead of handleSetComplete
-                  // to avoid double timer start (handleSetComplete sets showRPEInput=true
-                  // which then triggers handleRIRValidationAndComplete again)
-                  handleRIRValidationAndComplete();
+                  // FIX: Pass targetRIR directly because React setState is async
+                  // and currentRIR wouldn't be updated yet when the function runs
+                  handleRIRValidationAndComplete(targetRIR);
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
               >
@@ -4354,6 +4558,8 @@ export default function LiveWorkoutSession({
             Termina Workout
           </button>
         </div>
+        </>
+        )}
       </motion.div>
 
       {/* Hybrid Recovery Modal */}

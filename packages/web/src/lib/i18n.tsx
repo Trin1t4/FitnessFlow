@@ -870,18 +870,6 @@ const translations: Translations = {
   "feedback.discomfort.slightlyWorse": { it: "😕 Leggermente peggio", en: "😕 Slightly worse", fr: "😕 Légèrement pire", es: "😕 Ligeramente peor" },
   "feedback.discomfort.muchWorse": { it: "😟 Molto peggio", en: "😟 Much worse", fr: "😟 Beaucoup pire", es: "😟 Mucho peor" },
 
-  // RPE scale
-  "rpe.1": { it: "Molto facile", en: "Very easy", fr: "Très facile", es: "Muy fácil" },
-  "rpe.2": { it: "Facile", en: "Easy", fr: "Facile", es: "Fácil" },
-  "rpe.3": { it: "Leggero", en: "Light", fr: "Léger", es: "Ligero" },
-  "rpe.4": { it: "Moderato", en: "Moderate", fr: "Modéré", es: "Moderado" },
-  "rpe.5": { it: "Moderato+", en: "Moderate+", fr: "Modéré+", es: "Moderado+" },
-  "rpe.6": { it: "Impegnativo", en: "Challenging", fr: "Exigeant", es: "Desafiante" },
-  "rpe.7": { it: "Difficile", en: "Hard", fr: "Difficile", es: "Difícil" },
-  "rpe.8": { it: "Molto difficile", en: "Very hard", fr: "Très difficile", es: "Muy difícil" },
-  "rpe.9": { it: "Quasi massimale", en: "Near maximal", fr: "Presque maximal", es: "Casi máximo" },
-  "rpe.10": { it: "Massimale", en: "Maximal", fr: "Maximal", es: "Máximo" },
-
   // RIR scale
   "rir.0": { it: "0 - Ero al limite", en: "0 - I was at my limit", fr: "0 - J'étais à ma limite", es: "0 - Estaba al límite" },
   "rir.1": { it: "1 - Forse una", en: "1 - Maybe one more", fr: "1 - Peut-être une de plus", es: "1 - Quizás una más" },
