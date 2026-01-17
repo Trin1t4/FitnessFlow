@@ -370,7 +370,7 @@ function createFallbackAccessory(
  * DOPO (nuovo codice):
  * ```typescript
  * // Importa la nuova funzione
- * import { createAccessoryExerciseAdapted } from './fix-05-accessory-volume';
+ * import { createAccessoryExerciseAdapted } from './accessoryVolume';
  * 
  * // Usa al posto di createAccessoryExercise
  * const exercise = createAccessoryExerciseAdapted(

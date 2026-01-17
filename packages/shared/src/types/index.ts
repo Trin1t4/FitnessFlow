@@ -213,3 +213,45 @@ export {
   getZone2Range,
   determineRunningLevel,
 } from './running.types';
+
+// Quick Start (nuovo onboarding 3 minuti)
+export type {
+  QuickStartGoal,
+  QuickStartLocation,
+  ExperienceLevel,
+  QuickStartExperience,
+  QuickStartData,
+  InitialLevel,
+  ConservativeProgramParams,
+  BodyweightStrategy,
+  WeightedStrategy,
+  InitialWeightStrategy,
+  FeelerSetFeedback,
+  FeelerSetResult,
+  Session1Calibration,
+  RIRPerception,
+  Session2Calibration,
+  RecoveryTrend,
+  PainEvolution,
+  Session3Calibration,
+  UnlockAssessment,
+  CalibrationData,
+  PainReport,
+  SessionExerciseData,
+  SessionData,
+  WeeklySkipReason,
+  WeeklyCheck,
+  FeelerSetConfig,
+  TechQuizQuestion,
+  TechQuizResult,
+} from './quickStart.types';
+
+export {
+  FEELER_SET_OPTIONS,
+  CALIBRATION_SESSIONS_REQUIRED,
+  EXPERIENCE_SCORE_MAP,
+  CONSERVATIVE_PARAMS,
+  INITIAL_WEIGHT_ESTIMATES,
+  RIR_CONSISTENCY_THRESHOLD,
+  MAX_SESSION_RPE_FOR_UNLOCK,
+} from './quickStart.types';

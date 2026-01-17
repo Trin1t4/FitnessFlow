@@ -34,7 +34,7 @@ import {
   FATIGUE_MULTIPLIERS,
   type SetData,
   type LearningPeriodStatus,
-} from '../lib/fix-09-auto-regulation-improvements';
+} from '../lib/autoRegulation';
 */
 
 // ============================================================

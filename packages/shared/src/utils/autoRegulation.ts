@@ -541,7 +541,7 @@ export async function analyzeExerciseForAdjustment(
  * In LiveWorkoutSession.tsx, dopo aver raccolto tutti i set di un esercizio:
  * 
  * ```typescript
- * import { analyzeExerciseForAdjustment } from './fix-09-auto-regulation-improvements';
+ * import { analyzeExerciseForAdjustment } from './autoRegulation';
  * 
  * // Dopo l'ultimo set dell'esercizio
  * const analysis = await analyzeExerciseForAdjustment(

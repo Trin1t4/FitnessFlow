@@ -491,7 +491,7 @@ function calculateVariance(values: number[]): number {
  * 
  * ```typescript
  * // Importa la nuova funzione
- * import { createHorizontalPullExerciseImproved } from './fix-06-horizontal-pull-inference';
+ * import { createHorizontalPullExerciseImproved } from './horizontalPullInference';
  * 
  * // Nella generazione del programma:
  * const rowExercise = createHorizontalPullExerciseImproved(

@@ -73,7 +73,7 @@ export {
   calculate1RMFromNRM,
   calculateNRMFrom1RM,
   calculateWeightFromRIR,
-  // getTargetRIR moved to fix-03-dup-for-beginners (improved version with DUP safety)
+  // getTargetRIR moved to dupBeginnerSafety (improved version with DUP safety)
   calculateSuggestedWeight,
   formatWeight,
   getProgressionMultiplier,
@@ -478,24 +478,24 @@ export {
 } from './logger';
 
 // ============================================================
-// PROGRAM GENERATION FIXES
+// PROGRAM GENERATION MODULES (previously fix-01 through fix-09)
 // ============================================================
 
-// FIX 1: No Baseline Handling
+// Baseline Inference (no baseline handling)
 export {
   createExerciseWithFallback,
   shouldAutoCalibrateExercise,
   calculateCalibratedWeight,
   type ExerciseWithCalibration,
-} from './fix-01-no-baseline-handling';
+} from './baselineInference';
 
-// FIX 2: Correctives Distribution
+// Correctives Distribution
 export {
   distributeCorrectivesIntelligently,
   addCorrectivesToDaysIntelligently,
-} from './fix-02-correctives-distribution';
+} from './correctiveDistribution';
 
-// FIX 3: DUP for Beginners
+// DUP for Beginners Safety
 export {
   getTargetRIR,
   getDayTypeForLevel,
@@ -503,24 +503,24 @@ export {
   getVolumeParamsForDayType,
   MIN_RIR_BY_LEVEL,
   RIR_MATRIX,
-} from './fix-03-dup-for-beginners';
+} from './dupBeginnerSafety';
 
-// FIX 4: Multi-Goal Distribution
+// Multi-Goal Distribution
 export {
   calculateMultiGoalDistribution,
   applyMultiGoalToExercise,
   generateMultiGoalExplanation,
   type MultiGoalDistribution,
-} from './fix-04-multi-goal-distribution';
+} from './multiGoalDistribution';
 
-// FIX 5: Accessory Volume by Goal
+// Accessory Volume by Goal
 export {
   createAccessoryExerciseAdapted,
   ACCESSORY_PARAMS_BY_GOAL,
   ACCESSORY_NAMES_IT,
-} from './fix-05-accessory-volume';
+} from './accessoryVolume';
 
-// FIX 6: Horizontal Pull Inference
+// Horizontal Pull Inference
 export {
   createHorizontalPullExerciseImproved,
   checkAndAutoCalibrateInferred,
@@ -529,9 +529,9 @@ export {
   INFERRED_CALIBRATION_CONFIG,
   type InferredExercise,
   type CalibrationResult,
-} from './fix-06-horizontal-pull-inference';
+} from './horizontalPullInference';
 
-// FIX 7: Home Training - No Pull Equipment
+// Home Training - No Pull Equipment
 export {
   checkHorizontalPullCapability,
   selectHorizontalPullExercise,
@@ -543,9 +543,9 @@ export {
   HOME_EQUIPMENT_QUESTIONS,
   type EquipmentCheckResult,
   type PullDebt,
-} from './fix-07-home-no-pull-equipment';
+} from './homeNoPullEquipment';
 
-// FIX 8: RPE/RIR Feedback System Improved
+// RPE/RIR Feedback System
 export {
   calculateReadinessScore,
   calculateFeelerSetWeight,
@@ -566,9 +566,9 @@ export {
   type UserCalibration,
   type AdjustmentSuggestion,
   type ExerciseCategory,
-} from './fix-08-rpe-rir-feedback-system';
+} from './rpeFeedbackSystem';
 
-// FIX 9: Auto-Regulation Improvements
+// Auto-Regulation Improvements
 export {
   checkLearningPeriod,
   getSessionCountWithExercise,
@@ -584,7 +584,7 @@ export {
   type AdjustmentResult,
   type LearningPeriodStatus,
   type WeightedRIRResult,
-} from './fix-09-auto-regulation-improvements';
+} from './autoRegulation';
 
 // ============================================================
 // PROGRAM NORMALIZER UNIFIED (sostituisce programNormalizer.ts e programStructureNormalizer.ts)
@@ -1013,3 +1013,48 @@ export {
   // React Hook
   usePainDetect
 } from './painDetect';
+
+// ============================================================
+// QUICK START & CALIBRATION SYSTEM
+// ============================================================
+
+// Quick Start Service
+export {
+  calculateExperienceScore,
+  determineInitialLevel,
+  getConservativeParams,
+  getInitialWeightStrategy,
+  calculateInitialWeight,
+  calculateFeelerSetWeight,
+  analyzeFeelerSetFeedback,
+  analyzeRIRPerception,
+  calculateWeightAdjustmentFromRIR,
+  evaluateRecoveryTrend,
+  calculateOverallRIRConsistency,
+  calculateAvgSessionRPE,
+  shouldUnlockIntermediateMode,
+  evaluateTechQuiz,
+  createCalibrationData,
+  updateCalibrationSession1,
+  updateCalibrationSession2,
+  updateCalibrationSession3,
+  updateCalibrationUnlock,
+  analyzeWeeklyChecks,
+  mapQuickStartGoalToProgram,
+  generateProgramOptionsFromQuickStart,
+} from './quickStartService';
+
+// Conservative Program Generator
+export type {
+  ConservativeProgramOptions,
+  ConservativeProgramResult,
+  ConservativeProgram,
+  CalibrationConfig,
+} from './conservativeProgramGenerator';
+
+export {
+  generateConservativeProgram,
+  generateEmptyBaselines,
+  applyCalibrationToProgram,
+  programNeedsCalibration,
+} from './conservativeProgramGenerator';
