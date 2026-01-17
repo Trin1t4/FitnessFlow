@@ -1025,7 +1025,7 @@ export {
   getConservativeParams,
   getInitialWeightStrategy,
   calculateInitialWeight,
-  calculateFeelerSetWeight,
+  calculateFeelerSetWeight as calculateQuickStartFeelerSetWeight,
   analyzeFeelerSetFeedback,
   analyzeRIRPerception,
   calculateWeightAdjustmentFromRIR,
