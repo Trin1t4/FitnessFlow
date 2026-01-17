@@ -1141,3 +1141,31 @@ export {
   // Aggregated export
   TechnicalTips
 } from './technicalTips';
+
+// ============================================================
+// SEVERE PAIN BLOCK - Hard Stop for Pain >= 8/10
+// ============================================================
+
+export type {
+  PainBlockAction,
+  SeverePainBlockResult,
+  PainBlockCheck,
+  BlockLogEntry
+} from './severePainBlock';
+
+export {
+  // Core functions
+  checkSeverePainBlock,
+  exerciseInvolvesArea,
+  filterExercisesForPainArea,
+  createBlockLogEntry,
+  getSkippedExercisesMessage,
+  isHardBlockLevel,
+  isStrongWarningLevel,
+  // Constants
+  HARD_BLOCK_THRESHOLD,
+  STRONG_WARNING_THRESHOLD,
+  BLOCK_ACTION_LABELS,
+  // Aggregated export
+  SeverePainBlock
+} from './severePainBlock';
