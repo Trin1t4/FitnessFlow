@@ -1058,3 +1058,27 @@ export {
   applyCalibrationToProgram,
   programNeedsCalibration,
 } from './conservativeProgramGenerator';
+
+// ============================================================
+// PREGNANCY SAFETY - Filtro Esercizi Gravidanza (ACOG Guidelines)
+// ============================================================
+
+export type {
+  Trimester,
+  PregnancyContext
+} from './pregnancySafety';
+
+export {
+  // Core functions
+  isPregnancyGoal,
+  isExerciseSafeForPregnancy,
+  getPregnancySafeAlternative,
+  filterExerciseForPregnancy,
+  applyPregnancyIntensityCap,
+  // Params & Constants
+  PREGNANCY_PARAMS,
+  PREGNANCY_SAFE_ALTERNATIVES,
+  DEFAULT_SAFE_EXERCISES,
+  // Aggregated export
+  PregnancySafety
+} from './pregnancySafety';

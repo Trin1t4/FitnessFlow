@@ -33,6 +33,15 @@ import {
   type DayType
 } from './safetyCaps';
 
+// ============================================================================
+// PREGNANCY SAFETY - Import
+// ============================================================================
+import {
+  filterExerciseForPregnancy,
+  isPregnancyGoal,
+  applyPregnancyIntensityCap
+} from './pregnancySafety';
+
 /**
  * Lista esercizi isometrici (a tempo, non reps)
  * Questi esercizi usano secondi invece di ripetizioni
@@ -1779,8 +1788,8 @@ function generate3DayFullBody(options: SplitGeneratorOptions): WeeklySplit {
     createExercise('core', baselines.core, 2, options, getIntensityForPattern('core', 6, 2, goal, 3))
   ]);
 
-  // Aggiungi correttivi a tutti i giorni se necessario
-  const correctives = generateCorrectiveExercises(painAreas);
+  // Aggiungi correttivi a tutti i giorni se necessario (con filtro gravidanza)
+  const correctives = generateCorrectiveExercises(painAreas, goal);
   days.forEach(day => day.exercises.push(...correctives));
 
   // VALIDAZIONE: Rimuovi esercizi undefined/incompleti
@@ -1871,8 +1880,8 @@ function generate4DayUpperLower(options: SplitGeneratorOptions): WeeklySplit {
     createExercise('core', baselines.core, 3, options, 'volume')
   ]);
 
-  // Aggiungi correttivi
-  const correctives = generateCorrectiveExercises(painAreas);
+  // Aggiungi correttivi (con filtro gravidanza)
+  const correctives = generateCorrectiveExercises(painAreas, goal);
   days.forEach(day => day.exercises.push(...correctives));
 
   // VALIDAZIONE: Rimuovi esercizi undefined/incompleti
@@ -1992,8 +2001,8 @@ function generate6DayPPL(options: SplitGeneratorOptions): WeeklySplit {
     createAccessoryExercise('calves', 1, options, 'volume')
   ]);
 
-  // Aggiungi correttivi
-  const correctives = generateCorrectiveExercises(painAreas);
+  // Aggiungi correttivi (con filtro gravidanza)
+  const correctives = generateCorrectiveExercises(painAreas, goal);
   days.forEach(day => day.exercises.push(...correctives));
 
   // VALIDAZIONE: Rimuovi esercizi undefined/incompleti
@@ -2026,9 +2035,20 @@ function createExercise(
 ): Exercise {
   const { level, goal, location, trainingType, painAreas, quizScore, discrepancyType } = options;
 
+  // ════════════════════════════════════════════════════════════════════════════
+  // PREGNANCY SAFETY CHECK - Applica cap intensita PRIMA di altri check
+  // ════════════════════════════════════════════════════════════════════════════
+  let effectiveDayType = dayType;
+  if (isPregnancyGoal(goal)) {
+    effectiveDayType = applyPregnancyIntensityCap(dayType, goal);
+    if (effectiveDayType !== dayType) {
+      console.log(`[PREGNANCY] Intensity cap applied: ${dayType} -> ${effectiveDayType}`);
+    }
+  }
+
   // SAFETY CHECK: Apply intensity cap based on screening data
   const maxAllowed = getMaxAllowedIntensity(goal, level, quizScore, discrepancyType);
-  const safeDayType = applySafetyCap(dayType, maxAllowed);
+  const safeDayType = applySafetyCap(effectiveDayType, maxAllowed);
 
   if (!baseline) {
     // Fallback se baseline non presente
@@ -2170,6 +2190,20 @@ function createExercise(
     }
   }
 
+  // ════════════════════════════════════════════════════════════════════════════
+  // PREGNANCY SAFETY FILTER - Applica DOPO aver determinato exerciseName
+  // ════════════════════════════════════════════════════════════════════════════
+  let pregnancyNote = '';
+  if (isPregnancyGoal(goal)) {
+    const filtered = filterExerciseForPregnancy(exerciseName, patternId, goal);
+    if (filtered.wasReplaced) {
+      exerciseName = filtered.name;
+      pregnancyNote = filtered.reason || 'Adattato per gravidanza';
+      wasReplaced = true;
+      console.log(`[PREGNANCY] Exercise replaced: ${exerciseName} -> ${filtered.name}`);
+    }
+  }
+
   // CALCOLO CARICO AUTOMATICO (RIR-based)
   // Se abbiamo il peso 10RM dallo screening, calcoliamo il peso suggerito
   let suggestedWeight = '';
@@ -2214,6 +2248,7 @@ function createExercise(
     },
     wasReplaced: wasReplaced,
     notes: [
+      pregnancyNote, // PREGNANCY: nota se esercizio sostituito
       volumeCalc.notes,
       dupVariantAdjustment, // DUP bodyweight: mostra variante upgrade/base
       isIsometric ? 'Isometrico: mantieni la posizione' : `Baseline: ${baselineReps} reps @ diff. ${baseline.difficulty}/10`,
@@ -2236,9 +2271,17 @@ function createHorizontalPullExercise(
 ): Exercise {
   const { level, goal, location, trainingType, quizScore, discrepancyType } = options;
 
+  // ════════════════════════════════════════════════════════════════════════════
+  // PREGNANCY SAFETY CHECK
+  // ════════════════════════════════════════════════════════════════════════════
+  let effectiveDayType = dayType;
+  if (isPregnancyGoal(goal)) {
+    effectiveDayType = applyPregnancyIntensityCap(dayType, goal);
+  }
+
   // SAFETY CHECK: Apply intensity cap based on screening data
   const maxAllowed = getMaxAllowedIntensity(goal, level, quizScore, discrepancyType);
-  const safeDayType = applySafetyCap(dayType, maxAllowed);
+  const safeDayType = applySafetyCap(effectiveDayType, maxAllowed);
 
   const equipment = location === 'gym' ? 'gym' : 'bodyweight';
   const variants = HORIZONTAL_PULL_VARIANTS.filter(
@@ -2270,6 +2313,18 @@ function createHorizontalPullExercise(
     console.log(`Weight: ${exerciseName}: ${suggestedWeight} (${targetReps} reps @ RIR ${targetRIR}) [${level}] - stimato da vertical pull`);
   }
 
+  // ════════════════════════════════════════════════════════════════════════════
+  // PREGNANCY SAFETY FILTER
+  // ════════════════════════════════════════════════════════════════════════════
+  let pregnancyNote = '';
+  if (isPregnancyGoal(goal)) {
+    const filtered = filterExerciseForPregnancy(exerciseName, 'horizontal_pull', goal);
+    if (filtered.wasReplaced) {
+      exerciseName = filtered.name;
+      pregnancyNote = filtered.reason || 'Adattato per gravidanza';
+    }
+  }
+
   return {
     pattern: 'horizontal_pull' as any, // Pattern corretto per Row
     name: translateExerciseName(exerciseName),
@@ -2285,6 +2340,7 @@ function createHorizontalPullExercise(
       maxReps: baselineReps
     } : undefined,
     notes: [
+      pregnancyNote, // PREGNANCY: nota se esercizio sostituito
       'Row pattern - complementare al vertical pull',
       suggestedWeight ? `Carico: ${suggestedWeight} (${weightNote}) - stimato` : '',
       verticalPullBaseline ? `Baseline: ${baselineReps} reps (stimato da lat pulldown)` : ''
@@ -2303,9 +2359,17 @@ function createAccessoryExercise(
 ): Exercise {
   const { level, goal, location, trainingType, quizScore, discrepancyType } = options;
 
+  // ════════════════════════════════════════════════════════════════════════════
+  // PREGNANCY SAFETY CHECK
+  // ════════════════════════════════════════════════════════════════════════════
+  let effectiveDayType = dayType;
+  if (isPregnancyGoal(goal)) {
+    effectiveDayType = applyPregnancyIntensityCap(dayType, goal);
+  }
+
   // SAFETY CHECK: Apply intensity cap based on screening data
   const maxAllowed = getMaxAllowedIntensity(goal, level, quizScore, discrepancyType);
-  const safeDayType = applySafetyCap(dayType, maxAllowed);
+  const safeDayType = applySafetyCap(effectiveDayType, maxAllowed);
 
   const equipment = location === 'gym' ? 'gym' : 'bodyweight';
   const variants = ACCESSORY_VARIANTS[muscleGroup].filter(
@@ -2338,6 +2402,18 @@ function createAccessoryExercise(
     exerciseName = convertToMachineVariant(exerciseName);
   }
 
+  // ════════════════════════════════════════════════════════════════════════════
+  // PREGNANCY SAFETY FILTER
+  // ════════════════════════════════════════════════════════════════════════════
+  let pregnancyNote = '';
+  if (isPregnancyGoal(goal)) {
+    const filtered = filterExerciseForPregnancy(exerciseName, 'accessory', goal);
+    if (filtered.wasReplaced) {
+      exerciseName = filtered.name;
+      pregnancyNote = filtered.reason || 'Adattato per gravidanza';
+    }
+  }
+
   return {
     pattern: 'core', // Usiamo core come pattern generico per accessori
     name: translateExerciseName(exerciseName),
@@ -2346,14 +2422,18 @@ function createAccessoryExercise(
     rest: '60s',
     intensity: '70%',
     dayType: safeDayType, // DUP intra-giornata (safety capped)
-    notes: `Accessorio ${muscleGroup}`
+    notes: [pregnancyNote, `Accessorio ${muscleGroup}`].filter(Boolean).join(' | ')
   };
 }
 
 /**
  * Genera esercizi correttivi per dolori
+ * Con filtro gravidanza integrato
  */
-function generateCorrectiveExercises(painAreas: NormalizedPainArea[]): Exercise[] {
+function generateCorrectiveExercises(
+  painAreas: NormalizedPainArea[],
+  goal?: string
+): Exercise[] {
   const correctiveExercises: Exercise[] = [];
 
   for (const painEntry of painAreas) {
@@ -2361,14 +2441,28 @@ function generateCorrectiveExercises(painAreas: NormalizedPainArea[]): Exercise[
     const correctives = getCorrectiveExercises(painArea);
 
     for (const corrective of correctives) {
+      // ════════════════════════════════════════════════════════════════════════════
+      // PREGNANCY SAFETY FILTER
+      // ════════════════════════════════════════════════════════════════════════════
+      let exerciseName = corrective;
+      let pregnancyNote = '';
+
+      if (goal && isPregnancyGoal(goal)) {
+        const filtered = filterExerciseForPregnancy(corrective, 'corrective', goal);
+        if (filtered.wasReplaced) {
+          exerciseName = filtered.name;
+          pregnancyNote = filtered.reason || 'Adattato per gravidanza';
+        }
+      }
+
       correctiveExercises.push({
         pattern: 'corrective',
-        name: translateExerciseName(corrective),
+        name: translateExerciseName(exerciseName),
         sets: 2,
         reps: '10-15',
         rest: '30s',
         intensity: 'Low',
-        notes: `Correttivo per ${painArea} - Focus sulla qualità`
+        notes: [pregnancyNote, `Correttivo per ${painArea} - Focus sulla qualità`].filter(Boolean).join(' | ')
       });
     }
   }
